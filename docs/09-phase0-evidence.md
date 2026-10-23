@@ -74,7 +74,8 @@ Unity builds, domain/gameplay tests, Windows playtests, FPS measurements, theme 
 | Implementation boundary | PASS | Exact file allowlist excludes Unity folders, gameplay source, scenes, prefabs, binaries, images, audio, models and archives; no probe files created |
 | Secret scan | PASS, bounded | All 14 text files scanned for private keys, GitHub tokens, AWS access keys, assigned secret values and credential-bearing URLs; zero findings. This is pattern scanning, not a mathematical guarantee |
 | Claims review | PASS | Confirmed/Unverified/Assumption separated; prep permission not claimed; FPS/playtests/installations labelled unverified or not run; Quaternius held |
-| Whitespace | PASS | `git diff --check` exit 0 before staging; LF normalization warnings on original CRLF files were informational |
+| Whitespace | PASS | `git diff --check` and `git diff --cached --check` exit 0; LF normalization warnings on original CRLF files were informational |
+| Exact staged scope | PASS | 14 explicitly named paths staged; staged blob secret scan returned zero findings; all 39 relative links checked again against staged Markdown |
 | Game tests | NOT RUN | No game or test implementation exists; no fabricated test count or build result |
 
 Verification helper ran ephemerally via Python standard library over the worktree and Git subprocesses; no test code or tool dependency was added to the repository. Ignore/attribute probes used hypothetical paths and produced no assets. Required-content checks also confirmed competition evidence labels, exact local gate dates, all six planned phases, and blocked kickoff language.
@@ -83,10 +84,32 @@ Reproducible read-only command families used: `git status --porcelain=v1 --untra
 
 ### Delivery record
 
-At this pre-commit snapshot the Phase 0 files are verified locally; no Phase 0 push is claimed here yet. A following evidence receipt will record actual baseline commit/push results. The existing origin URL and branch are preserved. Git identity is configured; authentication remains in the OS keyring/SSH setup and is not stored in project files.
+Baseline commit: **`b2873eb8d965552e3ecfaecc6a421504c9f343bd`**, message `docs: establish Phase 0 preflight and repository foundation`. Commit and `git push origin main` both succeeded. At **2026-10-23T16:15:59+13:00**, `git rev-parse HEAD`, `git rev-parse origin/main`, and live `git ls-remote origin refs/heads/main` all returned that full SHA; `git status --short --branch` showed `main...origin/main` with no changed paths.
+
+This delivery receipt is a subsequent documentation-only revision. Its own commit SHA is intentionally not embedded in itself; obtain the final receipt revision from `git log -1` and the final handoff report. The baseline above remains a verifiable ancestor. The existing origin URL and branch are preserved. Authentication remains in the OS keyring/SSH setup and is not stored in project files. No binary/LFS upload was required because no assets exist.
 
 ## Readiness decision
 
 **PHASE0_STATUS=PARTIAL.** Preparation can be delivered, but missing Hub/editor/player support/Blender prevent a readiness PASS. Competition sources were accessible; explicit pre-jam-documentation permission, proprietary asset eligibility, and additional prize eligibility details remain unresolved. Quaternius license conflict is recorded and that candidate excluded; no uncertain asset has been imported.
 
 **PHASE1_READINESS=BLOCKED** by time/theme gates and missing tools. Stop after Phase 0. Use the [kickoff](08-phase1-kickoff.md) only in a later authorized execution after its entry conditions are met.
+
+```text
+PHASE0_STATUS=PARTIAL
+COMPETITION_RULES_STATUS=CONFIRMED_WITH_UNVERIFIED_ITEMS
+JAM_START_GATE=CLOSED
+GIT_REPOSITORY_STATUS=VERIFIED_MAIN
+REMOTE_PUSH_STATUS=VERIFIED_BASELINE_PUSH
+UNITY_HUB_STATUS=MISSING_BOUNDED_SEARCH
+UNITY_EDITOR_STATUS=MISSING_EXACT_PATCH_UNAVAILABLE
+WINDOWS_BUILD_SUPPORT_STATUS=MISSING_NO_EDITOR
+BLENDER_STATUS=MISSING_BOUNDED_SEARCH
+GIT_LFS_STATUS=VERIFIED_LOCAL_CONFIG_NO_ASSETS
+DOCUMENTATION_STATUS=PASS
+ART_DIRECTION_STATUS=PASS_PLAN_ONLY
+TECHNICAL_ARCHITECTURE_STATUS=PASS_PLAN_ONLY
+ASSET_LICENSE_STATUS=PASS_RESEARCH_NO_ASSETS_ADMITTED
+AI_DISCLOSURE_PLAN_STATUS=PASS
+PHASE1_READINESS=BLOCKED_TIME_THEME_AND_TOOLS
+IMPLEMENTATION_STATUS=NOT_STARTED
+```
