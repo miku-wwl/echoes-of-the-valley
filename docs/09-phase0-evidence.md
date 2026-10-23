@@ -2,6 +2,8 @@
 
 Audit date: **2026-10-23 NZDT**. First live environment timestamp: **2026-10-23T15:59:39+13:00**. Project root: `D:\workshop\oct\echoes-of-the-valley`. **Implementation NOT_STARTED; jam gate CLOSED.**
 
+**Historical snapshot notice:** the Phase 0 sections below retain their original results. The appended **Phase 0.5 — development environment recovery** section is the current environment record; it supersedes the old missing-Blender and unchecked-VS-Code-extension observations. No Unity implementation is authorized by either phase.
+
 ## Initial repository audit
 
 - Existing branch `main`, tracking `origin/main`; initial working tree clean.
@@ -112,4 +114,165 @@ ASSET_LICENSE_STATUS=PASS_RESEARCH_NO_ASSETS_ADMITTED
 AI_DISCLOSURE_PLAN_STATUS=PASS
 PHASE1_READINESS=BLOCKED_TIME_THEME_AND_TOOLS
 IMPLEMENTATION_STATUS=NOT_STARTED
+```
+
+## Phase 0.5 — development environment recovery
+
+Recovery date: **2026-10-23 NZDT**. Start repository commit `2700f459dfd53897879a9b3c6f4df6e82afd204a`; branch main and initial working tree clean. The developer reports external Phase 0 review and organizer permission for pre-jam preparation. The private permission text was not provided or interpreted as permission for early core content. **PREP_GATE_STATUS=OPEN_ENVIRONMENT_ONLY; CORE_CONTENT_GATE=CLOSED.** No game project, gameplay code, level, character, or game-ready asset was created.
+
+### Reinspection and version selection
+
+Repeated PATH, Windows uninstall registry, common installation roots, Start Menu/app inspection, disk, and executable checks. No Unity Hub, Unity Editor, or Blender installation was detected at the start of recovery. VS Code 1.142.0 and Microsoft C#/C# Dev Kit were already present; the Unity extension was missing. .NET SDKs 9.0.304 and 10.0.300 were detected. No unrelated software was removed or replaced.
+
+Selected **Unity 6000.3.27f1**, the released LTS patch returned by the official release service, published **2026-10-20**, revision **672d562a42a7**. [Official release notes](https://unity.com/releases/editor/whats-new/6000.3.27f1) and [official release API query](https://services.api.unity.com/unity/editor/release/v1/releases?version=6000.3&limit=10&order=RELEASE_DATE_DESC) were read. This is a stable release-channel selection, not a claim that it has no bugs. Relevant known issues include repeated asynchronous scene switching, high-polling-rate mouse Editor framerate, and simultaneous Bee backends; avoid parallel builds and retest scene transitions during the later implementation phase. The patch includes an FBX SDK security update.
+
+Selected **Blender 4.5.15 LTS**, released 2026-10-22; the 4.5 line is supported until July 2027. [Official 4.5 LTS release page](https://www.blender.org/releases/4-5/) and [official download directory](https://download.blender.org/release/Blender4.5/) were checked. An initial 4.5.14 archive was downloaded before the newer patch's security/correctness fixes were reviewed; it was not installed, and the retained archive was not deleted. Only 4.5.15 was extracted and run.
+
+### Download and integrity evidence
+
+All downloads, checksums, metadata and local logs are outside Git under **`D:\Unity\Phase05Recovery\20261023`**. Nothing from that directory is staged or committed. Full file checks:
+
+| Package | Actual bytes | Integrity / signer | Result |
+| --- | --- | --- | --- |
+| UnityHubSetup-x64.exe, product version 3.22.4 | 193385952 | Authenticode **Valid**, Unity Technologies SF | Download verified; not installed |
+| UnitySetup64-6000.3.27f1.exe | 4235893440 | Official API MD5 `7B9412B4F0970814DAF1AB6469944836`; Authenticode **Valid**, Unity Technologies SF | Download verified; not installed |
+| blender-4.5.15-windows-x64.zip | 398649826 | SHA-256 matches official `.sha256` manifest; extracted blender.exe signature **Valid**, Blender Foundation | Installed and background runtime verified |
+
+```text
+Hub SHA256     D61D152C271211962AF1904B57BE3479FC03251F8C36D6561316A881A6CEC69E
+Editor SHA256  15236D7DBE692EE683CC06E31D5F708AB15439A5C5E8CD5FF5EDD82A24434055
+Blender SHA256 52DD02FD74877FA08E74B67D7854CF32468A232C02AAA19B6844C91285574F8D
+```
+
+Unity metadata integrity `md5-e5QStPCXCBTa8atkaZRINg==` decodes to the MD5 printed above. MD5 here is an upstream transfer-integrity check, supplemented by valid Authenticode and a locally recorded SHA-256. The initial legacy Hub filename `UnityHubSetup.exe` returned 404; the architecture-specific official CDN filename `UnityHubSetup-x64.exe` succeeded. Blender/Unity public downloads worked through HTTPS requests despite earlier web-reader retrieval failures; no authentication or safety barrier was bypassed.
+
+### Blender installation and actual runtime evidence
+
+Portable installation: **`D:\Blender\blender-4.5.15-windows-x64\blender.exe`**. The destination did not exist before extraction. Created a new Start Menu shortcut `Blender 4.5 LTS.lnk` pointing to that executable; did not overwrite an existing shortcut or change system PATH.
+
+Commands actually run:
+
+```powershell
+& 'D:\Blender\blender-4.5.15-windows-x64\blender.exe' --version
+& 'D:\Blender\blender-4.5.15-windows-x64\blender.exe' --background --factory-startup --python-expr 'import bpy; bpy.ops.wm.read_factory_settings(use_empty=True); print("BLENDER_RUNTIME_SMOKE=PASS"); print("VERSION="+bpy.app.version_string); print("SCENE_OBJECTS="+str(len(bpy.data.objects)))'
+```
+
+Actual output, **exit code 0**:
+
+```text
+Blender 4.5.15 LTS
+build date: 2026-10-22
+build hash: 5afeabba6097
+build branch: blender-v4.5-release
+build platform: Windows
+
+BLENDER_RUNTIME_SMOKE=PASS
+VERSION=4.5.15 LTS
+SCENE_OBJECTS=0
+Blender 4.5.15 LTS (hash 5afeabba6097 built 2026-10-22 01:35:27)
+Blender quit
+```
+
+This checks executable/runtime startup, Python/bpy initialization and clean shutdown. No file was saved, rendered or exported. **GUI viewport/graphics operation NOT VERIFIED** because native desktop control was unavailable; no claim of visually observing Blender is made.
+
+### VS Code configuration and limitations
+
+Ran `code --install-extension visualstudiotoolsforunity.vstuc`, which exited 0 and reported successful installation. Subsequent installed-extension readback:
+
+```text
+visualstudiotoolsforunity.vstuc@1.3.2
+ms-dotnettools.csdevkit@3.40.215
+ms-dotnettools.csharp@2.160.4
+ms-dotnettools.vscode-dotnet-runtime@3.2.0
+9.0.304 [C:\Program Files\dotnet\sdk]
+10.0.300 [C:\Program Files\dotnet\sdk]
+```
+
+Unity extension manifest was read from `C:\Users\weila\.vscode\extensions\visualstudiotoolsforunity.vstuc-1.3.2`: publisher `visualstudiotoolsforunity`, VS Code requirement `^1.76.0`, dependencies C# Dev Kit and .NET runtime extension. No unrelated extension was changed. CLI emitted an existing crashpad registration warning; installation and readback still exited successfully.
+
+**Verified:** extension installed and dependencies present. **NOT VERIFIED:** Unity project integration, IntelliSense, attach debugging, and Unity's External Script Editor preference. Those need a real Editor/project session; installed extension paths alone do not establish that workflow. [Microsoft's official setup](https://code.visualstudio.com/docs/other/unity) requires Unity's **Visual Studio Editor** package 2.0.20 or newer and VS Code as external editor. Do not use the deprecated Visual Studio Code Editor Unity package. No package manifest or game project was created to claim this check.
+
+### D: cache and capacity configuration
+
+Created the previously absent user file **`C:\Users\weila\.upmconfig.toml`**, with these values; parsed it using Python `tomllib` and checked the D: directory exists:
+
+```toml
+cacheRoot = "D:\\Unity\\Cache\\upm"
+maxCacheSize = 5000000000
+```
+
+Readback: `UPM_CONFIG_PARSE=PASS`, cacheRoot `D:\Unity\Cache\upm`, maxCacheSize `5000000000`. No existing package cache or user config was moved, deleted or overwritten. No global TEMP/TMP or security settings were changed. [Unity 6.3 cache configuration](https://docs.unity.com/en-us/engine/6000.3/manual/packages-list/package-manager-caches/upm-config-cache), [user config location](https://docs.unity.com/en-us/engine/6000.3/manual/packages-list/upm-config/files). Actual UPM consumption remains NOT VERIFIED until Editor runs.
+
+At **2026-10-23T16:47:20+13:00**, C: **22.23 GiB free**, D: **79.27 GiB free**. Start of recovery: C: 22.00 GiB, D: 85.02 GiB; small background fluctuations are not attributed to this task. Editor installation metadata estimates another **8464143666 bytes (7.88 GiB)** on D:, leaving roughly **71 GiB** before further imports/caches/builds. Reserve approximately 20 GiB for project Library/imports, 10 GiB for build/temp work, and the configured ≤5 GB UPM cache. These are planning allowances, not measured project sizes. Recheck free space before installation and after first imports; pause optional downloads if either drive falls below its working reserve. Suggested operating reserves: C: ≥15 GiB, D: ≥30 GiB. Do not delete existing files/apps to meet them without approval.
+
+Large application, archives, editor destination, download destination and future repository-local Library/builds are on D:. VS Code's existing extensions and SDKs remain in their current locations to preserve the user's setup. Hub download/editor-path preferences still need to be set in Hub; creating D: destination directories does not verify those preferences.
+
+### Interactive Unity handoff — current blocker
+
+The environment is not elevated. A command to start the signed Hub installer was rejected by automatic approval review with **`blocked by policy`**; no more specific reason was returned, and no bypass was attempted. Download/integrity checks succeeded separately. Native Computer Use initialization succeeded, but app inspection returned **`Computer Use native pipe is unavailable ... os error 2`**, so there is no supported desktop window control/readback in this session.
+
+The user was asked to install/login/activate in Hub and separately whether an external empty verification project is permitted. Until answered, no project is created and no authentication, EULA acceptance, UAC approval, or license activation is automated. The private organizer permission is not used to infer authorization for an environment-test project.
+
+Concrete handoff instructions:
+
+1. Manually run **`D:\Unity\Phase05Recovery\20261023\UnityHubSetup-x64.exe`**. Review terms yourself, handle UAC as required, and select **`D:\Unity\Hub`** as the install location. Installer version/signature was verified above; installation has not been observed.
+2. Start Hub, sign in personally, and use the license appropriate to your eligibility. If Personal applies, use Settings → Licenses → Add license → Get a free personal license and personally review/accept its terms if needed. Do not share passwords, license files or keys in chat. [Official license management](https://docs.unity.com/en-us/hub/manage-license)
+3. Set Hub Editor installation destination to **`D:\Unity\Hub\Editor`** and download destination to **`D:\Unity\Downloads`** where the installed Hub supports it. Do not create a game project.
+4. Either install **6000.3.27f1** in Hub, or run the already verified **`D:\Unity\Phase05Recovery\20261023\UnitySetup64-6000.3.27f1.exe`** and select **`D:\Unity\Hub\Editor\6000.3.27f1`**, reviewing its terms/UAC yourself. Do not install a duplicate copy. If using the standalone installer, add **`D:\Unity\Hub\Editor\6000.3.27f1\Editor\Unity.exe`** using Hub's Locate/add-existing-editor action afterward.
+5. On Windows the desktop Mono player support is bundled with the Windows Editor: the exact official Windows module list offers `windows-il2cpp`, UWP and Windows Server as additional choices, but no separate Windows Mono add-on. **Do not install unrelated platform modules.** After installation, inspect `Editor\Data\PlaybackEngines\windowsstandalonesupport`, its Win64 Mono player files and `UnityEditor.WindowsStandalone.Extensions.dll`; then verify actual availability through Editor before calling support operational. IL2CPP is optional and is not needed for the initial Mono backend.
+6. Verify Hub lists the exact patch/path, Licenses shows a valid active license, `Unity.exe -version` returns 6000.3.27f1, and launch logs show successful licensing/Editor startup. No such Editor or license success is currently claimed. If an empty test project is explicitly authorized, perform only external environment/startup/Mono checks and keep all results outside the competition repository; otherwise record the remaining integration/build checks as NOT RUN.
+
+### Phase 0.5 acceptance assessment
+
+| Requirement | Result | Evidence or blocker |
+| --- | --- | --- |
+| Reinspect existing installations | PASS | Repeated live command/registry/path checks |
+| Select stable 6.3 LTS patch | PASS | Official LTS metadata and release notes, 6000.3.27f1 |
+| Hub install/detection | PARTIAL | Valid 3.22.4 installer staged on D:; user installation/readback pending |
+| Editor install/launch | PARTIAL | Valid exact-patch installer staged on D:; not installed or launched |
+| Windows x64 Mono support | NOT VERIFIED | Bundled support researched; installed files/Editor capability/build not exercised |
+| License readiness | BLOCKED | User login/eligible license activation required; no credential collection |
+| Supported Blender LTS | PASS for background runtime | 4.5.15 LTS, official checksum/signature, real runtime exit 0; GUI not observed |
+| VS Code Unity/C# | PARTIAL | Unity extension and dependencies verified; Editor integration not tested |
+| D: storage/cache preparation | PASS configuration | Large files/application on D:; TOML parsed; actual UPM/Hub use still unverified |
+| Design reconciliation | PASS | COMPETITION_MVP and BROADER_PLANNED_SCOPE separated; original GDD still unavailable |
+| No core-content work | PASS | No Unity project/gameplay/assets or runtime dependency added to repository |
+
+Raw local evidence files: `hub-installer-verification.json`, `unity-installer-verification.json`, `unity-release-6000.3.27f1.json`, `blender-archive-verification.json`, `blender-version.txt`, `blender-runtime-smoke.txt`, `vscode-unity-extensions.txt`, `vscode-unity-extension-manifest.json`, `dotnet-sdks.txt`, `disk-after-downloads.json`. These remain local; sanitized command outputs above supply the committed evidence. Installer files, caches, logs, SDKs and user settings are excluded from the documentation-only Git delivery.
+
+Final local Phase 0.5 documentation validation returned:
+
+```text
+REPOSITORY_FILES=14
+CHANGED_DOCUMENTS=4
+RELATIVE_LINKS=40
+DOCUMENT_SCOPE=PASS
+SECRET_SCAN=PASS
+CORE_CONTENT_ABSENT=PASS
+DESIGN_RECONCILIATION=PASS
+UNITY_INSTALLER_METADATA_MATCH=PASS
+BLENDER_LOG_CHECK=PASS
+UPM_CONFIG=PASS
+git diff --check: exit 0
+```
+
+Exact changed paths: README.md, docs/01-competition-compliance.md, docs/02-game-design-prep.md, docs/09-phase0-evidence.md. Validation parsed all local Markdown targets, checked the repository file allowlist and UTF-8/fences, scanned credential patterns, matched saved Unity bytes/MD5/signature results against official metadata, checked Blender's actual runtime log and archive verification, and parsed the real UPM TOML. These are environment/document checks, not game tests. Commit/push is performed only after staged-content checks; the final commit SHA and live remote comparison are supplied in the handoff rather than embedded self-referentially in this file.
+
+**PHASE05_STATUS=PARTIAL.** Independent recovery work and an exact installation handoff are complete; Hub installation/detection, Editor installation/launch, licensing, Windows Mono availability and full VS Code Unity integration are not verified. Stop at Phase 0.5. Core-content development remains CLOSED even after software setup succeeds.
+
+```text
+PHASE05_STATUS=PARTIAL
+UNITY_HUB_STATUS=SIGNED_INSTALLER_READY_INSTALLATION_PENDING
+UNITY_EDITOR_VERSION=NOT_INSTALLED_TARGET_6000.3.27f1
+UNITY_EDITOR_LAUNCH_STATUS=NOT_RUN
+WINDOWS_BUILD_SUPPORT_STATUS=NOT_VERIFIED_MONO_BUNDLED_WITH_WINDOWS_EDITOR
+UNITY_LICENSE_STATUS=USER_LOGIN_AND_ACTIVATION_REQUIRED
+BLENDER_VERSION=4.5.15_LTS
+BLENDER_LAUNCH_STATUS=PASS_BACKGROUND_RUNTIME_GUI_NOT_VERIFIED
+VSCODE_UNITY_STATUS=EXTENSIONS_VERIFIED_EDITOR_INTEGRATION_NOT_RUN
+C_DRIVE_FREE=22.23_GiB
+D_DRIVE_FREE=79.27_GiB
+PREP_GATE_STATUS=OPEN_ENVIRONMENT_ONLY_USER_REPORTED_PERMISSION
+CORE_CONTENT_GATE=CLOSED
+BLOCKERS=UNITY_INSTALLATION_LOGIN_LICENSE_AND_EDITOR_WORKFLOW_VERIFICATION
 ```

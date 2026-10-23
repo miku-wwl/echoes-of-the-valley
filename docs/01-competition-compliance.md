@@ -8,6 +8,10 @@ Review date: **2026-10-23 NZDT**, before the jam. This is a source-based prepara
 
 Sources read live: [official overview](https://itch.io/jam/thatgamejam02) and [official FAQ](https://itch.io/jam/thatgamejam02/topic/7110933/thatgamejam02-faq). Recheck both at kickoff and before release; no organizer has been contacted in Phase 0.
 
+### Phase 0.5 permission update
+
+The developer reports having received organizer permission for pre-jam preparation. This supersedes the earlier absence of any reported private permission, but no private message or exact permission text has been reviewed. **UNVERIFIED: the permission's detailed scope.** It is not evidence of an exemption for early core-content development. **ASSUMPTION / project boundary:** current authorization covers software recovery, installation/configuration, environment verification, and documentation reconciliation. The core-content gate stays CLOSED; Phase 1 is not authorized by this Phase 0.5 request. A separate question about an external empty environment-test project must be answered before creating one; it cannot be treated as authorization to create the competition game.
+
 ## Official overview findings
 
 All rows below are **CONFIRMED** by the [overview](https://itch.io/jam/thatgamejam02).
@@ -57,7 +61,7 @@ Do not apply a constant PT offset to both dates. Vote and announcement dates abo
 
 | Level | Question/policy | Handling |
 | --- | --- | --- |
-| UNVERIFIED | Explicit permission for pre-jam empty Git repository, GDD, architecture, and documentation | Not stated in reviewed official pages. Keep dated preparation commits; no claim of explicit approval. If organizer clarifies, record the response before relying on it. |
+| UNVERIFIED | Exact scope of private pre-jam permission | Developer reports organizer permission in Phase 0.5; private wording not inspected. Public pages do not explicitly settle each preparation activity. Preserve dated preparation history and avoid claiming permission extends to core content. |
 | ASSUMPTION | Research/configuration/tool checks and provisional design constitute permissible preparation | User-authorized project boundary; no playable work or game-ready content. It does not certify competition eligibility. |
 | UNVERIFIED | Whether proprietary licensed stock art qualifies like publicly available paid tools | FAQ distinguishes assets from tools. Exclude proprietary art unless official clarification supports use. |
 | UNVERIFIED | Additional age, residency, tax, or prize-payment terms | No such terms confirmed in the reviewed pages; inspect entry/prize terms before submission. |

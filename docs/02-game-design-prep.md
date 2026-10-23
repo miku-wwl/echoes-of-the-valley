@@ -2,6 +2,19 @@
 
 **Design preparation v0.1 — 2026-10-23 NZDT. No GDD v0.1 existed in the audited repository.** This baseline derives from the user's brief. All numeric tuning, character concepts, quest wording, narrative, and emotional progression require post-theme review. Nothing here is implemented.
 
+## Scope reconciliation — Phase 0.5
+
+**COMPETITION_MVP** is the simplified implementation proposal documented below: one compact valley, one protagonist, three NPC quests, three crafting recipes, chicken-only pasture, basic inventory/currency, gathering/mining, three restoration steps, and local save/load in a 15–20-minute Windows experience. Its item counts, prices, timers, quest roles, and route are provisional jam-planning choices introduced in Phase 0. They are not a recovered original GDD and are not implemented.
+
+**BROADER_PLANNED_SCOPE** preserves the wider cozy fantasy JRPG / gathering / crafting / pasture-simulation intent from the supplied project brief. It remains separate from the competition commitment:
+
+| Planned tier | Known scope from supplied brief | Current commitment |
+| --- | --- | --- |
+| Optional expansion after MVP acceptance | Fishing; cows and sheep; additional recipes and NPC quests; cinematic effects; additional animations | Planned only; no added counts, mechanics, narrative, or implementation promises |
+| Post-competition | Expanded world; full crop farming; seasons; animal breeding; large relationship systems; multiplayer | Planned only; excluded from competition MVP |
+
+The original GDD has not been provided or found. Its missing details remain **PENDING ORIGINAL_GDD_REVIEW**; this document does not invent them. The broader scope is neither deleted nor presented as a finished design. All system and progression sections below describe **COMPETITION_MVP** unless explicitly labelled otherwise.
+
 ## Player fantasy and character
 
 Be a capable young valley caretaker whose ordinary work helps neighbors and changes the surroundings. Proposed protagonist: an original adult traveler with a short practical cape, work gloves, gathered satchel, and readable herb/stone tool silhouettes. Avoid resemblance to any existing RPG protagonist. Exact identity, backstory, final clothing, motivation, and musical response are pending theme review.
