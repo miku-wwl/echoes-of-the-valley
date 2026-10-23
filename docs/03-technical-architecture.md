@@ -2,6 +2,8 @@
 
 **Planning only — 2026-10-23 NZDT. No implementation code, Unity project, package manifest, scenes, or prefabs are created in Phase 0.**
 
+Phase 0.5 verification exception: the user subsequently authorized a temporary blank environment probe outside the repository. It uses Unity's own unmodified template, without authored gameplay or assets. The actual installed editor/package results below refer to that probe, not an implemented Echoes of the Valley project. See the current follow-up in [environment evidence](09-phase0-evidence.md).
+
 ## Small project structure
 
 After the jam gate, create one Unity project at `game/` with a Universal 3D template. Proposed owned content is under `Assets/Echoes/`: Scenes, Scripts, Definitions, Prefabs, Art, Audio, UI, and Tests. This is a future layout, not directories to create now. Keep `.meta` files in Git; Force Text; never commit Library, Temp, builds, or credentials.
@@ -14,17 +16,17 @@ One session composition MonoBehaviour constructs the plain C# state/rule objects
 
 | Component | Intended use | Verification boundary |
 | --- | --- | --- |
-| Unity 6.3 LTS / 6000.3.x | Windows x64 editor/player | Missing locally; exact installed patch not available |
-| URP, `com.unity.render-pipelines.universal` | Forward rendering, baked environment plus one sun | Core package tied to editor; do not arbitrarily force another graphics package version |
-| Shader Graph, `com.unity.shadergraph` | One lightweight opaque anime surface family | Editor-aligned core package; no game shader authored yet |
-| Input System, `com.unity.inputsystem` | Move, Look, Interact, Inventory, Pause, UI actions | Resolve released compatible version in selected editor; no samples/gameplay imports |
+| Unity 6.3 LTS / 6000.3.x | Windows x64 editor/player | Phase 0.5: installed 6000.3.27f1, revision 672d562a42a7; external probe startup verified |
+| URP, `com.unity.render-pipelines.universal` | Forward rendering, baked environment plus one sun | External probe resolved 17.3.0; core package tied to editor; no competition lighting/content authored |
+| Shader Graph, `com.unity.shadergraph` | One lightweight opaque anime surface family | External probe resolved 17.3.0; no game shader authored |
+| Input System, `com.unity.inputsystem` | Move, Look, Interact, Inventory, Pause, UI actions | External probe resolved 1.20.1; only stock template input definitions, no authored player actions |
 | Cinemachine, `com.unity.cinemachine` | One follow camera, obstruction and reset behavior | Official 6000.3 page lists 3.1.7 released; confirm resolver at kickoff |
-| Test Framework, `com.unity.test-framework` | EditMode domain tests; PlayMode integration | Core package; runner not executed in Phase 0 |
+| Test Framework, `com.unity.test-framework` | EditMode domain tests; PlayMode integration | External probe resolved 1.6.0; gameplay/domain tests remain NOT RUN |
 | uGUI and TextMeshPro facilities | Compact Canvas UI and readable English text | Confirm shipped UI/text dependencies in editor; record necessary essential resources |
 
-Official evidence: [6.3 core packages](https://docs.unity.com/en-us/engine/6000.3/manual/packages-list/packages-all/pack-core), [Cinemachine for 6.3](https://docs.unity.com/en-us/engine/6000.3/manual/packages-list/packages-all/pack-safe/com-unity-cinemachine), [Input System installation](https://github.com/Unity-Technologies/InputSystem/blob/develop/Packages/com.unity.inputsystem/Documentation~/Installation.md), [URP documentation](https://docs.unity3d.com/6000.3/Documentation/Manual/urp/urp-introduction.html). One legacy URP setup URL failed; package/editor readback remains required. Package versions are research, not an installed lockfile.
+Official evidence: [6.3 core packages](https://docs.unity.com/en-us/engine/6000.3/manual/packages-list/packages-all/pack-core), [Cinemachine for 6.3](https://docs.unity.com/en-us/engine/6000.3/manual/packages-list/packages-all/pack-safe/com-unity-cinemachine), [Input System installation](https://github.com/Unity-Technologies/InputSystem/blob/develop/Packages/com.unity.inputsystem/Documentation~/Installation.md), [URP documentation](https://docs.unity3d.com/6000.3/Documentation/Manual/urp/urp-introduction.html). One legacy URP setup URL failed during Phase 0. Phase 0.5 now supplies actual probe manifest/lockfile evidence for the packages labelled resolved above; Cinemachine remains researched, not installed or tested. The competition project still has no package manifest/lockfile because it does not yet exist.
 
-Initial player backend: Mono; Windows x64; Direct3D 11 as the conservative graphics baseline. Windows IL2CPP requires its matching build module, Visual Studio C++ tools, and Windows SDK; do not confuse UWP or Windows Server support with the desktop player. Native compiler and SDK are detected locally, but no Unity build has been attempted. [Unity requirements](https://docs.unity.com/en-us/engine/6000.3/manual/get-started/install-and-upgrade/getting-started-installing-unity/system-requirements)
+Initial player backend: Mono; Windows x64; Direct3D 11 as the conservative graphics baseline. The Phase 0.5 external blank probe successfully built and launched that combination; this does not prove any game behavior or performance target. Windows IL2CPP requires its matching build module, Visual Studio C++ tools, and Windows SDK; do not confuse UWP or Windows Server support with the desktop player. IL2CPP remains NOT RUN and is not required for the initial backend. [Unity requirements](https://docs.unity.com/en-us/engine/6000.3/manual/get-started/install-and-upgrade/getting-started-installing-unity/system-requirements)
 
 ## System ownership
 

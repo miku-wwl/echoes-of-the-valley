@@ -31,6 +31,8 @@ The first complete vertical slice is **movement → resource gathering → inven
 
 Before 2026-10-24 20:00 NZDT **and** theme release: documentation/configuration/research/tool checks only. No Unity project, gameplay source, game-ready art, scene, prefab, level, or executable. This remains the boundary even if preparation finishes early. Pre-jam documentation eligibility is not explicitly settled by official sources; see [compliance](01-competition-compliance.md).
 
+Phase 0.5 narrow exception: the user subsequently reported organizer preparation permission and separately authorized an external temporary blank Unity project/build solely for environment verification. That probe uses the unmodified Unity template, without authored gameplay/content, and stays outside this repository. The private organizer permission's detailed scope remains unreviewed. This exception does not open the competition project or core-content gate; see [current evidence](09-phase0-evidence.md).
+
 After the gate: record source/time of theme release, listen to the official track, review the design, and follow the [Phase 1 specification](08-phase1-kickoff.md). This Phase 0 execution stops before that work. No automated timer will start development.
 
 ## Principal risks

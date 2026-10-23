@@ -2,7 +2,7 @@
 
 Audit date: **2026-10-23 NZDT**. First live environment timestamp: **2026-10-23T15:59:39+13:00**. Project root: `D:\workshop\oct\echoes-of-the-valley`. **Implementation NOT_STARTED; jam gate CLOSED.**
 
-**Historical snapshot notice:** the Phase 0 sections below retain their original results. The appended **Phase 0.5 — development environment recovery** section is the current environment record; it supersedes the old missing-Blender and unchecked-VS-Code-extension observations. No Unity implementation is authorized by either phase.
+**Historical snapshot notice:** the Phase 0 and initial Phase 0.5 sections retain their original results. The final **Phase 0.5 follow-up — authorized external blank probe** is the current environment record; it supersedes the earlier missing tools, pending handoff, and PARTIAL snapshots. Competition implementation remains NOT_STARTED; the user explicitly authorized only the external environment probe described in that follow-up.
 
 ## Initial repository audit
 
@@ -275,4 +275,140 @@ D_DRIVE_FREE=79.27_GiB
 PREP_GATE_STATUS=OPEN_ENVIRONMENT_ONLY_USER_REPORTED_PERMISSION
 CORE_CONTENT_GATE=CLOSED
 BLOCKERS=UNITY_INSTALLATION_LOGIN_LICENSE_AND_EDITOR_WORKFLOW_VERIFICATION
+```
+
+## Phase 0.5 follow-up — authorized external blank probe
+
+**Current result: PHASE05_STATUS=PASS for environment recovery, not for a game or GUI playtest.** On 2026-10-23 NZDT the user reported that Hub installation, login and license activation were complete, and expressly answered **yes** to an external temporary blank project for Editor/startup/Windows Mono verification. This is the authorization for the probe, not an inferred extension of the private organizer permission. No competition project, authored gameplay, level, character, or game-ready asset was created. Earlier initial-recovery PARTIAL states above remain historical.
+
+### Installed tools and Hub detection
+
+| Component | Current evidence | Result |
+| --- | --- | --- |
+| Hub | Running executable **`D:\Unity Hub\Unity Hub.exe`**, version **3.22.4** | VERIFIED |
+| Editor | **`D:\Unity\Downloads\6000.3.27f1\Editor\Unity.exe`**; executable metadata `6000.3.27f1_672d562a42a7`; `Unity.exe -version` prints `6000.3.27f1`, exit 0 | VERIFIED |
+| Hub editor registry | Official Unity CLI installed-editor query and Hub `editors-v2.json` both list exact version/path, manual registration, x86_64; rechecked after Hub restart | VERIFIED, GUI not visually observed |
+| License | `unity license status --json` exit 0, `data.active=true`, Unity Personal; real Editor logs resolved entitlements and exited 0 | VERIFIED; no activation bypass; no credentials or serials included |
+| Windows Mono | `windowsstandalonesupport` extension DLL, Win64 Mono variations, successful real Win64 Mono build and player startup | VERIFIED |
+| Blender | Existing verified 4.5.15 LTS installation/background runtime result above | VERIFIED_BACKGROUND; GUI not observed |
+
+The user installed Editor under **D:\Unity\Downloads**, which differs from the earlier suggested path. That working installation was preserved. The official CLI set **future** editor installations to **`D:\Unity\Hub\Editor`**; Hub download preference remains **`D:\Unity\Downloads`**. There was no relocation, duplicate Editor installation, deletion, or new software/license acceptance in this follow-up.
+
+Hub registration required a correction: a directory argument was rejected by the CLI; the Windows `Unity.exe` path was accepted/recognized. The live Hub later overwrote its editor list with an empty list. The installed Editor itself continued to build successfully. Hub was stopped, its registration was confirmed through the official CLI while stopped, then Hub was restarted and both registry/installed-editor query were checked again. The retained result lists the exact Editor; no signature-check bypass or hand-written registry fabrication was used. Hub's blank additional-module string is not used as proof of Mono support; actual installed files and build/runtime results supply that proof.
+
+### Probe scope, real Editor startup and packages
+
+Probe: **`D:\Unity\Phase05Recovery\20261023\EnvironmentProbe`**. Outputs/logs: same recovery root, with player under **`ProbeBuild\WindowsMono`**. `TEMP`/`TMP` were redirected only for these test processes to **`D:\Unity\Temp\Phase05Probe`**; system-wide TEMP/TMP was unchanged.
+
+The installed Unity Universal 3D template `com.unity.template.3d-cross-platform-17.0.14.tgz` was inspected before use. Its sample scene contains only **Main Camera**, **Directional Light**, and **Global Volume**. The two stock Readme scripts were compared byte-for-byte against the template and remained unchanged. No custom C# script was authored; no gameplay system, extra scene, model, texture, animation or level was added. The scratch project's own auto-generated Unity settings, packages, Library, solution and player are environment artifacts, not competition deliverables. No cloud project or VCS integration was created for it.
+
+Actual create/start/import command, launched from PowerShell with D:-backed process TEMP/TMP:
+
+```powershell
+& 'D:\Unity\Downloads\6000.3.27f1\Editor\Unity.exe' -batchmode -quit -createProject 'D:\Unity\Phase05Recovery\20261023\EnvironmentProbe' -cloneFromTemplate 'D:\Unity\Downloads\6000.3.27f1\Editor\Data\Resources\PackageManager\ProjectTemplates\com.unity.template.3d-cross-platform-17.0.14.tgz' -buildTarget Win64 -force-d3d11 -logFile 'D:\Unity\Phase05Recovery\20261023\editor-create-probe.log'
+```
+
+The GUI-subsystem executable initially detached from the shell; shell return was **not** treated as startup completion. Its actual process/log was followed through shutdown. Log evidence:
+
+```text
+[Licensing::Client] Successfully resolved entitlement details
+Forcing GfxDevice: Direct3D 11
+Version: Direct3D 11.0 [level 11.1]
+Renderer: AMD Radeon 780M Graphics (ID=0x1900)
+[Package Manager] Done resolving packages in 44.14 seconds
+[Package Manager] Registered 57 packages:
+Exiting batchmode successfully now!
+Exiting without the bug reporter. Application will terminate with return code 0
+```
+
+The first licensing-client connection logged a validation/token-availability warning before recovering entitlement resolution. Final active-license query and successful actual Editor runs, rather than those initial warnings or user assertion alone, determine readiness. No credentials, license IDs, access tokens or license files are copied into this documentation.
+
+Actual probe lockfile versions: **URP 17.3.0; Shader Graph 17.3.0; Input System 1.20.1; Visual Studio Editor 2.0.26; Unity Test Framework 1.6.0**. Cinemachine is still researched, not installed/tested; it belongs to later project setup. The intended stack is verified through actual package resolution where listed, not assumed from installation paths. No game-domain tests have been created or run.
+
+### VS Code configuration and solution generation
+
+VS Code **`D:\Microsoft VS Code\Code.exe`** is now Unity's External Script Editor. The existing Windows EditorPrefs value `kScriptsDefaultApp_h2657262712` was observed as REG_BINARY, its previous value was backed up locally, and its value was updated preserving that type. Readback after the build still points to VS Code. No arbitrary hashed preference name was invented, and no VS Code security/trust setting was changed.
+
+The installed Unity package's built-in synchronization method was executed with `Start-Process -WindowStyle Hidden -Wait -PassThru` so its real exit code was captured:
+
+```text
+Arguments: -batchmode -quit -projectPath <EnvironmentProbe>
+           -executeMethod UnityEditor.SyncVS.SyncSolution
+           -logFile <recovery-root>\editor-sync-vscode.log
+SYNC_VSCODE_EXIT=0
+Generated: EnvironmentProbe.slnx
+           Assembly-CSharp.csproj
+           Assembly-CSharp-Editor.csproj
+Generated .vscode files: extensions.json, launch.json, settings.json
+ExternalScriptEditor=D:\Microsoft VS Code\Code.exe
+```
+
+The already verified Unity extension 1.3.2, C# 2.160.4, C# Dev Kit 3.40.215 and .NET SDKs are unchanged. Configuration and engine-side project generation are PASS; interactive IntelliSense, trust prompts, breakpoint attachment and GUI editing are **NOT RUN**, and are not represented as observed working behavior.
+
+### Actual Windows x64 Mono build and player startup
+
+The scratch PlayerSettings explicitly added `Standalone: 0` under scriptingBackend (Mono), preserving the stock Android setting. The stock template scene was already in its build scene list. No custom build script or gameplay code was needed. Actual build arguments:
+
+```text
+<installed-editor> -batchmode -quit -projectPath <EnvironmentProbe>
+  -buildTarget Win64
+  -buildWindows64Player D:\Unity\Phase05Recovery\20261023\ProbeBuild\WindowsMono\EnvironmentProbe.exe
+  -force-d3d11
+  -logFile D:\Unity\Phase05Recovery\20261023\editor-build-windows-mono.log
+```
+
+Observed `Start-Process -Wait` result and build output:
+
+```text
+ExitCode=0
+Build Finished, Result: Success.
+Exiting without the bug reporter. Application will terminate with return code 0
+EnvironmentProbe.exe bytes=667136
+SHA256=F083B0E879A9298CDCF9933A8F3B4F2B013E13F7D3E51221FC0D756B79E28807
+Companion files: UnityPlayer.dll, EnvironmentProbe_Data, MonoBleedingEdge
+```
+
+The full generated player folder was launched independently of Editor using `-batchmode -force-d3d11 -screen-fullscreen 0 -screen-width 640 -screen-height 360 -logFile <player-windows-mono-smoke.log>`. Actual output:
+
+```text
+Mono path[0] = '.../EnvironmentProbe_Data/Managed'
+Mono config path = '.../MonoBleedingEdge/etc'
+Initialize engine version: 6000.3.27f1 (672d562a42a7)
+Version: Direct3D 11.0 [level 11.1]
+Renderer: AMD Radeon 780M Graphics (ID=0x1900)
+AliveAfter15Seconds=true
+EngineInitialized=true
+Radeon780MInitialized=true
+MonoInitialized=true
+FatalStartupPattern=false
+PASS=true
+```
+
+The blank player has no authored Quit behavior. It stayed alive for the 15-second observation, then the test harness stopped only its newly launched PID. **This is not a natural exit-code-0 claim or an interactive playthrough.** The create, solution-sync and build logs had zero matches for `error CS`, compiler-error aborts, BuildFailedException or unhandled exceptions. IL2CPP, performance targets, game inputs/quests/save systems and all competition features remain NOT RUN / NOT_STARTED.
+
+### Storage, retained evidence and limits
+
+At **2026-10-23T20:31:40+13:00**, **C: 12.70 GiB free; D: 68.33 GiB free**; the later final readback was **C: 12.71 GiB, D: 68.33 GiB**. Probe size was 1.979 GiB, full player folder 0.095 GiB, UPM cache 0.002 GiB. Probe imports created data under D:-backed UPM `db`, confirming actual cache use. Installations, scratch Library, build, downloads and process temp are on D:. No existing files or applications were deleted to reclaim space. C: is below the preferred 15 GiB reserve; this is a **nonblocking headroom caution**, not a claim that the target reserve was met. Current real import/build/startup checks passed with that capacity. Keep large development data on D:, recheck before substantial work, and obtain approval before any cleanup. No cause is asserted for unrelated C: usage changes.
+
+Additional local evidence: `installed-editor-version.txt`, `editor-create-probe.log`, `editor-sync-vscode.log`, `editor-build-windows-mono.log`, `windows-mono-build-result.json`, `player-windows-mono-smoke.log`, `player-smoke-result.json`, `probe-scope-and-packages.json`, `external-editor-preference-change.json`, `hub-after-restart-verification.json`, `license-status-sanitized.json`, `disk-after-probe.json`. Raw licensing logs remain local and are not committed; only sanitized excerpts are included above. The external probe and build are retained for review, not removed or copied into Git. Native GUI control remained unavailable, so no screenshot/GUI-observation claim is made.
+
+Environment acceptance: installed versions/paths, stable Hub detection after restart, active license plus real Editor startup, Windows x64 Mono build and player initialization, supported Blender runtime, VS Code configuration/solution generation, and D:-backed working storage are verified. **Phase 0.5 stops here.** No automatic transition to Phase 1 occurs, and the core-content gate remains CLOSED regardless of successful tools.
+
+Final follow-up validation: **14 repository files, six changed Markdown files, 42 valid relative links**; exact documentation scope, UTF-8/fences, credential-pattern scan, absence of competition content, probe build/runtime JSON, stable Hub/license evidence, and all three successful Editor logs passed. `git diff --check` exited 0. No external probe, source, binary, cache, log or user preference is included in the commit. The only paths staged for this follow-up are README.md and docs/00-project-charter.md, 01-competition-compliance.md, 03-technical-architecture.md, 08-phase1-kickoff.md and 09-phase0-evidence.md. Staged-content checks precede the documentation commit/push; the final handoff reports the resulting SHA and live remote comparison.
+
+```text
+PHASE05_STATUS=PASS
+UNITY_HUB_STATUS=VERIFIED_3.22.4_EDITOR_REGISTERED_AFTER_RESTART
+UNITY_EDITOR_VERSION=6000.3.27f1_672d562a42a7
+UNITY_EDITOR_LAUNCH_STATUS=PASS_BATCH_IMPORT_D3D11
+WINDOWS_BUILD_SUPPORT_STATUS=PASS_X64_MONO_BUILD_AND_PLAYER_STARTUP
+UNITY_LICENSE_STATUS=VERIFIED_ACTIVE_UNITY_PERSONAL
+BLENDER_VERSION=4.5.15_LTS
+BLENDER_LAUNCH_STATUS=PASS_BACKGROUND_RUNTIME_GUI_NOT_VERIFIED
+VSCODE_UNITY_STATUS=CONFIGURED_SOLUTION_GENERATION_PASS_DEBUGGER_NOT_RUN
+C_DRIVE_FREE=12.71_GiB
+D_DRIVE_FREE=68.33_GiB
+PREP_GATE_STATUS=OPEN_ENVIRONMENT_ONLY_EXPLICIT_EXTERNAL_PROBE_AUTHORIZATION
+CORE_CONTENT_GATE=CLOSED
+BLOCKERS=NONE_FOR_VERIFIED_ENVIRONMENT_SCOPE
 ```

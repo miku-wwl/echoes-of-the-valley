@@ -4,7 +4,7 @@
 
 ## Entry conditions
 
-All must be satisfied and recorded before project creation:
+All must be satisfied and recorded before competition-project creation. The separately authorized external Phase 0.5 environment probe does not satisfy or bypass this gate:
 
 1. Auckland time is at or after **2026-10-24 20:00 NZDT / 07:00 UTC**. Confirm against official schedule; do not open merely because another timezone says October 24.
 2. Official musical theme is actually released through an official source. Record URL, timestamp, title/composer/license as published; listen to the authentic track. No invented placeholder theme or claimed listening.

@@ -6,7 +6,7 @@ A cozy anime-style fantasy RPG about gathering, raising chickens, crafting, and 
 
 ## Current status — Phase 0.5, 2026-10-23 NZDT
 
-Preparation and development-environment recovery only. **IMPLEMENTATION_STATUS=NOT_STARTED. CORE_CONTENT_GATE=CLOSED.** No Unity project or competition game content has been created. Blender 4.5.15 LTS is installed on D: and passed a background runtime smoke check; the Microsoft Unity extension and C# dependencies are verified in VS Code. Signed Unity Hub 3.22.4 and Unity Editor 6000.3.27f1 installers are ready on D:, but installation, Hub detection, licensing, and Editor/player verification still require user interaction. Current readiness is **PARTIAL**; see the latest Phase 0.5 section of the [evidence and setup actions](docs/09-phase0-evidence.md). Original Phase 0 observations are retained as historical evidence.
+Preparation and development-environment recovery only. **IMPLEMENTATION_STATUS=NOT_STARTED. CORE_CONTENT_GATE=CLOSED.** No competition Unity project or custom game content has been created. Phase 0.5 environment verification is **PASS**: Hub 3.22.4 detects Editor 6000.3.27f1, Unity Personal is active, Blender 4.5.15 LTS runs, and VS Code is configured as Unity's external editor. With explicit user authorization, a temporary blank URP project outside this repository successfully built and launched a Windows x64 Mono player on the Radeon 780M. GUI interaction, debugger attachment, game features, and performance targets were not tested. C: has about 12.70 GiB free, below the preferred 15 GiB reserve; large tools, caches, probe imports and build/temp files are on D: (about 68.33 GiB free). See the latest Phase 0.5 follow-up in [evidence](docs/09-phase0-evidence.md); earlier results are historical snapshots.
 
 ## Competition and start gate
 
@@ -15,13 +15,13 @@ Prepared for [thatgamejam #02](https://itch.io/jam/thatgamejam02), subject to th
 - Start: **2026-10-24 20:00 NZDT** (2026-10-24 07:00 UTC).
 - Deadline: **2026-11-08 20:59 NZDT** (2026-11-08 07:59 UTC).
 - The musical theme is unreleased in this preflight. Narrative and interpretation remain pending.
-- Project policy permits documentation, research, configuration, and tool checks before the start. It prohibits creating the Unity project, implementing gameplay, producing game-ready assets, building levels, importing complete systems, or making a game build.
+- Project policy permits documentation, research, configuration, and tool checks before the start. It prohibits creating the competition Unity project, implementing gameplay, producing game-ready assets, building levels, importing complete systems, or making a competition build. The expressly authorized external blank environment probe is limited to toolchain verification.
 - The developer reports organizer permission for pre-jam preparation. The private wording has not been reviewed, so this does not establish permission for early core-content development. Public sources do not explicitly settle each preparation activity.
 - Phase 1 requires both the official start and theme release, a recorded theme review, and tool readiness. The [kickoff specification](docs/08-phase1-kickoff.md) is instructions for later, not permission to begin now.
 
 ## Intended stack
 
-Unity **6.3 LTS / 6000.3.x**, URP and Shader Graph, C#, Unity Input System, Cinemachine 3, Unity Test Framework, Blender, and local JSON saves. Exact editor and package versions will be recorded after installation and the start gate. Windows Mono is the first-build baseline; IL2CPP is a later option requiring its module and native toolchain. No backend, multiplayer, cloud runtime, or Docker runtime dependency.
+Unity **6.3 LTS / 6000.3.27f1**, URP and Shader Graph, C#, Unity Input System, Cinemachine 3, Unity Test Framework, Blender, and local JSON saves. Actual external-probe package versions are recorded in the evidence; the competition project's manifest/lockfile will be created only after its start gate. Cinemachine remains planned and untested. Windows Mono is the verified environment-probe backend and the first-game-build baseline; IL2CPP is a later option requiring its module and native toolchain. No backend, multiplayer, cloud runtime, or Docker runtime dependency.
 
 Visual inspiration: the color, readability, and warmth of anime fantasy RPGs such as Atelier Ryza. Pasture interaction inspiration: QQ Farm / QQ Ranch. All characters, layouts, UI, assets, and music must be original or independently licensed; references are not content to copy.
 
