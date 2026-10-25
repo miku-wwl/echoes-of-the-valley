@@ -47,7 +47,7 @@ The signature feature is **Valley Resonance**: each important restoration create
 | Command | What it does |
 | --- | --- |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\Init-Unity.ps1` | One-time creation of `game/` from Unity's own URP template; refuses to overwrite an existing project. Already done. |
-| `.\tools\Invoke-Echoes.ps1 -Task Setup` | Compile, configure player/URP settings, and (re)generate materials, prefabs and the `MainMenu` and `Valley` scenes. Idempotent: it rebuilds the scenes from code, so running it twice does not duplicate anything. |
+| `.\tools\Invoke-Echoes.ps1 -Task Setup` | Compile, configure player/URP settings, and (re)generate materials, prefabs and the `MainMenu` and `Valley` scenes. Idempotent: it rebuilds the scenes from code, so running it twice does not duplicate anything. Assets come out byte-identical, but Unity renumbers internal object IDs in the two scene files on every save, so `git diff` shows churn; `git checkout` the scenes if you did not mean to change them. |
 | `.\tools\Invoke-Echoes.ps1 -Task TestEdit` / `-Task TestPlay` | EditMode / PlayMode tests (batch mode, results in `artifacts\logs`). |
 | `.\tools\Invoke-Echoes.ps1 -Task Preview` | Render editor camera shots of both scenes (no Play Mode, no UI overlay). |
 | `.\tools\Invoke-Echoes.ps1 -Task Build` | Windows x64 Mono development build to `artifacts\build\win64\EchoesOfTheValley.exe`. |
