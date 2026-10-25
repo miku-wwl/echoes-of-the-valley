@@ -43,7 +43,7 @@ namespace Echoes
             if (!initialised) Snap();
 
             // Mouse look is ignored while paused. Per-frame deltas are clamped in ApplyLook, so a focus change cannot spin the camera.
-            if (!GameFlow.IsPaused) ApplyLook(GameInput.ReadLook());
+            if (GameFlow.LookAllowed) ApplyLook(GameInput.ReadLook());
 
             Follow(Time.deltaTime, false);
         }

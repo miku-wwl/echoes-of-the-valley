@@ -3,17 +3,23 @@ using UnityEngine;
 namespace Echoes
 {
     /// <summary>
-    /// Shared play state: pause/dialogue flags, time scale, cursor mode, and a once-per-frame
-    /// "E pressed" token so overlapping systems never act on the same key press twice.
+    /// Shared play state: pause/dialogue/panel flags, time scale, cursor mode, and once-per-frame "E" and "Esc" tokens
+    /// so overlapping systems never act on the same key press twice.
     /// Each scene calls EnterGameplayMode / EnterMenuMode on load, which also clears stale statics.
     /// </summary>
     public static class GameFlow
     {
         static int interactConsumedFrame = -1;
+        static int pauseConsumedFrame = -1;
 
         public static bool IsPaused { get; private set; }
         public static bool IsDialogueOpen { get; internal set; }
-        public static bool GameplayInputAllowed => !IsPaused && !IsDialogueOpen;
+
+        /// <summary>True while the inventory or crafting panel is open (the cursor is free, the world waits).</summary>
+        public static bool IsPanelOpen { get; private set; }
+
+        public static bool GameplayInputAllowed => !IsPaused && !IsDialogueOpen && !IsPanelOpen;
+        public static bool LookAllowed => !IsPaused && !IsPanelOpen;
 
         public static void EnterGameplayMode()
         {
@@ -31,7 +37,13 @@ namespace Echoes
         {
             IsPaused = paused;
             Time.timeScale = paused ? 0f : 1f;
-            SetCursorForGameplay(!paused);
+            SetCursorForGameplay(!paused && !IsPanelOpen);
+        }
+
+        public static void SetPanelOpen(bool open)
+        {
+            IsPanelOpen = open;
+            if (!IsPaused) SetCursorForGameplay(!open);
         }
 
         public static void SetCursorForGameplay(bool gameplay)
@@ -48,11 +60,21 @@ namespace Echoes
             return true;
         }
 
+        /// <summary>True at most once per frame: Esc was pressed and nobody (panel or pause menu) has used it yet.</summary>
+        public static bool TryConsumePause()
+        {
+            if (pauseConsumedFrame == Time.frameCount || !GameInput.PausePressed) return false;
+            pauseConsumedFrame = Time.frameCount;
+            return true;
+        }
+
         static void Reset()
         {
             IsPaused = false;
             IsDialogueOpen = false;
+            IsPanelOpen = false;
             interactConsumedFrame = -1;
+            pauseConsumedFrame = -1;
             Time.timeScale = 1f;
         }
     }

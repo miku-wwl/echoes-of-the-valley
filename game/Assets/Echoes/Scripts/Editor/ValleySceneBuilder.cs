@@ -8,9 +8,20 @@ using UnityEngine.UI;
 
 namespace Echoes.EditorTools
 {
+    internal struct WaterParts
+    {
+        public Transform Root;
+        public Renderer Pond;
+        public GameObject WideStream;
+        public GameObject Trickle;
+    }
+
     /// <summary>Generates the Valley scene from scratch on every run, so re-running replaces it instead of duplicating it.</summary>
     internal static class ValleySceneBuilder
     {
+        /// <summary>Top offset of the banner: the objective panel ends at 164 reference pixels, the banner starts below it.</summary>
+        public const float BannerTop = -190f;
+
         public static void Build(MaterialLibrary m, PrefabSet prefabs)
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -25,12 +36,23 @@ namespace Echoes.EditorTools
 
             HeartParts heart = Landmarks.Heart(world.transform, Ground(terrain, ValleyLayout.Heart), m);
             CottageParts cottage = Landmarks.Cottage(world.transform, Ground(terrain, ValleyLayout.Cottage), ValleyLayout.CottageYaw, m);
-            Transform spring = Landmarks.Spring(world.transform, Ground(terrain, ValleyLayout.Spring), 24f, m);
-            BuildWater(world.transform, m);
+            SpringParts springParts = Landmarks.Spring(world.transform, Ground(terrain, ValleyLayout.Spring), 24f, m);
+            Transform spring = springParts.Root;
+            WaterParts water = BuildWater(world.transform, m);
+            GameplayPieces.HenYardFence(world.transform, Ground(terrain, ValleyLayout.HenYard), m);
             Scatter(world.transform, terrain, prefabs);
             BuildBoundaries(world.transform);
             Pieces.MakeStatic(world);
+            // Things that move, scale or swap materials at runtime must not be statically batched.
             Pieces.MakeDynamic(heart.CrystalPivot.gameObject);
+            Pieces.MakeDynamic(water.Root.gameObject);
+            Pieces.MakeDynamic(springParts.Water.gameObject);
+
+            // Everything the player gathers, feeds or watches change lives outside the static scenery.
+            Transform gameplay = new GameObject("Gameplay").transform;
+            PlaceResourceNodes(gameplay, terrain, prefabs);
+            PlaceHen(gameplay, terrain, prefabs);
+            GameObject bloom = BuildBloom(gameplay, terrain, prefabs);
 
             // ---- Player, camera ----
             Vector3 spawnPosition = Ground(terrain, ValleyLayout.Spawn) + Vector3.up * 0.1f;
@@ -59,20 +81,38 @@ namespace Echoes.EditorTools
             Wire.Set(playerController, "respawnPoint", spawn);
 
             // ---- UI and game systems ----
-            BuildHud(out HudController hud, out DialogueBox dialogue, out PauseController pause);
+            BuildHud(out HudController hud, out DialogueBox dialogue, out PauseController pause, out GameplayUi ui);
             SceneKit.CreateEventSystem();
 
             GameObject systems = new GameObject("GameSystems");
             systems.AddComponent<GameBootstrap>();
             ExplorationObjective objective = systems.AddComponent<ExplorationObjective>();
             CompletionFeedback feedback = systems.AddComponent<CompletionFeedback>();
+            ValleyLighting lighting = systems.AddComponent<ValleyLighting>();
+            GameSessionHost host = systems.AddComponent<GameSessionHost>();
+            ResonanceView resonance = systems.AddComponent<ResonanceView>();
+            Wire.Set(lighting, "sun", sun);
+            Wire.Set(host, "objective", objective);
             Wire.Set(objective, "hud", hud);
             Wire.Set(objective, "feedback", feedback);
             Wire.Set(feedback, "sun", sun);
+            Wire.Set(feedback, "lighting", lighting);
             Wire.Set(feedback, "sparkles", BuildSparkles(heart.Root));
             Wire.Set(feedback, "crystal", heart.Crystal);
             Wire.Set(feedback, "crystalPivot", heart.CrystalPivot);
             Wire.Set(detector, "hud", hud);
+
+            // The world's answer to the restored stream (ResonanceStage 1)
+            Wire.Set(resonance, "lighting", lighting);
+            Wire.Set(resonance, "troubledStream", water.Trickle);
+            Wire.Set(resonance, "clearStream", water.WideStream);
+            Wire.Set(resonance, "pond", water.Pond);
+            Wire.Set(resonance, "springWater", springParts.Water);
+            Wire.Set(resonance, "murkyWater", m["WaterDull"]);
+            Wire.Set(resonance, "clearWater", m["Water"]);
+            Wire.Set(resonance, "bloomRoot", bloom);
+            Wire.Set(resonance, "pulse", GameplayPieces.Pulse(spring));
+            Wire.Set(resonance, "fountain", GameplayPieces.Fountain(spring));
 
             // ---- Interactables: all four use the same Interactable framework ----
             GameObject villager = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.Villager);
@@ -80,7 +120,9 @@ namespace Echoes.EditorTools
             villager.transform.position = Ground(terrain, ValleyLayout.Villager);
             villager.transform.rotation = Quaternion.LookRotation(new Vector3(-ValleyLayout.Villager.x, 0f, -ValleyLayout.Villager.y));
             Configure(villager.AddComponent<NpcInteractable>(), "Talk to Mira", 3f, "Mira", dialogue, objective);
-            Configure(cottage.InteractionPoint.gameObject.AddComponent<WorkshopInteractable>(), "Inspect the alchemy workshop", 3.5f, "Alchemy Workshop", dialogue, objective);
+            WorkshopInteractable workshop = cottage.InteractionPoint.gameObject.AddComponent<WorkshopInteractable>();
+            Configure(workshop, "Use the alchemy workshop", 3.5f, "Alchemy Workshop", dialogue, objective);
+            Wire.Set(workshop, "craftingPanel", ui.Crafting);
             Configure(spring.gameObject.AddComponent<SpringInteractable>(), "Examine the ruined spring", 3.8f, "The Ruined Spring", dialogue, objective);
             Configure(heart.Root.gameObject.AddComponent<HeartInteractable>(), "Touch the Heart Stone", 4.5f, "The Heart of the Valley", dialogue, objective);
 
@@ -209,13 +251,17 @@ namespace Echoes.EditorTools
 
         // ---- Water -------------------------------------------------------------------------------------------------
 
-        static void BuildWater(Transform parent, MaterialLibrary m)
+        /// <summary>
+        /// The pond and the stream in their silent-valley (stage 0) look: murky pond and a thin murky trickle. The wide, clear
+        /// stream is built too but hidden; ResonanceView swaps them when the stream is restored.
+        /// </summary>
+        static WaterParts BuildWater(Transform parent, MaterialLibrary m)
         {
             Transform water = Pieces.Group("Water", parent, Vector3.zero);
 
             Vector3 pond = new Vector3(ValleyLayout.Pond.x, ValleyLayout.WaterLevel + 0.01f, ValleyLayout.Pond.y);
             GameObject pondSurface = Pieces.Prim(water, PrimitiveType.Cylinder, "Pond", pond,
-                new Vector3(ValleyLayout.PondRadius * 2f, 0.01f, ValleyLayout.PondRadius * 2f), m["Water"]);
+                new Vector3(ValleyLayout.PondRadius * 2f, 0.01f, ValleyLayout.PondRadius * 2f), m["WaterDull"]);
             Pieces.NoShadows(pondSurface);
 
             for (int i = 0; i < 6; i++)
@@ -227,21 +273,31 @@ namespace Echoes.EditorTools
             }
 
             AssetPaths.EnsureFolder(AssetPaths.Meshes);
-            GameObject stream = new GameObject("Stream", typeof(MeshFilter), typeof(MeshRenderer));
-            stream.transform.SetParent(water, false);
-            stream.GetComponent<MeshFilter>().sharedMesh = BuildStreamMesh();
-            MeshRenderer renderer = stream.GetComponent<MeshRenderer>();
-            renderer.sharedMaterial = m["Water"];
-            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            GameObject wide = StreamObject(water, "Stream", BuildStreamMesh("StreamWater", ValleyLayout.StreamWidth), m["Water"]);
+            wide.SetActive(false);
+            GameObject trickle = StreamObject(water, "StreamTrickle", BuildStreamMesh("StreamTrickle", 0.8f), m["WaterDull"]);
+
+            return new WaterParts { Root = water, Pond = pondSurface.GetComponent<Renderer>(), WideStream = wide, Trickle = trickle };
         }
 
-        static Mesh BuildStreamMesh()
+        static GameObject StreamObject(Transform parent, string name, Mesh mesh, Material material)
         {
-            string path = AssetPaths.Meshes + "/StreamWater.asset";
+            GameObject stream = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
+            stream.transform.SetParent(parent, false);
+            stream.GetComponent<MeshFilter>().sharedMesh = mesh;
+            MeshRenderer renderer = stream.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            return stream;
+        }
+
+        static Mesh BuildStreamMesh(string assetName, float width)
+        {
+            string path = AssetPaths.Meshes + "/" + assetName + ".asset";
             Mesh mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
             if (mesh == null)
             {
-                mesh = new Mesh { name = "StreamWater" };
+                mesh = new Mesh { name = assetName };
                 AssetDatabase.CreateAsset(mesh, path);
             }
             mesh.Clear();
@@ -259,7 +315,7 @@ namespace Echoes.EditorTools
                 Vector2 previous = line[Mathf.Max(i - 1, 0)];
                 Vector2 next = line[Mathf.Min(i + 1, count - 1)];
                 Vector2 direction = (next - previous).normalized;
-                Vector2 side = new Vector2(-direction.y, direction.x) * (ValleyLayout.StreamWidth * 0.5f);
+                Vector2 side = new Vector2(-direction.y, direction.x) * (width * 0.5f);
                 Vector2 left = line[i] + side;
                 Vector2 right = line[i] - side;
                 if (i > 0) distance += Vector2.Distance(line[i], line[i - 1]);
@@ -330,7 +386,7 @@ namespace Echoes.EditorTools
                     || Vector2.Distance(p, ValleyLayout.Cottage) < 7.5f || Vector2.Distance(p, ValleyLayout.Villager) < 2.5f
                     || Vector2.Distance(p, ValleyLayout.Spring) < 4.5f || Vector2.Distance(p, ValleyLayout.Pond) < ValleyLayout.PondRadius + 1.5f
                     || ValleyLayout.DistanceToPolyline(p, ValleyLayout.Stream) < 3.2f || Mathf.Abs(p.x) > 46f || Mathf.Abs(p.y) > 46f
-                    || TooClose(placed, p, 2.2f) || TooClose(rockSpots, p, 2.2f) || TooClose(patches, p, 3.5f))
+                    || ValleyLayout.NearGameplaySpot(p, 3f) || TooClose(placed, p, 2.2f) || TooClose(rockSpots, p, 2.2f) || TooClose(patches, p, 3.5f))
                     continue;
                 patches.Add(p);
                 Spawn(prefabs.FlowerPatches[patches.Count % prefabs.FlowerPatches.Length], flowers, Ground(terrain, p), random, 1.1f, 1.7f);
@@ -381,6 +437,88 @@ namespace Echoes.EditorTools
             }
         }
 
+        // ---- Gameplay objects --------------------------------------------------------------------------------------
+
+        static void PlaceResourceNodes(Transform parent, Terrain terrain, PrefabSet prefabs)
+        {
+            Transform group = Pieces.Group("ResourceNodes", parent, Vector3.zero);
+            for (int i = 0; i < ValleyLayout.HerbSpots.Length; i++)
+                PlaceNode(group, terrain, prefabs.HerbNode, "herb_" + (i + 1), ItemIds.Herb, 40f, ValleyLayout.HerbSpots[i], i * 53f);
+            for (int i = 0; i < ValleyLayout.FlowerSpots.Length; i++)
+                PlaceNode(group, terrain, prefabs.FlowerNode, "flower_" + (i + 1), ItemIds.Flower, 40f, ValleyLayout.FlowerSpots[i], i * 71f);
+            for (int i = 0; i < ValleyLayout.OreSpots.Length; i++)
+                PlaceNode(group, terrain, prefabs.OreNode, "ore_" + (i + 1), ItemIds.Ore, 75f, ValleyLayout.OreSpots[i], i * 97f);
+        }
+
+        static void PlaceNode(Transform parent, Terrain terrain, GameObject prefab, string id, string itemId, float cooldown, Vector2 spot, float yaw)
+        {
+            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+            instance.name = id;
+            instance.transform.position = Ground(terrain, spot);
+            instance.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+
+            ResourceNode node = instance.AddComponent<ResourceNode>();
+            Wire.Set(node, "prompt", "Gather");
+            Wire.Set(node, "range", 2.4f);
+            Wire.Set(node, "nodeId", id);
+            Wire.Set(node, "itemId", itemId);
+            Wire.Set(node, "yieldAmount", 1);
+            Wire.Set(node, "cooldownSeconds", cooldown);
+            Wire.Set(node, "readyVisual", instance.transform.Find("Ready").gameObject);
+            Wire.Set(node, "depletedVisual", instance.transform.Find("Depleted").gameObject);
+        }
+
+        static ChickenInteractable PlaceHen(Transform parent, Terrain terrain, PrefabSet prefabs)
+        {
+            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.Hen, parent);
+            instance.name = "Clover";
+            instance.transform.position = Ground(terrain, ValleyLayout.HenYard);
+            instance.transform.rotation = Quaternion.LookRotation(new Vector3(-22f, 0f, 5f));
+
+            ChickenInteractable chicken = instance.AddComponent<ChickenInteractable>();
+            Wire.Set(chicken, "prompt", "Tend Clover");
+            Wire.Set(chicken, "range", 3.6f);
+            Wire.Set(chicken, "body", instance.transform.Find("Body"));
+            Wire.Set(chicken, "hungryIcon", instance.transform.Find("HungryIcon").gameObject);
+            Wire.Set(chicken, "producingIcon", instance.transform.Find("ProducingIcon").gameObject);
+            Wire.Set(chicken, "eggVisual", instance.transform.Find("Egg").gameObject);
+            return chicken;
+        }
+
+        /// <summary>Flower patches along both banks and saplings around the spring; hidden until the stream is restored.</summary>
+        static GameObject BuildBloom(Transform parent, Terrain terrain, PrefabSet prefabs)
+        {
+            GameObject root = new GameObject("StreamBloom");
+            root.transform.SetParent(parent, false);
+            System.Random random = new System.Random(7);
+
+            List<Vector2> line = ValleyLayout.Stream;
+            int created = 0;
+            for (int i = 2; i < line.Count - 2 && created < 18; i += 2)
+            {
+                Vector2 direction = (line[i + 1] - line[i - 1]).normalized;
+                Vector2 side = new Vector2(-direction.y, direction.x);
+                float offset = (created % 2 == 0 ? 1f : -1f) * (2.9f + (float)random.NextDouble() * 1.2f);
+                GameObject patch = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.FlowerPatches[created % prefabs.FlowerPatches.Length], root.transform);
+                patch.transform.position = Ground(terrain, line[i] + side * offset);
+                patch.transform.rotation = Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
+                patch.transform.localScale = Vector3.one * (1.5f + (float)random.NextDouble() * 0.5f);
+                created++;
+            }
+
+            foreach (float angle in new[] { 70f, 120f, 170f, 290f })
+            {
+                Vector2 spot = ValleyLayout.Spring + new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad)) * 4.8f;
+                GameObject sapling = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.TreeBlossom, root.transform);
+                sapling.transform.position = Ground(terrain, spot);
+                sapling.transform.rotation = Quaternion.Euler(0f, angle * 3f, 0f);
+                sapling.transform.localScale = Vector3.one * 0.55f;
+            }
+
+            root.SetActive(false);
+            return root;
+        }
+
         static ParticleSystem BuildSparkles(Transform parent)
         {
             GameObject go = new GameObject("Sparkles");
@@ -423,7 +561,7 @@ namespace Echoes.EditorTools
 
         // ---- HUD ---------------------------------------------------------------------------------------------------
 
-        static void BuildHud(out HudController hud, out DialogueBox dialogue, out PauseController pause)
+        static void BuildHud(out HudController hud, out DialogueBox dialogue, out PauseController pause, out GameplayUi gameplayUi)
         {
             Canvas canvas = UiKit.CreateCanvas("HUD", 10);
             Transform root = canvas.transform;
@@ -450,9 +588,9 @@ namespace Echoes.EditorTools
             Text promptText = UiKit.Label(promptPanel.transform, "Text", "[E]  Interact", 34, UiKit.Cream, TextAnchor.MiddleCenter, FontStyle.Bold);
             promptText.rectTransform.Fill(8f);
 
-            // Banner (top-centre)
+            // Banner (top-centre), below the objective panel and the status panel so they never overlap
             Image bannerPanel = UiKit.Panel(root, "Banner", new Color(0.08f, 0.11f, 0.18f, 0.6f));
-            bannerPanel.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -48f), new Vector2(1300f, 168f));
+            bannerPanel.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, BannerTop), new Vector2(1300f, 168f));
             CanvasGroup bannerGroup = bannerPanel.gameObject.AddComponent<CanvasGroup>();
             bannerGroup.interactable = false;
             bannerGroup.blocksRaycasts = false;
@@ -471,6 +609,9 @@ namespace Echoes.EditorTools
             Text hint = UiKit.Label(dialoguePanel.transform, "Hint", "E  Continue", 24, UiKit.Gold, TextAnchor.LowerRight);
             hint.rectTransform.Place(UiKit.BottomRight, UiKit.BottomRight, new Vector2(-36f, 14f), new Vector2(300f, 34f));
 
+            // Gameplay UI (coins, hen status, toasts, satchel, alchemy panel) sits under the pause menu in draw order
+            gameplayUi = GameplayUiBuilder.Build(canvas, hud);
+
             // Pause menu (full screen dimmer + centre panel)
             Image dim = UiKit.Panel(root, "PauseMenu", new Color(0.02f, 0.03f, 0.06f, 0.62f), false);
             dim.rectTransform.Fill();
@@ -479,9 +620,10 @@ namespace Echoes.EditorTools
             box.rectTransform.Place(UiKit.Center, UiKit.Center, Vector2.zero, new Vector2(560f, 560f));
             Text pauseTitle = UiKit.Label(box.transform, "Title", "Paused", 72, UiKit.Gold, TextAnchor.UpperCenter, FontStyle.Bold);
             pauseTitle.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -40f), new Vector2(500f, 90f));
-            Button resume = UiKit.MakeButton(box.transform, "ResumeButton", "Resume", UiKit.Center, new Vector2(0f, 50f), new Vector2(400f, 76f));
-            Button mainMenu = UiKit.MakeButton(box.transform, "MainMenuButton", "Main Menu", UiKit.Center, new Vector2(0f, -50f), new Vector2(400f, 76f));
-            Button quit = UiKit.MakeButton(box.transform, "QuitButton", "Quit", UiKit.Center, new Vector2(0f, -150f), new Vector2(400f, 76f));
+            Button resume = UiKit.MakeButton(box.transform, "ResumeButton", "Resume", UiKit.Center, new Vector2(0f, 90f), new Vector2(400f, 76f));
+            Button save = UiKit.MakeButton(box.transform, "SaveButton", "Save Game", UiKit.Center, new Vector2(0f, 0f), new Vector2(400f, 76f));
+            Button mainMenu = UiKit.MakeButton(box.transform, "MainMenuButton", "Main Menu", UiKit.Center, new Vector2(0f, -90f), new Vector2(400f, 76f));
+            Button quit = UiKit.MakeButton(box.transform, "QuitButton", "Quit", UiKit.Center, new Vector2(0f, -180f), new Vector2(400f, 76f));
             Text pauseHint = UiKit.Label(box.transform, "Hint", "Esc  Resume", 24, new Color(1f, 0.95f, 0.84f, 0.8f), TextAnchor.LowerCenter);
             pauseHint.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 22f), new Vector2(400f, 34f));
 
@@ -500,6 +642,7 @@ namespace Echoes.EditorTools
 
             Wire.Set(pause, "panel", dim.gameObject);
             Wire.Set(pause, "resumeButton", resume);
+            Wire.Set(pause, "saveButton", save);
             Wire.Set(pause, "mainMenuButton", mainMenu);
             Wire.Set(pause, "quitButton", quit);
 

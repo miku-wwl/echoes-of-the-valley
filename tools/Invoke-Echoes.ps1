@@ -1,5 +1,6 @@
 # Runs the Unity batch tasks and the player smoke test for Echoes of the Valley.
 # Run from anywhere: powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Echoes.ps1 -Task <Task>
+#   Compile   import and compile scripts only (fast check, exit 1 on compiler errors)
 #   Setup     compile, configure the project and (re)generate prefabs, MainMenu and Valley (idempotent)
 #   TestEdit  EditMode tests          TestPlay  PlayMode tests
 #   Preview   render editor camera shots of both scenes to artifacts\logs\preview-shots (no Play Mode, no overlay UI)
@@ -10,11 +11,11 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('Setup', 'TestEdit', 'TestPlay', 'Preview', 'Build', 'Smoke')]
+    [ValidateSet('Compile', 'Setup', 'TestEdit', 'TestPlay', 'Preview', 'Build', 'Smoke')]
     [string] $Task,
     [string] $UnityExe = 'D:\Unity\Downloads\6000.3.27f1\Editor\Unity.exe',
     [string] $TempDirectory = 'D:\Unity\Temp\Echoes',
-    [int] $SmokeTimeoutSeconds = 180
+    [int] $SmokeTimeoutSeconds = 300
 )
 
 $ErrorActionPreference = 'Stop'
@@ -54,6 +55,13 @@ function Show-TestSummary([string] $Xml) {
 }
 
 switch ($Task) {
+    'Compile' {
+        $log = Join-Path $logDir 'compile.log'
+        $code = Invoke-Unity @('-quit') $log
+        Write-Host "TASK=Compile UNITY_EXIT=$code"
+        Show-LogSummary $log
+        exit $code
+    }
     'Setup' {
         $log = Join-Path $logDir 'setup.log'
         $code = Invoke-Unity @('-quit', '-executeMethod', 'Echoes.EditorTools.ProjectSetup.GenerateAll') $log
@@ -100,8 +108,10 @@ switch ($Task) {
         $playerLog = Join-Path $logDir 'player-smoke.log'
         New-Item -ItemType Directory -Force -Path $shots | Out-Null
         Remove-Item -LiteralPath $playerLog -ErrorAction SilentlyContinue
+        $saveDir = Join-Path $logDir 'smoke-save'
         $arguments = @('-screen-fullscreen', '0', '-screen-width', '1280', '-screen-height', '720',
-            '-echoes-smoke', '-echoes-shots', ('"' + $shots + '"'), '-logFile', ('"' + $playerLog + '"'))
+            '-echoes-smoke', '-echoes-shots', ('"' + $shots + '"'), '-echoes-save-dir', ('"' + $saveDir + '"'),
+            '-logFile', ('"' + $playerLog + '"'))
         $process = Start-Process -FilePath $player -ArgumentList $arguments -PassThru
         $exited = $process.WaitForExit($SmokeTimeoutSeconds * 1000)
         if ($exited) {

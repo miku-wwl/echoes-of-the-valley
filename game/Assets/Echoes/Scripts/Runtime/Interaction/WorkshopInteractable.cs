@@ -2,18 +2,23 @@ using UnityEngine;
 
 namespace Echoes
 {
-    /// <summary>The alchemy workshop. Phase 1 only explains that alchemy is not available yet.</summary>
+    /// <summary>The alchemy workshop. Interacting opens the crafting panel; the dialogue is only a fallback if the panel is not wired.</summary>
     public class WorkshopInteractable : DialogueInteractable
     {
-        [SerializeField, TextArea] string[] lines =
+        [SerializeField] CraftingPanel craftingPanel;
+
+        [SerializeField, TextArea] string[] fallbackLines =
         {
             "A cosy workshop crowded with cauldrons, jars and bundles of drying herbs.",
-            "The alchemy table is cold and dusty. Alchemy will be unlocked in a future phase - come back once the valley has begun to recover."
+            "The alchemy table is not set up yet."
         };
+
+        public CraftingPanel Panel => craftingPanel;
 
         public override void Interact(InteractionDetector interactor)
         {
-            Dialogue.Open(Speaker, lines);
+            if (craftingPanel != null) craftingPanel.Open();
+            else Dialogue.Open(Speaker, fallbackLines);
         }
     }
 }

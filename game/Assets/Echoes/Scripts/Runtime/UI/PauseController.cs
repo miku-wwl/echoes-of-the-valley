@@ -5,17 +5,19 @@ using UnityEngine.UI;
 
 namespace Echoes
 {
-    /// <summary>Esc toggles the pause menu. Pausing freezes time and frees the cursor; resuming restores both.</summary>
+    /// <summary>Esc toggles the pause menu. Pausing freezes time and frees the cursor; resuming restores both. Save Game writes the session to disk.</summary>
     public class PauseController : MonoBehaviour
     {
         [SerializeField] GameObject panel;
         [SerializeField] Button resumeButton;
+        [SerializeField] Button saveButton;
         [SerializeField] Button mainMenuButton;
         [SerializeField] Button quitButton;
 
         public bool IsPaused => GameFlow.IsPaused;
         public GameObject Panel => panel;
         public Button ResumeButton => resumeButton;
+        public Button SaveButton => saveButton;
         public Button MainMenuButton => mainMenuButton;
         public Button QuitButton => quitButton;
 
@@ -23,13 +25,15 @@ namespace Echoes
         {
             if (panel != null) panel.SetActive(false);
             if (resumeButton != null) resumeButton.onClick.AddListener(Resume);
+            if (saveButton != null) saveButton.onClick.AddListener(() => SaveGame());
             if (mainMenuButton != null) mainMenuButton.onClick.AddListener(GoToMainMenu);
             if (quitButton != null) quitButton.onClick.AddListener(QuitGame);
         }
 
         void Update()
         {
-            if (GameInput.PausePressed) Toggle();
+            // An open panel closes on Esc itself, so Esc only pauses when no panel is open.
+            if (!GameFlow.IsPanelOpen && GameFlow.TryConsumePause()) Toggle();
         }
 
         void OnDestroy()
@@ -48,6 +52,13 @@ namespace Echoes
             if (panel != null) panel.SetActive(paused);
             if (paused && resumeButton != null && EventSystem.current != null)
                 EventSystem.current.SetSelectedGameObject(resumeButton.gameObject);
+        }
+
+        /// <summary>Saves the running session. Returns false (and shows why) when the write or its verification fails.</summary>
+        public bool SaveGame()
+        {
+            GameSessionHost host = GameSessionHost.Instance;
+            return host != null && host.SaveNow();
         }
 
         public void GoToMainMenu()

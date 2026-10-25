@@ -33,5 +33,21 @@ namespace Echoes
         public static bool InteractPressed => Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
 
         public static bool PausePressed => Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+
+        public static bool InventoryPressed => Keyboard.current != null && Keyboard.current.iKey.wasPressedThisFrame;
+
+        /// <summary>Number keys 1-3 (crafting shortcuts).</summary>
+        public static bool DigitPressed(int digit)
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null) return false;
+            switch (digit)
+            {
+                case 1: return keyboard.digit1Key.wasPressedThisFrame;
+                case 2: return keyboard.digit2Key.wasPressedThisFrame;
+                case 3: return keyboard.digit3Key.wasPressedThisFrame;
+                default: return false;
+            }
+        }
     }
 }

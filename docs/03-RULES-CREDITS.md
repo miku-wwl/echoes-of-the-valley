@@ -19,7 +19,7 @@ Official sources: [jam page](https://itch.io/jam/thatgamejam02) · [FAQ](https:/
 | --- | --- | --- | --- | --- |
 | *(none yet)* | — | — | — | — |
 
-**Phase 1 content is code-generated** (`game/Assets/Echoes/Scripts/Editor`): primitive-built characters, scenery and landmarks, flat-colour materials and a procedural terrain. It also uses resources that ship inside Unity itself and are not committed: the built-in primitive meshes, the built-in UI sprite `UI/Skin/UISprite.psd`, the built-in font `LegacyRuntime.ttf` and the procedural skybox shader. Confirm the Unity Personal terms and any font notice before submission.
+**Phase 1 and 2 content is code-generated** (`game/Assets/Echoes/Scripts/Editor`): primitive-built characters, scenery, landmarks, gathering nodes, the hen and her fence, flat-colour materials, particle effects and a procedural terrain. No external art, audio or text files were added in Phase 2 either. It also uses resources that ship inside Unity itself and are not committed: the built-in primitive meshes, the built-in UI sprite `UI/Skin/UISprite.psd`, the built-in font `LegacyRuntime.ttf` and the procedural skybox shader. Confirm the Unity Personal terms and any font notice before submission.
 
 Hold packs with unclear license (including conflicting Quaternius/QAL claims) until verified. Prefer owned/CC0 art; avoid noncommercial and ripped content. Do not mistake a license allowing game use for permission to publish raw source assets.
 
@@ -30,6 +30,7 @@ Hold packs with unclear license (including conflicting Quaternius/QAL claims) un
 | Date | Tool | Paths | Purpose | Human review |
 | --- | --- | --- | --- | --- |
 | 2026-10-25 | Anthropic Claude Code (Claude Sonnet 5.5) | `game/Assets/Echoes/**/*.cs`, `*.asmdef`, `tools/Invoke-Echoes.ps1`, `CLAUDE.md`, doc updates; generated materials, prefabs, scenes and terrain data under `game/Assets/Echoes` | Wrote all Phase 1 gameplay, UI, Editor-automation and test code, ran the Unity batch tooling, and generated the graybox scenes from code | **Pending** - the developer has not yet read or playtested it |
+| 2026-10-25 | Anthropic Claude Code (Claude Sonnet 5.5) | `game/Assets/Echoes/Scripts/**` (gameplay model, save system, nodes, hen, crafting and inventory UI, resonance view, smoke runner), `game/Assets/Echoes/Tests/**`, the Editor generators, generated Phase 2 materials, prefabs and scenes, `README.md`, `docs/02`, `docs/03` | Phase 2: wrote the gather/craft/hen/quest/save systems, all item, recipe and dialogue wording (original, AI-written), the procedural props and effects, and the tests; ran Unity batch Setup, tests, build and smoke | **Pending** - the developer has not yet read or playtested it |
 
 Subsequent AI use must be logged here by date, tool, path, purpose and human review. No AI-generated image, audio, model or texture file is committed; the graybox visuals are produced procedurally by the code above.
 

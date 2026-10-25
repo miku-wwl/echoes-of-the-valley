@@ -93,5 +93,54 @@ namespace Echoes.Tests
             yield return null;
             Assert.IsFalse(dialogue.IsOpen, "...and does not reopen it");
         }
+
+        [UnityTest]
+        public IEnumerator I_TogglesTheSatchel_AndEscClosesItWithoutPausing()
+        {
+            yield return Tap(Key.I);
+            Assert.IsTrue(inventoryPanel.IsOpen, "I opens the satchel");
+            Assert.IsTrue(GameFlow.IsPanelOpen);
+
+            yield return Tap(Key.Escape);
+            Assert.IsFalse(inventoryPanel.IsOpen, "Esc closes the open panel");
+            Assert.IsFalse(pause.IsPaused, "...and that same press must not also pause");
+            Assert.AreEqual(1f, Time.timeScale);
+
+            yield return Tap(Key.I);
+            Assert.IsTrue(inventoryPanel.IsOpen);
+            yield return Tap(Key.I);
+            Assert.IsFalse(inventoryPanel.IsOpen, "I closes it again");
+
+            yield return Tap(Key.Escape);
+            Assert.IsTrue(pause.IsPaused, "with no panel open Esc pauses as before");
+        }
+
+        [UnityTest]
+        public IEnumerator PressingE_GathersFromBushes_AndKeyOneCraftsTheTonicAtTheWorkshop()
+        {
+            yield return StandNextTo(Node("herb_1"));
+            yield return Tap(Key.E);
+            yield return StandNextTo(Node("herb_2"));
+            yield return Tap(Key.E);
+            yield return StandNextTo(Node("flower_1"));
+            yield return Tap(Key.E);
+            Assert.AreEqual(2, Session.Inventory.Count(ItemIds.Herb));
+            Assert.AreEqual(1, Session.Inventory.Count(ItemIds.Flower));
+
+            yield return StandNextTo(workshop);
+            yield return Tap(Key.E);
+            Assert.IsTrue(crafting.IsOpen, "E opens the workshop panel");
+
+            yield return Tap(Key.Digit1);
+            Assert.AreEqual(1, Session.Inventory.Count(ItemIds.SpringTonic), "key 1 crafts the first recipe");
+            Assert.AreEqual(0, Session.Inventory.Count(ItemIds.Herb));
+
+            yield return Tap(Key.Digit1);
+            Assert.AreEqual(1, Session.Inventory.Count(ItemIds.SpringTonic), "a second press has nothing left to spend");
+
+            yield return Tap(Key.Escape);
+            Assert.IsFalse(crafting.IsOpen);
+            Assert.IsFalse(pause.IsPaused);
+        }
     }
 }

@@ -14,6 +14,8 @@ namespace Echoes.EditorTools
 
         public static readonly Vector2 TopLeft = new Vector2(0f, 1f);
         public static readonly Vector2 TopCenter = new Vector2(0.5f, 1f);
+        public static readonly Vector2 TopRight = new Vector2(1f, 1f);
+        public static readonly Vector2 MiddleRight = new Vector2(1f, 0.5f);
         public static readonly Vector2 BottomLeft = new Vector2(0f, 0f);
         public static readonly Vector2 BottomCenter = new Vector2(0.5f, 0f);
         public static readonly Vector2 BottomRight = new Vector2(1f, 0f);

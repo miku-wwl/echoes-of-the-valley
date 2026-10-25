@@ -23,7 +23,26 @@ namespace Echoes.EditorTools
         public static readonly Vector2 Spring = new Vector2(-21f, 16f);
         public static readonly Vector2 Pond = new Vector2(-28f, -14f);
 
-        static readonly Vector2[] PathSouth = { new Vector2(0f, -32f), new Vector2(0f, -21f), new Vector2(0f, -9f) };
+        public static readonly Vector2 HenYard = new Vector2(22f, -5f);
+
+        // Renewable gathering spots, spread so exploring the valley is how the quest gets done.
+        public static readonly Vector2[] HerbSpots =
+        {
+            new Vector2(-19.5f, 8.5f), new Vector2(-20.5f, 0.5f), new Vector2(-19f, -8f),
+            new Vector2(-6f, -19f), new Vector2(8f, -17f), new Vector2(-12f, -26f)
+        };
+
+        public static readonly Vector2[] FlowerSpots =
+        {
+            new Vector2(13f, -3.5f), new Vector2(18f, 1f), new Vector2(10f, 10.5f), new Vector2(3f, 14f), new Vector2(-9f, -13f)
+        };
+
+        public static readonly Vector2[] OreSpots =
+        {
+            new Vector2(35f, 18f), new Vector2(37f, -8f), new Vector2(-38f, 22f), new Vector2(-33f, -30f)
+        };
+
+        static readonly Vector2[] PathSouth ={ new Vector2(0f, -32f), new Vector2(0f, -21f), new Vector2(0f, -9f) };
         static readonly Vector2[] PathEast = { new Vector2(9f, 1f), new Vector2(15f, 4f), new Vector2(21f, 8f) };
         static readonly Vector2[] PathWest = { new Vector2(-8f, 5f), new Vector2(-14f, 11f), new Vector2(-19f, 15f) };
         static readonly Vector2[][] Paths = { PathSouth, PathEast, PathWest };
@@ -55,6 +74,7 @@ namespace Echoes.EditorTools
             flat = Mathf.Max(flat, Mask(Vector2.Distance(p, Cottage), 10f, 18f));
             flat = Mathf.Max(flat, Mask(Vector2.Distance(p, Spring), 7f, 14f));
             flat = Mathf.Max(flat, Mask(Vector2.Distance(p, Pond), 12f, 20f));
+            flat = Mathf.Max(flat, Mask(Vector2.Distance(p, HenYard), 5f, 11f));
             flat = Mathf.Max(flat, Mask(DistanceToPaths(p), 3f, 8f));
             flat = Mathf.Max(flat, Mask(DistanceToPolyline(p, Stream), 5f, 11f));
 
@@ -126,7 +146,18 @@ namespace Echoes.EditorTools
             if (Vector2.Distance(p, Spring) < 6f + extra) return false;
             if (Vector2.Distance(p, Pond) < PondRadius + 3f + extra) return false;
             if (DistanceToPaths(p) < 3f + extra) return false;
+            if (NearGameplaySpot(p, 3f + extra)) return false;
             return DistanceToPolyline(p, Stream) >= 3.5f + extra;
+        }
+
+        /// <summary>True near a resource node or the hen yard, so decoration never hides or blocks gameplay objects.</summary>
+        public static bool NearGameplaySpot(Vector2 p, float radius)
+        {
+            if (Vector2.Distance(p, HenYard) < radius + 3f) return true;
+            foreach (Vector2 spot in HerbSpots) if (Vector2.Distance(p, spot) < radius) return true;
+            foreach (Vector2 spot in FlowerSpots) if (Vector2.Distance(p, spot) < radius) return true;
+            foreach (Vector2 spot in OreSpots) if (Vector2.Distance(p, spot) < radius) return true;
+            return false;
         }
 
         /// <summary>Catmull-Rom resampling of a control polyline.</summary>

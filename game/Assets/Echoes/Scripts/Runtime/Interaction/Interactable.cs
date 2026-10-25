@@ -17,7 +17,8 @@ namespace Echoes
 
         public static IReadOnlyList<Interactable> Active => active;
 
-        public string Prompt => prompt;
+        /// <summary>Text after "[E]". Override for prompts that depend on state (regrowing nodes, the hen).</summary>
+        public virtual string Prompt => prompt;
         public float Range => range;
         public Vector3 Position => interactionPoint != null ? interactionPoint.position : transform.position;
 

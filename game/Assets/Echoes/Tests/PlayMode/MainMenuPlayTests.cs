@@ -13,6 +13,7 @@ namespace Echoes.Tests
         [UnitySetUp]
         public IEnumerator LoadMainMenu()
         {
+            TestSaveFolder.Begin();   // an empty save folder: the menu must not depend on a developer's real save
             yield return SceneManager.LoadSceneAsync(SceneNames.MainMenu);
             yield return null;
             yield return null;
@@ -22,6 +23,7 @@ namespace Echoes.Tests
         public IEnumerator RestoreGlobalState()
         {
             GameFlow.EnterMenuMode();
+            TestSaveFolder.End();
             yield return null;
         }
 

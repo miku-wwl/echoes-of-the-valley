@@ -114,15 +114,20 @@ namespace Echoes.EditorTools
             Text subtitle = UiKit.Label(root, "Subtitle", "Silence   ·   Awakening   ·   Resonance   ·   Rest", 36, UiKit.Gold, TextAnchor.MiddleCenter, FontStyle.Bold);
             subtitle.rectTransform.Place(UiKit.Center, UiKit.Center, new Vector2(0f, 150f), new Vector2(1400f, 56f));
 
-            Button play = UiKit.MakeButton(root, "PlayButton", "Play", UiKit.Center, new Vector2(0f, -10f), new Vector2(380f, 84f));
-            Button quit = UiKit.MakeButton(root, "QuitButton", "Quit", UiKit.Center, new Vector2(0f, -115f), new Vector2(380f, 84f));
+            Button continueGame = UiKit.MakeButton(root, "ContinueButton", "Continue", UiKit.Center, new Vector2(0f, 20f), new Vector2(380f, 80f));
+            Button play = UiKit.MakeButton(root, "PlayButton", "New Game", UiKit.Center, new Vector2(0f, -76f), new Vector2(380f, 80f));
+            Button quit = UiKit.MakeButton(root, "QuitButton", "Quit", UiKit.Center, new Vector2(0f, -172f), new Vector2(380f, 80f));
+            Text saveStatus = UiKit.Label(root, "SaveStatus", "No saved game yet.", 26, new Color(1f, 0.95f, 0.84f, 0.95f), TextAnchor.MiddleCenter);
+            saveStatus.rectTransform.Place(UiKit.Center, UiKit.Center, new Vector2(0f, -250f), new Vector2(1200f, 40f));
 
-            Text footer = UiKit.Label(root, "Footer", "A quiet valley is waiting to be heard   |   Phase 1 prototype   |   thatgamejam #02", 24,
+            Text footer = UiKit.Label(root, "Footer", "A quiet valley is waiting to be heard   |   Phase 2 prototype   |   thatgamejam #02", 24,
                 new Color(1f, 0.95f, 0.84f, 0.85f), TextAnchor.LowerCenter);
             footer.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 26f), new Vector2(1500f, 40f));
 
+            Wire.Set(controller, "continueButton", continueGame);
             Wire.Set(controller, "playButton", play);
             Wire.Set(controller, "quitButton", quit);
+            Wire.Set(controller, "saveStatusText", saveStatus);
             Wire.Set(controller, "cameraRig", cameraTransform);
         }
     }

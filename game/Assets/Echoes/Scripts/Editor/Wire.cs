@@ -17,6 +17,10 @@ namespace Echoes.EditorTools
             switch (value)
             {
                 case null: property.objectReferenceValue = null; break;
+                case UnityEngine.Object[] objects:
+                    property.arraySize = objects.Length;
+                    for (int i = 0; i < objects.Length; i++) property.GetArrayElementAtIndex(i).objectReferenceValue = objects[i];
+                    break;
                 case UnityEngine.Object asset: property.objectReferenceValue = asset; break;
                 case string text: property.stringValue = text; break;
                 case float number: property.floatValue = number; break;

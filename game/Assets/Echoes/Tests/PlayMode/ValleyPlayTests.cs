@@ -165,18 +165,19 @@ namespace Echoes.Tests
         }
 
         [UnityTest]
-        public IEnumerator Workshop_ExplainsThatAlchemyComesLater_WithoutChangingTheObjective()
+        public IEnumerator Workshop_OpensTheAlchemyPanel_WithoutChangingTheObjective()
         {
+            // Phase 1 showed a "coming later" message here; Phase 2 replaced it with the real crafting panel.
             yield return StandNextTo(workshop);
             Assert.AreSame(workshop, detector.Current);
             Assert.IsTrue(detector.TryInteract());
+            yield return null;
 
-            string all = dialogue.CurrentLine;
-            dialogue.Advance();
-            all += " " + dialogue.CurrentLine;
-            StringAssert.Contains("future phase", all);
-            dialogue.Close();
+            Assert.IsTrue(crafting.IsOpen);
+            Assert.IsFalse(dialogue.IsOpen);
             Assert.AreEqual(ObjectiveStep.MeetVillager, objective.Step);
+            crafting.Close();
+            Assert.IsFalse(crafting.IsOpen);
         }
 
         [UnityTest]

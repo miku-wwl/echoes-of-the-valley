@@ -68,6 +68,21 @@ namespace Echoes.EditorTools
             Lit("HairMira", 0.84f, 0.64f, 0.36f);
             Lit("Cream", 0.98f, 0.94f, 0.84f);
 
+            // Gameplay: gathering nodes, the hen, the murky water of the silent valley
+            Lit("WaterDull", 0.46f, 0.50f, 0.40f, 0.25f);
+            Lit("HerbLeaf", 0.20f, 0.74f, 0.64f);
+            Lit("HerbDark", 0.14f, 0.42f, 0.38f);
+            Lit("BlossomCoral", 1.00f, 0.54f, 0.36f);
+            Lit("OreRock", 0.50f, 0.52f, 0.58f);
+            Lit("ChickenWhite", 0.98f, 0.97f, 0.94f);
+            Lit("ChickenComb", 0.90f, 0.26f, 0.26f);
+            Lit("ChickenBeak", 1.00f, 0.70f, 0.20f);
+            Lit("EggShell", 1.00f, 0.96f, 0.88f, 0.35f);
+            Glow("BlossomGlow", new Color(1f, 0.80f, 0.42f), new Color(0.55f, 0.30f, 0.05f));
+            Glow("OreCrystal", new Color(0.55f, 0.86f, 1f), new Color(0.10f, 0.42f, 0.58f), 0.7f);
+            Glow("IconHungry", new Color(1f, 0.58f, 0.26f), new Color(0.45f, 0.18f, 0.02f));
+            Glow("IconStar", new Color(1f, 0.92f, 0.45f), new Color(0.65f, 0.50f, 0.08f));
+
             // Glowing details (emission keyword stays enabled so the variant ships in the player)
             Glow("PotionGreen", new Color(0.45f, 0.85f, 0.55f), new Color(0.10f, 0.45f, 0.18f));
             Glow("PotionPurple", new Color(0.66f, 0.46f, 0.86f), new Color(0.25f, 0.10f, 0.40f));

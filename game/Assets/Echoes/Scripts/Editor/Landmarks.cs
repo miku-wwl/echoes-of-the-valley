@@ -15,6 +15,12 @@ namespace Echoes.EditorTools
         public Transform InteractionPoint;
     }
 
+    internal struct SpringParts
+    {
+        public Transform Root;
+        public Renderer Water;
+    }
+
     /// <summary>The three hand-composed set pieces: the ruined Heart of the Valley, the dry spring and the workshop cottage.</summary>
     internal static class Landmarks
     {
@@ -61,12 +67,13 @@ namespace Echoes.EditorTools
 
         // ---- Ruined spring -------------------------------------------------------------------------------------
 
-        public static Transform Spring(Transform parent, Vector3 position, float yaw, MaterialLibrary m)
+        public static SpringParts Spring(Transform parent, Vector3 position, float yaw, MaterialLibrary m)
         {
             Transform root = Pieces.Group("RuinedSpring", parent, position, yaw);
 
             Pieces.Prim(root, PrimitiveType.Cylinder, "Bed", new Vector3(0f, 0.03f, 0f), new Vector3(2.8f, 0.03f, 2.8f), m["Mud"], Col.Mesh);
-            Pieces.Prim(root, PrimitiveType.Cylinder, "Trickle", new Vector3(0f, 0.065f, 0f), new Vector3(0.9f, 0.006f, 0.9f), m["Water"]);
+            // The puddle in the basin: murky and tiny while the valley is silent; ResonanceView fills it when the stream is restored.
+            GameObject water = Pieces.Prim(root, PrimitiveType.Cylinder, "SpringWater", new Vector3(0f, 0.065f, 0f), new Vector3(0.9f, 0.006f, 0.9f), m["WaterDull"]);
 
             // Ring of 10 blocks; one gap faces the stream (+X after yaw), some blocks have collapsed or tilted.
             for (int i = 0; i < 10; i++)
@@ -85,7 +92,7 @@ namespace Echoes.EditorTools
             Pieces.Prim(root, PrimitiveType.Cylinder, "ArchPostL", new Vector3(-1.6f, 0.9f, -2.5f), new Vector3(0.55f, 0.9f, 0.55f), m["Stone"], Col.Auto);
             Pieces.Prim(root, PrimitiveType.Cylinder, "ArchPostR", new Vector3(1.6f, 0.55f, -2.5f), new Vector3(0.55f, 0.55f, 0.55f), m["StoneMoss"], Col.Auto);
             Pieces.Prim(root, PrimitiveType.Cube, "FallenLintel", new Vector3(1.9f, 0.22f, -3.3f), new Vector3(2.4f, 0.4f, 0.6f), m["Stone"], Col.Box, new Vector3(0f, 18f, 4f));
-            return root;
+            return new SpringParts { Root = root, Water = water.GetComponent<Renderer>() };
         }
 
         // ---- Workshop cottage ----------------------------------------------------------------------------------

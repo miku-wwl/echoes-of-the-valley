@@ -19,7 +19,7 @@ namespace Echoes
 
         [SerializeField, TextArea] string[] afterLines =
         {
-            "The crystal glows softly. The valley's restoration will continue in Phase 2."
+            "The crystal glows softly. Mira may know how to wake the stream."
         };
 
         public override void Interact(InteractionDetector interactor)

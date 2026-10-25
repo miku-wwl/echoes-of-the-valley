@@ -11,6 +11,10 @@ namespace Echoes.EditorTools
         public GameObject Rock;
         public GameObject Hero;
         public GameObject Villager;
+        public GameObject HerbNode;
+        public GameObject FlowerNode;
+        public GameObject OreNode;
+        public GameObject Hen;
         public GameObject[] FlowerPatches;
     }
 
@@ -34,6 +38,11 @@ namespace Echoes.EditorTools
             collider.height = 1.6f;
             collider.radius = 0.34f;
             set.Villager = Save(villager);
+
+            set.HerbNode = Save(GameplayPieces.HerbNode(m));
+            set.FlowerNode = Save(GameplayPieces.FlowerNode(m));
+            set.OreNode = Save(GameplayPieces.OreNode(m));
+            set.Hen = Save(GameplayPieces.Hen(m));
 
             string[] petals = { "FlowerPink", "FlowerYellow", "FlowerWhite", "FlowerLilac" };
             set.FlowerPatches = new GameObject[petals.Length];

@@ -28,6 +28,14 @@ namespace Echoes
 
         public void Reset() => Step = ObjectiveStep.MeetVillager;
 
+        /// <summary>Sets the step from saved data. Rejects anything outside the known steps.</summary>
+        public bool Restore(int step)
+        {
+            if (step < (int)ObjectiveStep.MeetVillager || step > (int)ObjectiveStep.Complete) return false;
+            Step = (ObjectiveStep)step;
+            return true;
+        }
+
         bool TryAdvance(ObjectiveStep expected)
         {
             if (Step != expected) return false;
@@ -42,7 +50,7 @@ namespace Echoes
                 case ObjectiveStep.MeetVillager: return "Find the villager near the workshop cottage.";
                 case ObjectiveStep.InspectSpring: return "Visit the ruined spring beside the pond.";
                 case ObjectiveStep.ReturnToHeart: return "Return to the Heart of the Valley.";
-                default: return "Complete - the valley is stirring. Restoration continues in Phase 2.";
+                default: return "Complete - the crystal stirs. Ask Mira about the dry stream.";
             }
         }
     }
