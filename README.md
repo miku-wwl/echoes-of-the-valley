@@ -1,47 +1,49 @@
 # Echoes of the Valley
 
-A cozy anime-style fantasy RPG about gathering, raising chickens, crafting, and restoring a small valley. One developer; a complete 15–20-minute Windows x64 experience; English interface; no combat.
+**Theme-led Unity game jam starter · 2026-10-25 NZDT**
 
-**GATHER → RAISE → CRAFT → RESTORE**
+An original, short, peaceful fantasy adventure about **bringing a silent valley back to life** through gathering, caring for a chicken, alchemy and visible restoration.
 
-## Current status — Phase 0.5, 2026-10-23 NZDT
+> **Silence → Awakening → Resonance → Rest**
 
-Preparation and development-environment recovery only. **IMPLEMENTATION_STATUS=NOT_STARTED. CORE_CONTENT_GATE=CLOSED.** No competition Unity project or custom game content has been created. Phase 0.5 environment verification is **PASS**: Hub 3.22.4 detects Editor 6000.3.27f1, Unity Personal is active, Blender 4.5.15 LTS runs, and VS Code is configured as Unity's external editor. With explicit user authorization, a temporary blank URP project outside this repository successfully built and launched a Windows x64 Mono player on the Radeon 780M. GUI interaction, debugger attachment, game features, and performance targets were not tested. C: has about 12.70 GiB free, below the preferred 15 GiB reserve; large tools, caches, probe imports and build/temp files are on D: (about 68.33 GiB free). See the latest Phase 0.5 follow-up in [evidence](docs/09-phase0-evidence.md); earlier results are historical snapshots.
+**GATHER → CARE → CRAFT → RESTORE → WATCH THE WORLD RESPOND**
 
-## Competition and start gate
+## Current truth
 
-Prepared for [thatgamejam #02](https://itch.io/jam/thatgamejam02), subject to the [official FAQ](https://itch.io/jam/thatgamejam02/topic/7110933/thatgamejam02-faq) and the [compliance review](docs/01-competition-compliance.md).
+- **Competition:** [thatgamejam #02](https://itch.io/jam/thatgamejam02), hosted by thatgamecompany.
+- **Start:** 2026-10-24 20:00 NZDT; **deadline:** **2026-11-08 20:59 NZDT**. Internal upload target: 2026-11-07.
+- **Environment:** Phase 0.5 **PASS** for the separately tested Unity/Windows toolchain (see [baseline](docs/04-BASELINE.md)).
+- **Official theme:** released; the supplied 60-second audio's dynamics have been measured and interpreted. The emotional interpretation remains a **design choice**, not a claim of direct human listening.
+- **Competition project:** **NOT CREATED IN THIS ZIP**. This is a clean initialization package, not a claimed playable or tested Unity build.
+- **Remote:** this ZIP is **not pushed or committed** to GitHub. Integrate into the existing repository intentionally.
 
-- Start: **2026-10-24 20:00 NZDT** (2026-10-24 07:00 UTC).
-- Deadline: **2026-11-08 20:59 NZDT** (2026-11-08 07:59 UTC).
-- The musical theme is unreleased in this preflight. Narrative and interpretation remain pending.
-- Project policy permits documentation, research, configuration, and tool checks before the start. It prohibits creating the competition Unity project, implementing gameplay, producing game-ready assets, building levels, importing complete systems, or making a competition build. The expressly authorized external blank environment probe is limited to toolchain verification.
-- The developer reports organizer permission for pre-jam preparation. The private wording has not been reviewed, so this does not establish permission for early core-content development. Public sources do not explicitly settle each preparation activity.
-- Phase 1 requires both the official start and theme release, a recorded theme review, and tool readiness. The [kickoff specification](docs/08-phase1-kickoff.md) is instructions for later, not permission to begin now.
+## Exact MVP (10–15-minute goal; max 20-minute target)
 
-## Intended stack
+One compact valley, one original protagonist, three short NPC quests, herbs/ore, a chicken and egg, three recipes, three restoration states, an ending, and local save/load. No combat, fishing, seasons, breeding, online features or large world.
 
-Unity **6.3 LTS / 6000.3.27f1**, URP and Shader Graph, C#, Unity Input System, Cinemachine 3, Unity Test Framework, Blender, and local JSON saves. Actual external-probe package versions are recorded in the evidence; the competition project's manifest/lockfile will be created only after its start gate. Cinemachine remains planned and untested. Windows Mono is the verified environment-probe backend and the first-game-build baseline; IL2CPP is a later option requiring its module and native toolchain. No backend, multiplayer, cloud runtime, or Docker runtime dependency.
+The signature feature is **Valley Resonance**: each important restoration creates a clear, persistent before/after change in color, vegetation, activity and sound. The game does **not** need to be a rhythm game or ship with the official theme audio.
 
-Visual inspiration: the color, readability, and warmth of anime fantasy RPGs such as Atelier Ryza. Pasture interaction inspiration: QQ Farm / QQ Ranch. All characters, layouts, UI, assets, and music must be original or independently licensed; references are not content to copy.
+## Docs: four short working references
 
-## Documentation
+1. [01 — Game vision and musical theme](docs/01-GAME-DESIGN.md)
+2. [02 — Implementation and acceptance gates](docs/02-BUILD-PLAN.md)
+3. [03 — Jam rules, provenance and AI disclosure](docs/03-RULES-CREDITS.md)
+4. [04 — Verified Phase 0.5 baseline](docs/04-BASELINE.md)
 
-| Document | Purpose |
-| --- | --- |
-| [00 — Project charter](docs/00-project-charter.md) | Scope, priorities, boundaries, risks |
-| [01 — Competition compliance](docs/01-competition-compliance.md) | Official evidence, dates, unresolved questions |
-| [02 — Game design preparation](docs/02-game-design-prep.md) | Systems, progression, onboarding, ending |
-| [03 — Technical architecture](docs/03-technical-architecture.md) | Ownership, transactions, events, saves |
-| [04 — Art direction](docs/04-art-direction.md) | Solo production and Radeon 780M budgets |
-| [05 — Asset license register](docs/05-asset-license-register.md) | Candidate sources and admission rules |
-| [06 — AI usage disclosure](docs/06-ai-usage-disclosure.md) | Actual Phase 0 use and future disclosure |
-| [07 — Development roadmap](docs/07-development-roadmap.md) | Six phases and evidence gates |
-| [08 — Phase 1 kickoff](docs/08-phase1-kickoff.md) | Ordered, blocked foundation work |
-| [09 — Phase 0 evidence](docs/09-phase0-evidence.md) | Environment, checks, setup, delivery record |
+## Code-first Unity initialization (Windows)
 
-## Repository and licensing
+Requires the already verified Unity Editor 6000.3.27f1 with a valid Personal license, Windows PowerShell and sufficient D: disk space. From the repository root:
 
-This baseline contains only Markdown documentation, [LICENSE](LICENSE), [.gitignore](.gitignore), and [.gitattributes](.gitattributes). Binary LFS rules are prepared for future authored assets; no assets are currently stored. Preserve Unity `.meta` files when implementation is authorized. Use Visible Meta Files and Force Text serialization in Phase 1.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\Init-Unity.ps1
+```
 
-The existing MIT text and copyright holder are preserved. Its repository scope is original source code only; art, audio, fonts, third-party packages, and documentation are excluded from that grant. See the [license register](docs/05-asset-license-register.md) before admitting any asset. The simplified three-quest/chicken-only design is explicitly **COMPETITION_MVP**; the broader planned scope remains separate in the [design document](docs/02-game-design-prep.md).
+This script uses Unity batchmode to create `game/` from Unity's own Universal 3D template, generates a basic owned-content folder layout and leaves logs in ignored `artifacts/bootstrap/`. It **never overwrites** an existing Unity project. It does **not** create gameplay or count as Phase 1 PASS. Open or batch-build the generated project and follow [Phase 1](docs/02-BUILD-PLAN.md) for genuine tests.
+
+**Existing GitHub repo migration:** keep Git history and the original Phase 0.5 evidence commit. Unpack this ZIP separately and review its diff before copying it into your existing checkout. After confirming the new four docs cover your needs, remove the ten old tracked `docs/00-...09-...` files from the **working tree only**, commit the intentional replacement, and push only if you choose. Simply extracting this ZIP on top of the old repository will **not** remove those old docs.
+
+Manual fallback: create a **Universal 3D (URP)** Unity 6000.3.27f1 project in `game/` and keep `.meta` files, `Packages/manifest.json`, `Packages/packages-lock.json` and `ProjectSettings/` in version control.
+
+## Rights and attribution
+
+Original source code is MIT-licensed (see [LICENSE](LICENSE)). That grant does **not** apply to art, audio, fonts, third-party material, documentation or the official theme. **Do not add the official theme WAV to public GitHub.** Maintain an actual-use asset register and make an honest AI-usage disclosure at submission; see [rules](docs/03-RULES-CREDITS.md).

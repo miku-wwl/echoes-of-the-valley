@@ -1,4 +1,4 @@
-# Unity generated data, at any future project depth. Keep Assets and .meta files.
+# Unity generated directories; always keep Assets, ProjectSettings, Packages and .meta.
 **/[Ll]ibrary/
 **/[Tt]emp/
 **/[Oo]bj/
@@ -9,40 +9,32 @@
 **/[Mm]emoryCaptures/
 **/[Rr]ecordings/
 **/.utmp/
-**/AssetStoreTools/
 
-# IDE and generated solution files
+# IDE-generated files
 .vs/
 .idea/
+.vscode/*.log
 *.csproj
 *.sln
 *.slnx
 *.suo
 *.user
 *.userprefs
-*.pidb
-*.booproj
-*.opendb
-*.VC.db
 *.pdb
 *.mdb
 *.csproj.meta
 *.sln.meta
-*.pidb.meta
-*.pdb.meta
-*.mdb.meta
 
-# Local tools, caches, downloads, builds, exports, and reports
+# Local development files and build artifacts
+artifacts/
+TestResults/
 node_modules/
 .venv/
 __pycache__/
 .pytest_cache/
 .cache/
-.local/
 downloads/
 installers/
-artifacts/
-TestResults/
 *.unitypackage
 *.exe
 *.msi
@@ -55,7 +47,7 @@ TestResults/
 *.blend1
 *.blend2
 
-# Credentials and machine-local settings
+# Secrets and OS files
 .env
 .env.*
 *.pem
