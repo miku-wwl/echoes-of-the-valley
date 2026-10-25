@@ -70,7 +70,7 @@ try {
     Write-Host "UNITY_PROJECT_PATH=$GameDirectory"
     Write-Host "EDITOR_LOG=$logPath"
     Write-Host 'PHASE1_GAMEPLAY_STATUS=NOT_STARTED'
-    Write-Host 'NEXT=Generate owned Boot/Valley scenes with Unity Editor scripts, then compile/build and manually playtest.'
+    Write-Host 'NEXT=Run tools\Invoke-Echoes.ps1 -Task Setup to generate the MainMenu and Valley scenes, then test, build and playtest.'
 }
 finally {
     $env:TEMP = $previousTemp

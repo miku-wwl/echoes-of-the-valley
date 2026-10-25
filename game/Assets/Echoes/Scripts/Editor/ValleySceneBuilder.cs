@@ -1,0 +1,511 @@
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+namespace Echoes.EditorTools
+{
+    /// <summary>Generates the Valley scene from scratch on every run, so re-running replaces it instead of duplicating it.</summary>
+    internal static class ValleySceneBuilder
+    {
+        public static void Build(MaterialLibrary m, PrefabSet prefabs)
+        {
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            // The valley starts muted and cool; CompletionFeedback warms it up.
+            Light sun = SceneKit.CreateSun(Quaternion.Euler(48f, 38f, 0f), new Color(0.86f, 0.90f, 1f), 1.0f);
+            SceneKit.ConfigureEnvironment(m["SkyValley"], new Color(0.50f, 0.58f, 0.72f), new Color(0.46f, 0.48f, 0.54f),
+                new Color(0.30f, 0.30f, 0.32f), new Color(0.62f, 0.68f, 0.76f), 0.007f);
+
+            GameObject world = new GameObject("World");
+            Terrain terrain = BuildTerrain(m, world.transform);
+
+            HeartParts heart = Landmarks.Heart(world.transform, Ground(terrain, ValleyLayout.Heart), m);
+            CottageParts cottage = Landmarks.Cottage(world.transform, Ground(terrain, ValleyLayout.Cottage), ValleyLayout.CottageYaw, m);
+            Transform spring = Landmarks.Spring(world.transform, Ground(terrain, ValleyLayout.Spring), 24f, m);
+            BuildWater(world.transform, m);
+            Scatter(world.transform, terrain, prefabs);
+            BuildBoundaries(world.transform);
+            Pieces.MakeStatic(world);
+            Pieces.MakeDynamic(heart.CrystalPivot.gameObject);
+
+            // ---- Player, camera ----
+            Vector3 spawnPosition = Ground(terrain, ValleyLayout.Spawn) + Vector3.up * 0.1f;
+            Transform spawn = new GameObject("SpawnPoint").transform;
+            spawn.position = spawnPosition;
+
+            GameObject player = new GameObject("Player");
+            player.transform.position = spawnPosition;
+            CharacterController controller = player.AddComponent<CharacterController>();
+            controller.height = 1.6f;
+            controller.radius = 0.3f;
+            controller.center = new Vector3(0f, 0.8f, 0f);
+            controller.stepOffset = 0.3f;   // clears the 0.2 m and 0.1 m dais steps, but not the 0.4 m obelisk base
+            controller.slopeLimit = 48f;
+            controller.skinWidth = 0.04f;
+            GameObject hero = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.Hero, player.transform);
+            hero.name = "Visual";
+            PlayerController playerController = player.AddComponent<PlayerController>();
+            InteractionDetector detector = player.AddComponent<InteractionDetector>();
+
+            Camera camera = SceneKit.CreateCamera(spawnPosition + new Vector3(0f, 4f, -6f), Quaternion.Euler(22f, 0f, 0f), 60f);
+            ThirdPersonCamera rig = camera.gameObject.AddComponent<ThirdPersonCamera>();
+            Wire.Set(rig, "target", player.transform);
+            Wire.Set(playerController, "cameraTransform", camera.transform);
+            Wire.Set(playerController, "characterAnimator", hero.GetComponent<CharacterAnimator>());
+            Wire.Set(playerController, "respawnPoint", spawn);
+
+            // ---- UI and game systems ----
+            BuildHud(out HudController hud, out DialogueBox dialogue, out PauseController pause);
+            SceneKit.CreateEventSystem();
+
+            GameObject systems = new GameObject("GameSystems");
+            systems.AddComponent<GameBootstrap>();
+            ExplorationObjective objective = systems.AddComponent<ExplorationObjective>();
+            CompletionFeedback feedback = systems.AddComponent<CompletionFeedback>();
+            Wire.Set(objective, "hud", hud);
+            Wire.Set(objective, "feedback", feedback);
+            Wire.Set(feedback, "sun", sun);
+            Wire.Set(feedback, "sparkles", BuildSparkles(heart.Root));
+            Wire.Set(feedback, "crystal", heart.Crystal);
+            Wire.Set(feedback, "crystalPivot", heart.CrystalPivot);
+            Wire.Set(detector, "hud", hud);
+
+            // ---- Interactables: all four use the same Interactable framework ----
+            GameObject villager = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.Villager);
+            villager.name = "Mira";
+            villager.transform.position = Ground(terrain, ValleyLayout.Villager);
+            villager.transform.rotation = Quaternion.LookRotation(new Vector3(-ValleyLayout.Villager.x, 0f, -ValleyLayout.Villager.y));
+            Configure(villager.AddComponent<NpcInteractable>(), "Talk to Mira", 3f, "Mira", dialogue, objective);
+            Configure(cottage.InteractionPoint.gameObject.AddComponent<WorkshopInteractable>(), "Inspect the alchemy workshop", 3.5f, "Alchemy Workshop", dialogue, objective);
+            Configure(spring.gameObject.AddComponent<SpringInteractable>(), "Examine the ruined spring", 3.8f, "The Ruined Spring", dialogue, objective);
+            Configure(heart.Root.gameObject.AddComponent<HeartInteractable>(), "Touch the Heart Stone", 4.5f, "The Heart of the Valley", dialogue, objective);
+
+            if (!EditorSceneManager.SaveScene(scene, AssetPaths.ValleyScene))
+                throw new System.InvalidOperationException("Could not save " + AssetPaths.ValleyScene);
+            Debug.Log("[Echoes] Generated " + AssetPaths.ValleyScene);
+        }
+
+        static void Configure(DialogueInteractable interactable, string prompt, float range, string speaker, DialogueBox dialogue, ExplorationObjective objective)
+        {
+            Wire.Set(interactable, "prompt", prompt);
+            Wire.Set(interactable, "range", range);
+            Wire.Set(interactable, "speaker", speaker);
+            Wire.Set(interactable, "dialogue", dialogue);
+            Wire.Set(interactable, "objective", objective);
+        }
+
+        static Vector3 Ground(Terrain terrain, Vector2 p)
+        {
+            float y = terrain.SampleHeight(new Vector3(p.x, 0f, p.y)) + terrain.transform.position.y;
+            return new Vector3(p.x, y, p.y);
+        }
+
+        // ---- Terrain ----------------------------------------------------------------------------------------------
+
+        static Terrain BuildTerrain(MaterialLibrary m, Transform parent)
+        {
+            AssetPaths.EnsureFolder(AssetPaths.Terrain);
+            const int heightRes = 129;
+            const int alphaRes = 128;
+            float size = ValleyLayout.TerrainSize;
+
+            TerrainLayer[] layers =
+            {
+                MakeLayer("Grass", new Color(0.50f, 0.74f, 0.36f)),
+                MakeLayer("Meadow", new Color(0.66f, 0.78f, 0.40f)),
+                MakeLayer("Path", new Color(0.84f, 0.74f, 0.54f)),
+                MakeLayer("Stone", new Color(0.68f, 0.64f, 0.58f))
+            };
+
+            string dataPath = AssetPaths.Terrain + "/ValleyTerrainData.asset";
+            TerrainData data = AssetDatabase.LoadAssetAtPath<TerrainData>(dataPath);
+            if (data == null)
+            {
+                data = new TerrainData();
+                AssetDatabase.CreateAsset(data, dataPath);
+            }
+
+            data.heightmapResolution = heightRes;
+            data.size = new Vector3(size, ValleyLayout.TerrainMaxHeight, size);
+            data.terrainLayers = layers;
+            data.alphamapResolution = alphaRes;
+
+            float[,] heights = new float[heightRes, heightRes];
+            for (int zi = 0; zi < heightRes; zi++)
+            {
+                for (int xi = 0; xi < heightRes; xi++)
+                {
+                    float x = (xi / (float)(heightRes - 1) - 0.5f) * size;
+                    float z = (zi / (float)(heightRes - 1) - 0.5f) * size;
+                    heights[zi, xi] = Mathf.Clamp01((ValleyLayout.Height(x, z) + ValleyLayout.TerrainBaseOffset) / ValleyLayout.TerrainMaxHeight);
+                }
+            }
+            data.SetHeights(0, 0, heights);
+
+            float[,,] alphas = new float[alphaRes, alphaRes, layers.Length];
+            float[] weights = new float[layers.Length];
+            for (int zi = 0; zi < alphaRes; zi++)
+            {
+                for (int xi = 0; xi < alphaRes; xi++)
+                {
+                    float x = ((xi + 0.5f) / alphaRes - 0.5f) * size;
+                    float z = ((zi + 0.5f) / alphaRes - 0.5f) * size;
+                    ValleyLayout.Weights(x, z, weights);
+                    for (int l = 0; l < layers.Length; l++) alphas[zi, xi, l] = weights[l];
+                }
+            }
+            data.SetAlphamaps(0, 0, alphas);
+            EditorUtility.SetDirty(data);
+
+            GameObject go = Terrain.CreateTerrainGameObject(data);
+            go.name = "Terrain";
+            go.transform.SetParent(parent, false);
+            go.transform.position = new Vector3(-size * 0.5f, -ValleyLayout.TerrainBaseOffset, -size * 0.5f);
+            Terrain terrain = go.GetComponent<Terrain>();
+            terrain.materialTemplate = m["TerrainLit"];
+            terrain.drawInstanced = true;
+            terrain.heightmapPixelError = 6f;
+            terrain.drawTreesAndFoliage = false;
+            return terrain;
+        }
+
+        static TerrainLayer MakeLayer(string name, Color color)
+        {
+            string texturePath = AssetPaths.Terrain + "/" + name + "Color.asset";
+            Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath);
+            if (texture == null)
+            {
+                texture = new Texture2D(4, 4, TextureFormat.RGB24, true, false);
+                AssetDatabase.CreateAsset(texture, texturePath);
+            }
+            // No alpha channel on purpose: URP's terrain shader locks smoothness to 1 when the diffuse has alpha.
+            texture.Reinitialize(4, 4, TextureFormat.RGB24, true);
+            Color[] pixels = new Color[16];
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = color;
+            texture.SetPixels(pixels);
+            texture.Apply(true, false);
+            texture.wrapMode = TextureWrapMode.Repeat;
+            texture.filterMode = FilterMode.Bilinear;
+            EditorUtility.SetDirty(texture);
+
+            string layerPath = AssetPaths.Terrain + "/" + name + ".terrainlayer";
+            TerrainLayer layer = AssetDatabase.LoadAssetAtPath<TerrainLayer>(layerPath);
+            if (layer == null)
+            {
+                layer = new TerrainLayer();
+                AssetDatabase.CreateAsset(layer, layerPath);
+            }
+            layer.diffuseTexture = texture;
+            layer.tileSize = new Vector2(8f, 8f);
+            layer.smoothness = 0f;
+            layer.metallic = 0f;
+            EditorUtility.SetDirty(layer);
+            return layer;
+        }
+
+        // ---- Water -------------------------------------------------------------------------------------------------
+
+        static void BuildWater(Transform parent, MaterialLibrary m)
+        {
+            Transform water = Pieces.Group("Water", parent, Vector3.zero);
+
+            Vector3 pond = new Vector3(ValleyLayout.Pond.x, ValleyLayout.WaterLevel + 0.01f, ValleyLayout.Pond.y);
+            GameObject pondSurface = Pieces.Prim(water, PrimitiveType.Cylinder, "Pond", pond,
+                new Vector3(ValleyLayout.PondRadius * 2f, 0.01f, ValleyLayout.PondRadius * 2f), m["Water"]);
+            Pieces.NoShadows(pondSurface);
+
+            for (int i = 0; i < 6; i++)
+            {
+                float angle = (i * 61f + 10f) * Mathf.Deg2Rad;
+                float radius = 1.2f + 0.8f * (i % 3);
+                Vector3 p = pond + new Vector3(Mathf.Cos(angle) * radius, 0.02f, Mathf.Sin(angle) * radius);
+                Pieces.Prim(water, PrimitiveType.Cylinder, "LilyPad" + i, p, new Vector3(0.75f, 0.008f, 0.75f), m["LilyPad"]);
+            }
+
+            AssetPaths.EnsureFolder(AssetPaths.Meshes);
+            GameObject stream = new GameObject("Stream", typeof(MeshFilter), typeof(MeshRenderer));
+            stream.transform.SetParent(water, false);
+            stream.GetComponent<MeshFilter>().sharedMesh = BuildStreamMesh();
+            MeshRenderer renderer = stream.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = m["Water"];
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+        }
+
+        static Mesh BuildStreamMesh()
+        {
+            string path = AssetPaths.Meshes + "/StreamWater.asset";
+            Mesh mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (mesh == null)
+            {
+                mesh = new Mesh { name = "StreamWater" };
+                AssetDatabase.CreateAsset(mesh, path);
+            }
+            mesh.Clear();
+
+            List<Vector2> line = ValleyLayout.Stream;
+            int count = line.Count;
+            Vector3[] vertices = new Vector3[count * 2];
+            Vector3[] normals = new Vector3[count * 2];
+            Vector2[] uvs = new Vector2[count * 2];
+            int[] triangles = new int[(count - 1) * 6];
+            float distance = 0f;
+
+            for (int i = 0; i < count; i++)
+            {
+                Vector2 previous = line[Mathf.Max(i - 1, 0)];
+                Vector2 next = line[Mathf.Min(i + 1, count - 1)];
+                Vector2 direction = (next - previous).normalized;
+                Vector2 side = new Vector2(-direction.y, direction.x) * (ValleyLayout.StreamWidth * 0.5f);
+                Vector2 left = line[i] + side;
+                Vector2 right = line[i] - side;
+                if (i > 0) distance += Vector2.Distance(line[i], line[i - 1]);
+
+                vertices[i * 2] = new Vector3(left.x, ValleyLayout.WaterLevel, left.y);
+                vertices[i * 2 + 1] = new Vector3(right.x, ValleyLayout.WaterLevel, right.y);
+                normals[i * 2] = Vector3.up;
+                normals[i * 2 + 1] = Vector3.up;
+                uvs[i * 2] = new Vector2(0f, distance * 0.25f);
+                uvs[i * 2 + 1] = new Vector2(1f, distance * 0.25f);
+            }
+
+            for (int i = 0; i < count - 1; i++)
+            {
+                int a = i * 2, b = i * 2 + 1, c = i * 2 + 2, d = i * 2 + 3;
+                triangles[i * 6] = a;
+                triangles[i * 6 + 1] = c;
+                triangles[i * 6 + 2] = b;
+                triangles[i * 6 + 3] = b;
+                triangles[i * 6 + 4] = c;
+                triangles[i * 6 + 5] = d;
+            }
+
+            mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.uv = uvs;
+            mesh.triangles = triangles;
+            mesh.RecalculateBounds();
+            EditorUtility.SetDirty(mesh);
+            return mesh;
+        }
+
+        // ---- Scenery -----------------------------------------------------------------------------------------------
+
+        static void Scatter(Transform parent, Terrain terrain, PrefabSet prefabs)
+        {
+            System.Random random = new System.Random(20261025);
+
+            Transform trees = Pieces.Group("Trees", parent, Vector3.zero);
+            GameObject[] treeVariants = { prefabs.TreeRound, prefabs.TreeTall, prefabs.TreeBlossom, prefabs.TreeRound, prefabs.TreeTall };
+            List<Vector2> placed = new List<Vector2>();
+            for (int attempt = 0; attempt < 6000 && placed.Count < 56; attempt++)
+            {
+                Vector2 p = RandomInRing(random, 15f, 48f);
+                if (!ValleyLayout.IsFreeForScenery(p) || TooClose(placed, p, 5f)) continue;
+                placed.Add(p);
+                Spawn(treeVariants[placed.Count % treeVariants.Length], trees, Ground(terrain, p), random, 0.8f, 1.35f);
+            }
+
+            Transform rocks = Pieces.Group("Rocks", parent, Vector3.zero);
+            List<Vector2> rockSpots = new List<Vector2>();
+            for (int attempt = 0; attempt < 3000 && rockSpots.Count < 14; attempt++)
+            {
+                Vector2 p = RandomInRing(random, 14f, 48f);
+                if (!ValleyLayout.IsFreeForScenery(p) || TooClose(placed, p, 3.5f) || TooClose(rockSpots, p, 6f)) continue;
+                rockSpots.Add(p);
+                Spawn(prefabs.Rock, rocks, Ground(terrain, p) + Vector3.down * 0.1f, random, 0.7f, 1.6f);
+            }
+
+            Transform flowers = Pieces.Group("Flowers", parent, Vector3.zero);
+            List<Vector2> patches = new List<Vector2>();
+            for (int attempt = 0; attempt < 4000 && patches.Count < 28; attempt++)
+            {
+                Vector2 p = RandomInRing(random, 10.5f, 42f);
+                bool nearPath = ValleyLayout.DistanceToPaths(p) < 10f;
+                if (!nearPath && random.NextDouble() > 0.2) continue;
+                if (ValleyLayout.DistanceToPaths(p) < 2.3f || Vector2.Distance(p, ValleyLayout.Spawn) < 5f
+                    || Vector2.Distance(p, ValleyLayout.Cottage) < 7.5f || Vector2.Distance(p, ValleyLayout.Villager) < 2.5f
+                    || Vector2.Distance(p, ValleyLayout.Spring) < 4.5f || Vector2.Distance(p, ValleyLayout.Pond) < ValleyLayout.PondRadius + 1.5f
+                    || ValleyLayout.DistanceToPolyline(p, ValleyLayout.Stream) < 3.2f || Mathf.Abs(p.x) > 46f || Mathf.Abs(p.y) > 46f
+                    || TooClose(placed, p, 2.2f) || TooClose(rockSpots, p, 2.2f) || TooClose(patches, p, 3.5f))
+                    continue;
+                patches.Add(p);
+                Spawn(prefabs.FlowerPatches[patches.Count % prefabs.FlowerPatches.Length], flowers, Ground(terrain, p), random, 1.1f, 1.7f);
+            }
+            Debug.Log("[Echoes] Scenery: " + placed.Count + " trees, " + rockSpots.Count + " rocks, " + patches.Count + " flower patches");
+        }
+
+        static Vector2 RandomInRing(System.Random random, float inner, float outer)
+        {
+            float radius = Mathf.Lerp(inner, outer, Mathf.Sqrt((float)random.NextDouble()));
+            float angle = (float)(random.NextDouble() * Mathf.PI * 2.0);
+            return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+        }
+
+        static bool TooClose(List<Vector2> others, Vector2 p, float distance)
+        {
+            foreach (Vector2 other in others)
+                if ((other - p).sqrMagnitude < distance * distance) return true;
+            return false;
+        }
+
+        static void Spawn(GameObject prefab, Transform parent, Vector3 position, System.Random random, float minScale, float maxScale)
+        {
+            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+            instance.transform.position = position;
+            instance.transform.rotation = Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
+            instance.transform.localScale = Vector3.one * Mathf.Lerp(minScale, maxScale, (float)random.NextDouble());
+        }
+
+        /// <summary>Invisible walls keep the player inside the playable square, away from the terrain edge.</summary>
+        static void BuildBoundaries(Transform parent)
+        {
+            float half = ValleyLayout.PlayableHalfSize;
+            float span = half * 2f + 6f;
+            Vector3[] centers =
+            {
+                new Vector3(0f, 20f, half + 1f), new Vector3(0f, 20f, -half - 1f),
+                new Vector3(half + 1f, 20f, 0f), new Vector3(-half - 1f, 20f, 0f)
+            };
+            Vector3[] sizes = { new Vector3(span, 60f, 2f), new Vector3(span, 60f, 2f), new Vector3(2f, 60f, span), new Vector3(2f, 60f, span) };
+            Transform group = Pieces.Group("Boundaries", parent, Vector3.zero);
+            for (int i = 0; i < centers.Length; i++)
+            {
+                GameObject wall = new GameObject("Boundary" + i);
+                wall.transform.SetParent(group, false);
+                wall.transform.position = centers[i];
+                wall.AddComponent<BoxCollider>().size = sizes[i];
+            }
+        }
+
+        static ParticleSystem BuildSparkles(Transform parent)
+        {
+            GameObject go = new GameObject("Sparkles");
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = new Vector3(0f, 0.4f, 0f);
+            go.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+
+            ParticleSystem system = go.AddComponent<ParticleSystem>();
+            system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            ParticleSystem.MainModule main = system.main;
+            main.loop = true;
+            main.playOnAwake = false;
+            main.duration = 5f;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(3f, 5f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 1.2f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.3f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.93f, 0.62f, 1f), new Color(0.62f, 1f, 0.96f, 1f));
+            main.gravityModifier = -0.02f;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 300;
+
+            ParticleSystem.EmissionModule emission = system.emission;
+            emission.rateOverTime = 14f;
+            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 70) });
+
+            ParticleSystem.ShapeModule shape = system.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Cone;
+            shape.angle = 18f;
+            shape.radius = 3.6f;
+
+            ParticleSystem.ColorOverLifetimeModule fade = system.colorOverLifetime;
+            fade.enabled = true;
+            fade.color = new ParticleSystem.MinMaxGradient(SceneKit.FadeInOut(Color.white, 1f));
+
+            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = SceneKit.ParticleMaterial();
+            return system;
+        }
+
+        // ---- HUD ---------------------------------------------------------------------------------------------------
+
+        static void BuildHud(out HudController hud, out DialogueBox dialogue, out PauseController pause)
+        {
+            Canvas canvas = UiKit.CreateCanvas("HUD", 10);
+            Transform root = canvas.transform;
+            hud = canvas.gameObject.AddComponent<HudController>();
+            dialogue = canvas.gameObject.AddComponent<DialogueBox>();
+            pause = canvas.gameObject.AddComponent<PauseController>();
+
+            // Objective (top-left)
+            Image objectivePanel = UiKit.Panel(root, "ObjectivePanel", UiKit.PanelColor);
+            objectivePanel.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(32f, -32f), new Vector2(660f, 132f));
+            Text heading = UiKit.Label(objectivePanel.transform, "Heading", ObjectiveTracker.Title, 30, UiKit.Gold, TextAnchor.UpperLeft, FontStyle.Bold);
+            heading.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(24f, -14f), new Vector2(612f, 40f));
+            Text body = UiKit.Label(objectivePanel.transform, "Body", ObjectiveTracker.Describe(ObjectiveStep.MeetVillager), 26, UiKit.Cream, TextAnchor.UpperLeft);
+            body.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(24f, -60f), new Vector2(612f, 64f));
+
+            // Controls hint (bottom-left)
+            Text controls = UiKit.Label(root, "ControlsHint", "WASD  Move      Mouse  Look      E  Interact      Esc  Pause", 24,
+                new Color(1f, 0.95f, 0.84f, 0.9f), TextAnchor.LowerLeft);
+            controls.rectTransform.Place(UiKit.BottomLeft, UiKit.BottomLeft, new Vector2(32f, 24f), new Vector2(980f, 40f));
+
+            // Interaction prompt (bottom-centre)
+            Image promptPanel = UiKit.Panel(root, "InteractionPrompt", UiKit.PanelColor);
+            promptPanel.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 300f), new Vector2(640f, 70f));
+            Text promptText = UiKit.Label(promptPanel.transform, "Text", "[E]  Interact", 34, UiKit.Cream, TextAnchor.MiddleCenter, FontStyle.Bold);
+            promptText.rectTransform.Fill(8f);
+
+            // Banner (top-centre)
+            Image bannerPanel = UiKit.Panel(root, "Banner", new Color(0.08f, 0.11f, 0.18f, 0.6f));
+            bannerPanel.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -48f), new Vector2(1300f, 168f));
+            CanvasGroup bannerGroup = bannerPanel.gameObject.AddComponent<CanvasGroup>();
+            bannerGroup.interactable = false;
+            bannerGroup.blocksRaycasts = false;
+            Text bannerTitle = UiKit.Label(bannerPanel.transform, "Title", "Objective Complete", 56, UiKit.Gold, TextAnchor.UpperCenter, FontStyle.Bold);
+            bannerTitle.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -14f), new Vector2(1240f, 72f));
+            Text bannerSubtitle = UiKit.Label(bannerPanel.transform, "Subtitle", string.Empty, 30, UiKit.Cream, TextAnchor.UpperCenter);
+            bannerSubtitle.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -88f), new Vector2(1180f, 72f));
+
+            // Dialogue (bottom-centre)
+            Image dialoguePanel = UiKit.Panel(root, "Dialogue", new Color(0.08f, 0.11f, 0.18f, 0.86f));
+            dialoguePanel.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 76f), new Vector2(1300f, 224f));
+            Text speaker = UiKit.Label(dialoguePanel.transform, "Speaker", string.Empty, 36, UiKit.Gold, TextAnchor.UpperLeft, FontStyle.Bold);
+            speaker.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(36f, -20f), new Vector2(900f, 46f));
+            Text line = UiKit.Label(dialoguePanel.transform, "Line", string.Empty, 32, UiKit.Cream, TextAnchor.UpperLeft);
+            line.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(36f, -72f), new Vector2(1228f, 112f));
+            Text hint = UiKit.Label(dialoguePanel.transform, "Hint", "E  Continue", 24, UiKit.Gold, TextAnchor.LowerRight);
+            hint.rectTransform.Place(UiKit.BottomRight, UiKit.BottomRight, new Vector2(-36f, 14f), new Vector2(300f, 34f));
+
+            // Pause menu (full screen dimmer + centre panel)
+            Image dim = UiKit.Panel(root, "PauseMenu", new Color(0.02f, 0.03f, 0.06f, 0.62f), false);
+            dim.rectTransform.Fill();
+            dim.raycastTarget = true;
+            Image box = UiKit.Panel(dim.transform, "Panel", new Color(0.08f, 0.11f, 0.18f, 0.94f));
+            box.rectTransform.Place(UiKit.Center, UiKit.Center, Vector2.zero, new Vector2(560f, 560f));
+            Text pauseTitle = UiKit.Label(box.transform, "Title", "Paused", 72, UiKit.Gold, TextAnchor.UpperCenter, FontStyle.Bold);
+            pauseTitle.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -40f), new Vector2(500f, 90f));
+            Button resume = UiKit.MakeButton(box.transform, "ResumeButton", "Resume", UiKit.Center, new Vector2(0f, 50f), new Vector2(400f, 76f));
+            Button mainMenu = UiKit.MakeButton(box.transform, "MainMenuButton", "Main Menu", UiKit.Center, new Vector2(0f, -50f), new Vector2(400f, 76f));
+            Button quit = UiKit.MakeButton(box.transform, "QuitButton", "Quit", UiKit.Center, new Vector2(0f, -150f), new Vector2(400f, 76f));
+            Text pauseHint = UiKit.Label(box.transform, "Hint", "Esc  Resume", 24, new Color(1f, 0.95f, 0.84f, 0.8f), TextAnchor.LowerCenter);
+            pauseHint.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 22f), new Vector2(400f, 34f));
+
+            Wire.Set(hud, "objectiveHeading", heading);
+            Wire.Set(hud, "objectiveBody", body);
+            Wire.Set(hud, "promptRoot", promptPanel.gameObject);
+            Wire.Set(hud, "promptText", promptText);
+            Wire.Set(hud, "bannerGroup", bannerGroup);
+            Wire.Set(hud, "bannerTitle", bannerTitle);
+            Wire.Set(hud, "bannerSubtitle", bannerSubtitle);
+
+            Wire.Set(dialogue, "panel", dialoguePanel.gameObject);
+            Wire.Set(dialogue, "speakerText", speaker);
+            Wire.Set(dialogue, "bodyText", line);
+            Wire.Set(dialogue, "hintText", hint);
+
+            Wire.Set(pause, "panel", dim.gameObject);
+            Wire.Set(pause, "resumeButton", resume);
+            Wire.Set(pause, "mainMenuButton", mainMenu);
+            Wire.Set(pause, "quitButton", quit);
+
+            dim.gameObject.SetActive(false);
+            dialoguePanel.gameObject.SetActive(false);
+            promptPanel.gameObject.SetActive(false);
+        }
+    }
+}

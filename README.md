@@ -1,6 +1,6 @@
 # Echoes of the Valley
 
-**Theme-led Unity game jam starter · 2026-10-25 NZDT**
+**Unity game jam entry · thatgamejam #02 · 2026**
 
 An original, short, peaceful fantasy adventure about **bringing a silent valley back to life** through gathering, caring for a chicken, alchemy and visible restoration.
 
@@ -12,10 +12,16 @@ An original, short, peaceful fantasy adventure about **bringing a silent valley 
 
 - **Competition:** [thatgamejam #02](https://itch.io/jam/thatgamejam02), hosted by thatgamecompany.
 - **Start:** 2026-10-24 20:00 NZDT; **deadline:** **2026-11-08 20:59 NZDT**. Internal upload target: 2026-11-07.
-- **Environment:** Phase 0.5 **PASS** for the separately tested Unity/Windows toolchain (see [baseline](docs/04-BASELINE.md)).
+- **Phase 1 (foundation): PASS** against its acceptance gate on 2026-10-25: 23/23 EditMode and 18/18 PlayMode tests, a Windows x64 Mono development build, and a scripted standalone-player smoke test that exited 0. A **human playtest of the Windows player has not been done yet**. Exact evidence, known issues and the manual QA checklist: [02](docs/02-BUILD-PLAN.md#phase-1-status-2026-10-25).
+- **Environment:** Phase 0.5 **PASS** was for a separately tested blank-template probe (see [baseline](docs/04-BASELINE.md)); Phase 1 exercised the toolchain on this project.
 - **Official theme:** released; the supplied 60-second audio's dynamics have been measured and interpreted. The emotional interpretation remains a **design choice**, not a claim of direct human listening.
-- **Competition project:** **NOT CREATED IN THIS ZIP**. This is a clean initialization package, not a claimed playable or tested Unity build.
-- **Remote:** this ZIP is **not pushed or committed** to GitHub. Integrate into the existing repository intentionally.
+- **Remote:** Phase 1 work is committed **locally only**; nothing has been pushed.
+
+## What exists now (Phase 1)
+
+A small playable exploration slice, built entirely from code: `MainMenu` (Play / Quit over a dusk backdrop) → `Valley` (third-person WASD + mouse, one valley with a ruined landmark, workshop cottage, pond and stream, trees and flowers). Press **E** at four interactables (the villager, the alchemy workshop, the ruined spring, the Heart of the Valley) to complete *Discover the Heart of the Valley*, which warms the light and wakes the crystal. **Esc** opens the pause menu (Resume / Main Menu / Quit).
+
+Not built yet: gathering, inventory, crafting, the chicken, save/load, `ResonanceStage` restoration and audio (Phase 2+). The workshop and ending text say so in-game.
 
 ## Exact MVP (10–15-minute goal; max 20-minute target)
 
@@ -30,19 +36,26 @@ The signature feature is **Valley Resonance**: each important restoration create
 3. [03 — Jam rules, provenance and AI disclosure](docs/03-RULES-CREDITS.md)
 4. [04 — Verified Phase 0.5 baseline](docs/04-BASELINE.md)
 
-## Code-first Unity initialization (Windows)
+## Unity project (Windows)
 
-Requires the already verified Unity Editor 6000.3.27f1 with a valid Personal license, Windows PowerShell and sufficient D: disk space. From the repository root:
+`game/` is a Unity **6000.3.27f1** Universal 3D (URP) project: Windows x64 Mono + D3D11, Input System only. It needs the verified Editor at `D:\Unity\Downloads\6000.3.27f1\Editor\Unity.exe`, a valid Personal license and free space on D:.
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\Init-Unity.ps1
-```
+**Open it:** add `game/` in Unity Hub, or run `Unity.exe -projectPath game`. Open `Assets/Echoes/Scenes/MainMenu.unity` (the startup scene) and press Play.
 
-This script uses Unity batchmode to create `game/` from Unity's own Universal 3D template, generates a basic owned-content folder layout and leaves logs in ignored `artifacts/bootstrap/`. It **never overwrites** an existing Unity project. It does **not** create gameplay or count as Phase 1 PASS. Open or batch-build the generated project and follow [Phase 1](docs/02-BUILD-PLAN.md) for genuine tests.
+**Commands** (from the repository root; logs, test XML, screenshots and builds go to the git-ignored `artifacts/`):
 
-**Existing GitHub repo migration:** keep Git history and the original Phase 0.5 evidence commit. Unpack this ZIP separately and review its diff before copying it into your existing checkout. After confirming the new four docs cover your needs, remove the ten old tracked `docs/00-...09-...` files from the **working tree only**, commit the intentional replacement, and push only if you choose. Simply extracting this ZIP on top of the old repository will **not** remove those old docs.
+| Command | What it does |
+| --- | --- |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\Init-Unity.ps1` | One-time creation of `game/` from Unity's own URP template; refuses to overwrite an existing project. Already done. |
+| `.\tools\Invoke-Echoes.ps1 -Task Setup` | Compile, configure player/URP settings, and (re)generate materials, prefabs and the `MainMenu` and `Valley` scenes. Idempotent: it rebuilds the scenes from code, so running it twice does not duplicate anything. |
+| `.\tools\Invoke-Echoes.ps1 -Task TestEdit` / `-Task TestPlay` | EditMode / PlayMode tests (batch mode, results in `artifacts\logs`). |
+| `.\tools\Invoke-Echoes.ps1 -Task Preview` | Render editor camera shots of both scenes (no Play Mode, no UI overlay). |
+| `.\tools\Invoke-Echoes.ps1 -Task Build` | Windows x64 Mono development build to `artifacts\build\win64\EchoesOfTheValley.exe`. |
+| `.\tools\Invoke-Echoes.ps1 -Task Smoke` | Start that build with `-echoes-smoke`: a scripted pass through menu, movement, all interactions, the objective, pause and back to the menu, saving screenshots and exiting with code 0 (pass) or 1. It calls the game's public entry points; it is **not** a human playtest. |
 
-Manual fallback: create a **Universal 3D (URP)** Unity 6000.3.27f1 project in `game/` and keep `.meta` files, `Packages/manifest.json`, `Packages/packages-lock.json` and `ProjectSettings/` in version control.
+Scenes and prefabs are **generated**: edit `game/Assets/Echoes/Scripts/Editor` (also under the **Echoes** menu in the Editor) and re-run `Setup` rather than editing `.unity`/`.prefab` files by hand.
+
+**Controls:** WASD/arrows move relative to the camera, mouse looks, **E** interacts, **Esc** pauses.
 
 ## Rights and attribution
 

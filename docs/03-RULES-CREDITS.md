@@ -13,20 +13,28 @@ Official sources: [jam page](https://itch.io/jam/thatgamejam02) · [FAQ](https:/
 
 ## Actual-use register
 
-**No actual game asset is included in this starter ZIP.** Fill the following **for each asset actually admitted**:
+**No third-party art, audio, model, font or texture file is committed.** Fill the following **for each external asset actually admitted**:
 
 | Local path | Exact source, creator, URL | Exact license / proof | Edits and required credit | Source/Git/game redistribution OK? |
 | --- | --- | --- | --- | --- |
 | *(none yet)* | — | — | — | — |
 
+**Phase 1 content is code-generated** (`game/Assets/Echoes/Scripts/Editor`): primitive-built characters, scenery and landmarks, flat-colour materials and a procedural terrain. It also uses resources that ship inside Unity itself and are not committed: the built-in primitive meshes, the built-in UI sprite `UI/Skin/UISprite.psd`, the built-in font `LegacyRuntime.ttf` and the procedural skybox shader. Confirm the Unity Personal terms and any font notice before submission.
+
 Hold packs with unclear license (including conflicting Quaternius/QAL claims) until verified. Prefer owned/CC0 art; avoid noncommercial and ripped content. Do not mistake a license allowing game use for permission to publish raw source assets.
 
 ## Actual AI record and final template
 
-**Known 2026-10-25:** AI assisted planning, documentation, source-rule review and **signal-based** interpretation of the theme track. No generated game-ready model, texture, animation, audio, playable code or built game is included in this ZIP. Subsequent AI use in development must be logged by date, tool, path, purpose and human review.
+**Known 2026-10-25 (earlier):** AI assisted planning, documentation, source-rule review and **signal-based** interpretation of the theme track. No generated model, texture, animation or audio was added at that stage.
+
+| Date | Tool | Paths | Purpose | Human review |
+| --- | --- | --- | --- | --- |
+| 2026-10-25 | Anthropic Claude Code (Claude Sonnet 5.5) | `game/Assets/Echoes/**/*.cs`, `*.asmdef`, `tools/Invoke-Echoes.ps1`, `CLAUDE.md`, doc updates; generated materials, prefabs, scenes and terrain data under `game/Assets/Echoes` | Wrote all Phase 1 gameplay, UI, Editor-automation and test code, ran the Unity batch tooling, and generated the graybox scenes from code | **Pending** - the developer has not yet read or playtested it |
+
+Subsequent AI use must be logged here by date, tool, path, purpose and human review. No AI-generated image, audio, model or texture file is committed; the graybox visuals are produced procedurally by the code above.
 
 The submission description must be edited to reflect the **final** shipping work. Starting wording:
 
-> This game contains AI-assisted content. OpenAI/Codex assisted with research, planning, documentation and [replace with the verified final coding/art/text scope]. The final shipped AI-generated assets are [exact list, or an audited statement that none are included].
+> This game contains AI-assisted content. AI coding assistants (OpenAI Codex for early planning and documentation; Anthropic Claude Code for [replace with the verified final coding/art/text scope]) assisted with research, planning, documentation and code. The final shipped AI-generated assets are [exact list, or an audited statement that none are included].
 
 Replace every bracketed placeholder before upload. Keep source code under the repository MIT license **only for original code**; art, audio, docs, font and theme recording are **not MIT-licensed**. Include actual license notices and credits in the final game/entry.
