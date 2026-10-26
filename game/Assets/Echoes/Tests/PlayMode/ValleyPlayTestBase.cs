@@ -61,6 +61,9 @@ namespace Echoes.Tests
         protected WorkshopInteractable workshop;
         protected SpringInteractable spring;
         protected HeartInteractable heart;
+        protected GardenKeeperInteractable keeper;
+        protected WindmillRestorerInteractable restorer;
+        protected EndingPanel endingPanel;
 
         protected GameSession Session => GameSession.Current;
 
@@ -102,6 +105,9 @@ namespace Echoes.Tests
             workshop = Object.FindFirstObjectByType<WorkshopInteractable>();
             spring = Object.FindFirstObjectByType<SpringInteractable>();
             heart = Object.FindFirstObjectByType<HeartInteractable>();
+            keeper = Object.FindFirstObjectByType<GardenKeeperInteractable>();
+            restorer = Object.FindFirstObjectByType<WindmillRestorerInteractable>();
+            endingPanel = Object.FindFirstObjectByType<EndingPanel>();
         }
 
         protected ResourceNode Node(string id) =>
@@ -177,6 +183,72 @@ namespace Echoes.Tests
             yield return StandNextTo(spring);
             InteractAndReadAll(spring);
             Assert.AreEqual(StreamQuestStage.Completed, Session.StreamQuest);
+        }
+
+        /// <summary>Feeds Clover and lets her lay, using the real hen interaction. The wait is the session clock the host ticks every frame.</summary>
+        protected IEnumerator FeedCloverAndWaitForTheEgg()
+        {
+            yield return StandNextTo(hen);
+            Assert.IsTrue(detector.TryInteract(), "feeding Clover");
+            Assert.AreEqual(ChickenPhase.Producing, Session.Chicken);
+            Session.Tick(GameSession.ChickenProductionSeconds + 0.5f);
+            yield return null;
+            Assert.AreEqual(ChickenPhase.EggReady, Session.Chicken);
+        }
+
+        /// <summary>Quest 2 through real interactions: Wren, a blossom, Chicken Feed, the hen, the egg, and back to Wren.</summary>
+        protected IEnumerator RestoreTheGarden()
+        {
+            yield return RestoreTheStream();
+            yield return StandNextTo(keeper);
+            InteractAndReadAll(keeper);
+            Assert.AreEqual(QuestStage.Active, Session.GardenQuest);
+
+            yield return GatherFrom("flower_2");
+            yield return CraftAtWorkshop(1);
+            Assert.AreEqual(3, Session.Inventory.Count(ItemIds.ChickenFeed));
+            yield return FeedCloverAndWaitForTheEgg();
+            Assert.IsTrue(detector.TryInteract(), "collecting the egg");
+            Assert.AreEqual(1, Session.Inventory.Count(ItemIds.Egg));
+
+            yield return StandNextTo(keeper);
+            InteractAndReadAll(keeper);
+            Assert.AreEqual(QuestStage.Completed, Session.GardenQuest);
+            Assert.AreEqual(ResonanceStage.BloomingGarden, Session.Resonance);
+        }
+
+        /// <summary>Gathers the four Echo Ore nodes by interaction and mixes Windmill Braces at the workshop.</summary>
+        protected IEnumerator CraftWindmillBraces()
+        {
+            foreach (string id in new[] { "ore_1", "ore_2", "ore_3", "ore_4" }) yield return GatherFrom(id);
+            Assert.AreEqual(4, Session.Inventory.Count(ItemIds.Ore));
+            yield return CraftAtWorkshop(2);
+            Assert.AreEqual(1, Session.Inventory.Count(ItemIds.WindmillBraces));
+            Assert.AreEqual(0, Session.Inventory.Count(ItemIds.Ore));
+        }
+
+        /// <summary>Quest 3 through real interactions: Alder, four ore, the braces, and back to Alder.</summary>
+        protected IEnumerator RestoreTheWindmill()
+        {
+            yield return RestoreTheGarden();
+            yield return StandNextTo(restorer);
+            InteractAndReadAll(restorer);
+            Assert.AreEqual(QuestStage.Active, Session.WindmillQuest);
+
+            yield return CraftWindmillBraces();
+            yield return StandNextTo(restorer);
+            InteractAndReadAll(restorer);
+            Assert.AreEqual(QuestStage.Completed, Session.WindmillQuest);
+            Assert.AreEqual(ResonanceStage.RestoredValley, Session.Resonance);
+        }
+
+        /// <summary>The whole game up to the closing conversation with Mira, which opens the ending screen.</summary>
+        protected IEnumerator PlayToTheEnding()
+        {
+            yield return RestoreTheWindmill();
+            yield return StandNextTo(npc);
+            InteractAndReadAll(npc);
+            Assert.IsTrue(endingPanel.IsOpen, "the closing conversation opens the ending");
         }
 
         /// <summary>Reloads the Valley the way the Continue button does.</summary>

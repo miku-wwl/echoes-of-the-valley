@@ -120,9 +120,28 @@ namespace Echoes.EditorTools
             Text saveStatus = UiKit.Label(root, "SaveStatus", "No saved game yet.", 26, new Color(1f, 0.95f, 0.84f, 0.95f), TextAnchor.MiddleCenter);
             saveStatus.rectTransform.Place(UiKit.Center, UiKit.Center, new Vector2(0f, -250f), new Vector2(1200f, 40f));
 
-            Text footer = UiKit.Label(root, "Footer", "A quiet valley is waiting to be heard   |   Phase 2 prototype   |   thatgamejam #02", 24,
+            Text footer = UiKit.Label(root, "Footer", "A quiet valley is waiting to be heard   |   Phase 3 greybox   |   thatgamejam #02", 24,
                 new Color(1f, 0.95f, 0.84f, 0.85f), TextAnchor.LowerCenter);
             footer.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 26f), new Vector2(1500f, 40f));
+
+            // "Start a new game?" - shown only when a save exists; the save is not touched by asking
+            Image dim = UiKit.Panel(root, "ConfirmPanel", new Color(0.04f, 0.03f, 0.08f, 0.72f), false);
+            dim.rectTransform.Fill();
+            dim.raycastTarget = true;
+            Image box = UiKit.Panel(dim.transform, "Box", new Color(0.08f, 0.11f, 0.18f, 0.96f));
+            box.rectTransform.Place(UiKit.Center, UiKit.Center, Vector2.zero, new Vector2(1180f, 520f));
+            Text question = UiKit.Label(box.transform, "Question", "Start a new game?", 66, UiKit.Gold, TextAnchor.UpperCenter, FontStyle.Bold);
+            question.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -36f), new Vector2(1080f, 88f));
+            Text message = UiKit.Label(box.transform, "Message", "You have a saved game.", 34, UiKit.Cream, TextAnchor.UpperCenter);
+            message.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -144f), new Vector2(1020f, 190f));
+            Button startNew = UiKit.MakeButton(box.transform, "ConfirmButton", "Start New Game", UiKit.BottomCenter, new Vector2(-270f, 84f), new Vector2(470f, 84f));
+            Button cancel = UiKit.MakeButton(box.transform, "CancelButton", "Cancel", UiKit.BottomCenter, new Vector2(270f, 84f), new Vector2(380f, 84f));
+
+            Wire.Set(controller, "confirmPanel", dim.gameObject);
+            Wire.Set(controller, "confirmText", message);
+            Wire.Set(controller, "confirmButton", startNew);
+            Wire.Set(controller, "cancelButton", cancel);
+            dim.gameObject.SetActive(false);
 
             Wire.Set(controller, "continueButton", continueGame);
             Wire.Set(controller, "playButton", play);

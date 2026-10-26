@@ -4,9 +4,9 @@ namespace Echoes
 {
     /// <summary>
     /// The only writer of the valley's mood (sun, ambient, fog, sky). It captures the muted scene values once and composes
-    /// two independent contributions every time they change: the Heart payoff (muted -> awakened) and the restored stream
-    /// (an extra golden-hour shift added on top). Because the shift is additive, the two can happen in any order and a
-    /// loaded game can set both instantly.
+    /// independent contributions every time they change: the Heart payoff (muted -> awakened) and three additive warm shifts,
+    /// one per restoration (stream, garden, windmill). Because the shifts are additive, they can happen in any order, they
+    /// never undo each other, and a loaded game can set all of them instantly.
     /// </summary>
     public class ValleyLighting : MonoBehaviour
     {
@@ -34,17 +34,40 @@ namespace Echoes
         [SerializeField] Color streamSkyTintShift = new Color(0.05f, 0f, -0.05f, 0f);
         [SerializeField] float streamExposureShift = 0.12f;
 
+        [Header("Garden blooming (added on top)")]
+        [SerializeField] Color gardenSunShift = new Color(0f, -0.02f, -0.05f, 0f);
+        [SerializeField] float gardenSunIntensityShift = 0.06f;
+        [SerializeField] Color gardenAmbientShift = new Color(0.03f, 0.02f, -0.02f, 0f);
+        [SerializeField] Color gardenFogShift = new Color(0.01f, 0f, -0.03f, 0f);
+        [SerializeField] Color gardenSkyTintShift = new Color(0.03f, 0f, -0.03f, 0f);
+        [SerializeField] float gardenExposureShift = 0.05f;
+
+        [Header("Windmill turning: the golden hour (added on top)")]
+        [SerializeField] Color valleySunShift = new Color(0f, -0.05f, -0.12f, 0f);
+        [SerializeField] float valleySunIntensityShift = 0.05f;
+        [SerializeField] float valleySunPitchShift = -10f;
+        [SerializeField] Color valleyAmbientShift = new Color(0.05f, 0.02f, -0.05f, 0f);
+        [SerializeField] Color valleyFogShift = new Color(0.03f, -0.01f, -0.07f, 0f);
+        [SerializeField] float valleyFogDensityShift = -0.0008f;
+        [SerializeField] Color valleySkyTintShift = new Color(0.06f, 0f, -0.06f, 0f);
+        [SerializeField] float valleyExposureShift = 0.10f;
+
         Color baseSun, baseAmbientSky, baseAmbientEquator, baseAmbientGround, baseFog, baseSkyTint;
         float baseSunIntensity, baseFogDensity, baseExposure;
+        Quaternion baseSunRotation;
         Material skyMaterial;
         bool captured;
         bool dirty = true;
         float heartBlend;
         float streamBlend;
+        float gardenBlend;
+        float valleyBlend;
 
         public Light Sun => sun;
         public float HeartBlend => heartBlend;
         public float StreamBlend => streamBlend;
+        public float GardenBlend => gardenBlend;
+        public float ValleyBlend => valleyBlend;
 
         public void SetHeartBlend(float blend)
         {
@@ -55,6 +78,18 @@ namespace Echoes
         public void SetStreamBlend(float blend)
         {
             streamBlend = Mathf.Clamp01(blend);
+            dirty = true;
+        }
+
+        public void SetGardenBlend(float blend)
+        {
+            gardenBlend = Mathf.Clamp01(blend);
+            dirty = true;
+        }
+
+        public void SetValleyBlend(float blend)
+        {
+            valleyBlend = Mathf.Clamp01(blend);
             dirty = true;
         }
 
@@ -79,6 +114,7 @@ namespace Echoes
             {
                 baseSun = sun.color;
                 baseSunIntensity = sun.intensity;
+                baseSunRotation = sun.transform.rotation;
             }
             baseAmbientSky = RenderSettings.ambientSkyColor;
             baseAmbientEquator = RenderSettings.ambientEquatorColor;
@@ -99,32 +135,42 @@ namespace Echoes
         {
             float h = heartBlend;
             float s = streamBlend;
+            float g = gardenBlend;
+            float v = valleyBlend;
 
             if (sun != null)
             {
-                sun.color = Compose(baseSun, heartSun, streamSunShift, h, s);
-                sun.intensity = Mathf.Lerp(baseSunIntensity, heartSunIntensity, h) + streamSunIntensityShift * s;
+                sun.color = Compose(baseSun, heartSun, h, Shift(streamSunShift, s, gardenSunShift, g, valleySunShift, v));
+                sun.intensity = Mathf.Lerp(baseSunIntensity, heartSunIntensity, h)
+                    + streamSunIntensityShift * s + gardenSunIntensityShift * g + valleySunIntensityShift * v;
+                // The golden hour: the sun sinks a little, so shadows lengthen and the light turns sideways.
+                sun.transform.rotation = baseSunRotation * Quaternion.Euler(valleySunPitchShift * v, 0f, 0f);
             }
-            RenderSettings.ambientSkyColor = Compose(baseAmbientSky, heartAmbientSky, streamAmbientShift, h, s);
-            RenderSettings.ambientEquatorColor = Compose(baseAmbientEquator, heartAmbientEquator, streamAmbientShift, h, s);
-            RenderSettings.ambientGroundColor = Compose(baseAmbientGround, heartAmbientGround, streamAmbientShift, h, s);
-            RenderSettings.fogColor = Compose(baseFog, heartFog, streamFogShift, h, s);
-            RenderSettings.fogDensity = baseFogDensity + streamFogDensityShift * s;
+
+            Color ambientShift = Shift(streamAmbientShift, s, gardenAmbientShift, g, valleyAmbientShift, v);
+            RenderSettings.ambientSkyColor = Compose(baseAmbientSky, heartAmbientSky, h, ambientShift);
+            RenderSettings.ambientEquatorColor = Compose(baseAmbientEquator, heartAmbientEquator, h, ambientShift);
+            RenderSettings.ambientGroundColor = Compose(baseAmbientGround, heartAmbientGround, h, ambientShift);
+            RenderSettings.fogColor = Compose(baseFog, heartFog, h, Shift(streamFogShift, s, gardenFogShift, g, valleyFogShift, v));
+            RenderSettings.fogDensity = baseFogDensity + streamFogDensityShift * s + valleyFogDensityShift * v;
 
             if (skyMaterial != null)
             {
-                skyMaterial.SetColor(SkyTintId, Compose(baseSkyTint, heartSkyTint, streamSkyTintShift, h, s));
-                skyMaterial.SetFloat(ExposureId, Mathf.Lerp(baseExposure, heartSkyExposure, h) + streamExposureShift * s);
+                skyMaterial.SetColor(SkyTintId, Compose(baseSkyTint, heartSkyTint, h, Shift(streamSkyTintShift, s, gardenSkyTintShift, g, valleySkyTintShift, v)));
+                skyMaterial.SetFloat(ExposureId, Mathf.Lerp(baseExposure, heartSkyExposure, h)
+                    + streamExposureShift * s + gardenExposureShift * g + valleyExposureShift * v);
             }
         }
 
-        static Color Compose(Color baseColor, Color heartColor, Color streamShift, float heart, float stream)
+        static Color Shift(Color stream, float s, Color garden, float g, Color valley, float v) => stream * s + garden * g + valley * v;
+
+        static Color Compose(Color baseColor, Color heartColor, float heart, Color shift)
         {
             Color mixed = Color.Lerp(baseColor, heartColor, heart);
             return new Color(
-                Mathf.Clamp01(mixed.r + streamShift.r * stream),
-                Mathf.Clamp01(mixed.g + streamShift.g * stream),
-                Mathf.Clamp01(mixed.b + streamShift.b * stream),
+                Mathf.Clamp01(mixed.r + shift.r),
+                Mathf.Clamp01(mixed.g + shift.g),
+                Mathf.Clamp01(mixed.b + shift.b),
                 1f);
         }
     }

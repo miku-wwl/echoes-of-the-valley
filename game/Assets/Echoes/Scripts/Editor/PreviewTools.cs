@@ -37,11 +37,35 @@ namespace Echoes.EditorTools
             Shot(camera, directory, "valley-8-herbs", At(-14f, 4f, 2.4f), At(-19.5f, 8.5f, 0.3f));
             Shot(camera, directory, "valley-9-flowers-ore", At(30f, 12f, 3f), At(35f, 18f, 0.6f));
 
-            ShowStageOne();
+            // Phase 3 places in their silent state (stage 0): the withered garden, the broken windmill, the new villagers
+            Vector2 garden = ValleyLayout.Garden;
+            Vector2 mill = ValleyLayout.Windmill;
+            Shot(camera, directory, "valley-12-garden-dormant", At(garden.x - 10f, garden.y - 5f, 3.4f), At(garden.x, garden.y, 0.6f));
+            Shot(camera, directory, "valley-13-windmill-broken", At(mill.x - 3f, mill.y - 18f, 3.6f), At(mill.x, mill.y, 4.6f));
+            Shot(camera, directory, "valley-14-windmill-broken-close", At(mill.x - 7f, mill.y - 9f, 3.2f), At(mill.x, mill.y, 6.4f));
+            Shot(camera, directory, "valley-15-keeper-slumped", At(ValleyLayout.GardenKeeper.x + 2f, ValleyLayout.GardenKeeper.y - 2.6f, 1.8f),
+                At(ValleyLayout.GardenKeeper.x, ValleyLayout.GardenKeeper.y, 1.0f));
+            Shot(camera, directory, "valley-16-restorer", At(ValleyLayout.WindmillRestorer.x - 2.6f, ValleyLayout.WindmillRestorer.y - 2.4f, 1.8f),
+                At(ValleyLayout.WindmillRestorer.x, ValleyLayout.WindmillRestorer.y, 1.0f));
+
+            ShowStage(1);
             Shot(camera, directory, "valley-10-stage1-spring", new Vector3(-8f, 4.5f, 6f), new Vector3(-23f, 0.5f, 10f));
             Shot(camera, directory, "valley-11-stage1-stream", At(-16f, -2f, 5f), At(-27f, -4f, 0f));
 
             Shot(camera, directory, "valley-7b-hen-yard", At(27.5f, -10f, 2.2f), At(22f, -5f, 0.5f));
+
+            // Stage 2: the garden in bloom and the lively hen yard
+            ShowStage(2);
+            Shot(camera, directory, "valley-17-stage2-garden", At(garden.x - 10f, garden.y - 5f, 3.4f), At(garden.x, garden.y, 0.6f));
+            Shot(camera, directory, "valley-18-stage2-garden-close", At(garden.x - 6.5f, garden.y - 1.5f, 1.8f), At(garden.x + 1f, garden.y, 0.5f));
+            Shot(camera, directory, "valley-19-stage2-hen-yard", At(27.5f, -10f, 2.4f), At(22f, -5f, 0.8f));
+
+            // Stage 3: the mended windmill (the turning is runtime-only), lanterns and flowers through the village
+            ShowStage(3);
+            Shot(camera, directory, "valley-20-stage3-windmill", At(mill.x - 3f, mill.y - 18f, 3.6f), At(mill.x, mill.y, 4.6f));
+            Shot(camera, directory, "valley-21-stage3-windmill-close", At(mill.x - 7f, mill.y - 9f, 3.2f), At(mill.x, mill.y, 6.4f));
+            Shot(camera, directory, "valley-22-stage3-plaza", At(-12f, -12f, 3.6f), At(0f, 0f, 1.6f));
+            Shot(camera, directory, "valley-23-stage3-overview", new Vector3(0f, 44f, -50f), new Vector3(0f, 0f, 4f));
 
             CaptureValleyUi(directory);
 
@@ -50,6 +74,10 @@ namespace Echoes.EditorTools
             Canvas menuCanvas = UnityEngine.Object.FindFirstObjectByType<Canvas>();
             ShowCanvasInCamera(menuCanvas, Camera.main);
             Shot(Camera.main, directory, "ui-main-menu", Camera.main.transform.position, new Vector3(0f, 4f, 22f), 1280, 720);
+            menuCanvas.transform.Find("ConfirmPanel").gameObject.SetActive(true);
+            SetText(menuCanvas.transform, "ConfirmPanel/Box/Message",
+                "You have a saved game. Starting a new game replaces it the first time the new game saves. Continue keeps it until then.");
+            Shot(Camera.main, directory, "ui-main-menu-confirm", Camera.main.transform.position, new Vector3(0f, 4f, 22f), 1280, 720);
             Debug.Log("[Echoes] Preview shots written to " + directory);
         }
 
@@ -108,7 +136,7 @@ namespace Echoes.EditorTools
             SetText(crafting, "RecipeName1", "[2]  Chicken Feed");
             SetText(crafting, "RecipeDetail1", "<color=#ff8f8f>Dawn Blossom 0/1</color>\nOne blossom makes three portions for Clover.  Makes 3 x Chicken Feed.");
             SetText(crafting, "RecipeName2", "[3]  Windmill Braces");
-            SetText(crafting, "RecipeDetail2", "<color=#ff8f8f>Echo Ore 1/4</color>\nRinging ore struts. Kept for the windmill, a later task.  Makes Windmill Braces.");
+            SetText(crafting, "RecipeDetail2", "<color=#ff8f8f>Echo Ore 1/4</color>\nRinging ore struts. They mend the old windmill.  Makes Windmill Braces.");
             SetText(crafting, "Status", "Crafted Spring Tonic.");
             crafting.gameObject.SetActive(true);
             Shot(camera, directory, "ui-crafting", position, lookAt, 1280, 720);
@@ -116,6 +144,28 @@ namespace Echoes.EditorTools
 
             root.Find("PauseMenu").gameObject.SetActive(true);
             Shot(camera, directory, "ui-pause", position, lookAt, 1280, 720);
+            root.Find("PauseMenu").gameObject.SetActive(false);
+
+            // Phase 3 text: the longest objective, prompt, banner and dialogue speaker, so any overflow shows up
+            SetText(root, "ObjectivePanel/Heading", QuestLog.GardenHeading);
+            SetText(root, "ObjectivePanel/Body", "Gather a Dawn Blossom, mix Chicken Feed at the workshop, then feed Clover.");
+            SetText(root, "InteractionPrompt/Text", "[E]  Talk to Alder, the Windmill Restorer");
+            SetText(root, "Banner/Title", "The Garden Blooms");
+            SetText(root, "Banner/Subtitle", "Colour and warmth spread through the village.");
+            root.Find("Banner").GetComponent<CanvasGroup>().alpha = 1f;
+            root.Find("InteractionPrompt").gameObject.SetActive(true);
+            Shot(camera, directory, "ui-hud-garden", position, lookAt, 1280, 720);
+            root.Find("Banner").GetComponent<CanvasGroup>().alpha = 0f;
+            root.Find("InteractionPrompt").gameObject.SetActive(false);
+
+            SetText(root, "Dialogue/Speaker", "Alder, the Windmill Restorer");
+            SetText(root, "Dialogue/Line", "I need Windmill Braces to mend the supports. Gather 4 Echo Ore from the pale outcrops around the valley's edge (you have 0), mix Windmill Braces at the workshop and bring them here.");
+            root.Find("Dialogue").gameObject.SetActive(true);
+            Shot(camera, directory, "ui-dialogue-alder", position, lookAt, 1280, 720);
+            root.Find("Dialogue").gameObject.SetActive(false);
+
+            root.Find("EndingPanel").gameObject.SetActive(true);
+            Shot(camera, directory, "ui-ending", position, lookAt, 1280, 720);
         }
 
         static void ShowCanvasInCamera(Canvas canvas, Camera camera)
@@ -138,20 +188,45 @@ namespace Echoes.EditorTools
             return new Vector3(x, terrain.SampleHeight(new Vector3(x, 0f, z)) + terrain.transform.position.y + above, z);
         }
 
-        /// <summary>Edit-mode stand-in for ResonanceView's stage 1 (the real one runs in Play Mode): swaps the water, shows the blooms.</summary>
-        static void ShowStageOne()
+        /// <summary>
+        /// Edit-mode stand-in for ResonanceView (the real one runs in Play Mode): shows the objects each stage switches on, so the
+        /// still shots show every stage's world. Lighting shifts, the pulse and the windmill's turning only exist at run time.
+        /// </summary>
+        static void ShowStage(int stage)
         {
             ResonanceView view = UnityEngine.Object.FindFirstObjectByType<ResonanceView>();
             SerializedObject so = new SerializedObject(view);
-            ((GameObject)so.FindProperty("troubledStream").objectReferenceValue).SetActive(false);
-            ((GameObject)so.FindProperty("clearStream").objectReferenceValue).SetActive(true);
-            ((GameObject)so.FindProperty("bloomRoot").objectReferenceValue).SetActive(true);
-            Material clear = (Material)so.FindProperty("clearWater").objectReferenceValue;
-            ((Renderer)so.FindProperty("pond").objectReferenceValue).sharedMaterial = clear;
+            bool stream = stage >= 1;
+            bool garden = stage >= 2;
+            bool valley = stage >= 3;
+
+            SetActive(so, "troubledStream", !stream);
+            SetActive(so, "clearStream", stream);
+            SetActive(so, "bloomRoot", stream);
+            Material water = (Material)so.FindProperty(stream ? "clearWater" : "murkyWater").objectReferenceValue;
+            ((Renderer)so.FindProperty("pond").objectReferenceValue).sharedMaterial = water;
             Renderer springWater = (Renderer)so.FindProperty("springWater").objectReferenceValue;
-            springWater.sharedMaterial = clear;
-            springWater.transform.localScale = so.FindProperty("springWaterFull").vector3Value;
+            springWater.sharedMaterial = water;
+            springWater.transform.localScale = so.FindProperty(stream ? "springWaterFull" : "springWaterDry").vector3Value;
+
+            SetActive(so, "gardenDormant", !garden);
+            SetActive(so, "gardenBloomRoot", garden);
+            SetActive(so, "yardLifeRoot", garden);
+            SetActive(so, "villageLifeRoot", valley);
+            SerializedProperty damaged = so.FindProperty("windmillDamaged");
+            SerializedProperty repaired = so.FindProperty("windmillRepaired");
+            for (int i = 0; i < damaged.arraySize; i++) ((GameObject)damaged.GetArrayElementAtIndex(i).objectReferenceValue).SetActive(!valley);
+            for (int i = 0; i < repaired.arraySize; i++) ((GameObject)repaired.GetArrayElementAtIndex(i).objectReferenceValue).SetActive(valley);
+
+            // The mood of the later stages, approximated for stills: a warmer, lower sun
+            Light sun = (Light)new SerializedObject(UnityEngine.Object.FindFirstObjectByType<ValleyLighting>()).FindProperty("sun").objectReferenceValue;
+            sun.color = stage >= 3 ? new Color(1f, 0.74f, 0.42f) : stage >= 2 ? new Color(1f, 0.82f, 0.58f) : new Color(1f, 0.86f, 0.62f);
+            sun.intensity = 1.35f + 0.1f * stage;
+            sun.transform.rotation = Quaternion.Euler(stage >= 3 ? 38f : 48f, 38f, 0f);
         }
+
+        static void SetActive(SerializedObject owner, string field, bool active) =>
+            ((GameObject)owner.FindProperty(field).objectReferenceValue).SetActive(active);
 
         static void Shot(Camera camera, string directory, string name, Vector3 position, Vector3 lookAt, int width = Width, int height = Height)
         {

@@ -23,7 +23,7 @@ namespace Echoes
     /// <summary>
     /// The three recipes from docs/01-GAME-DESIGN.md. The design fixes the 2 herbs for the Spring Tonic and the 4 ore
     /// for the Windmill Braces; the rest are first-pass tuning: a blossom is the catalyst for tonic, and one blossom
-    /// mixes three portions of feed. Windmill Braces are crafted now and delivered in a later phase.
+    /// mixes three portions of feed. Phase 3 adds no recipe: the Spring Tonic, an egg and the braces are the three deliveries.
     /// </summary>
     public static class RecipeBook
     {
@@ -39,7 +39,7 @@ namespace Echoes
             new Recipe(ChickenFeed, "Chicken Feed", "One blossom makes three portions for Clover.",
                 new[] { new ItemAmount(ItemIds.Flower, 1) },
                 new ItemAmount(ItemIds.ChickenFeed, 3)),
-            new Recipe(WindmillBraces, "Windmill Braces", "Ringing ore struts. Kept for the windmill, a later task.",
+            new Recipe(WindmillBraces, "Windmill Braces", "Ringing ore struts. They mend the old windmill.",
                 new[] { new ItemAmount(ItemIds.Ore, 4) },
                 new ItemAmount(ItemIds.WindmillBraces, 1))
         };

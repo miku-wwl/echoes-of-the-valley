@@ -54,6 +54,13 @@ namespace Echoes.EditorTools
             PlaceHen(gameplay, terrain, prefabs);
             GameObject bloom = BuildBloom(gameplay, terrain, prefabs);
 
+            // Phase 3: the garden, the windmill, the hen yard's decorations and the village's lanterns and flowers.
+            // Each has a "before" and an "after" that ResonanceView switches between; none of it is static.
+            GardenParts garden = Phase3Pieces.Garden(gameplay, Ground(terrain, ValleyLayout.Garden), m);
+            WindmillParts windmill = Phase3Pieces.Windmill(gameplay, Ground(terrain, ValleyLayout.Windmill), ValleyLayout.WindmillYaw, m);
+            GameObject yardLife = Phase3Pieces.YardLife(gameplay, Ground(terrain, ValleyLayout.HenYard), m);
+            GameObject villageLife = BuildVillageLife(gameplay, terrain, prefabs, m);
+
             // ---- Player, camera ----
             Vector3 spawnPosition = Ground(terrain, ValleyLayout.Spawn) + Vector3.up * 0.1f;
             Transform spawn = new GameObject("SpawnPoint").transform;
@@ -82,6 +89,7 @@ namespace Echoes.EditorTools
 
             // ---- UI and game systems ----
             BuildHud(out HudController hud, out DialogueBox dialogue, out PauseController pause, out GameplayUi ui);
+            EndingPanel ending = GameplayUiBuilder.BuildEnding(hud.GetComponent<Canvas>(), rig);
             SceneKit.CreateEventSystem();
 
             GameObject systems = new GameObject("GameSystems");
@@ -114,12 +122,38 @@ namespace Echoes.EditorTools
             Wire.Set(resonance, "pulse", GameplayPieces.Pulse(spring));
             Wire.Set(resonance, "fountain", GameplayPieces.Fountain(spring));
 
-            // ---- Interactables: all four use the same Interactable framework ----
-            GameObject villager = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.Villager);
-            villager.name = "Mira";
-            villager.transform.position = Ground(terrain, ValleyLayout.Villager);
-            villager.transform.rotation = Quaternion.LookRotation(new Vector3(-ValleyLayout.Villager.x, 0f, -ValleyLayout.Villager.y));
-            Configure(villager.AddComponent<NpcInteractable>(), "Talk to Mira", 3f, "Mira", dialogue, objective);
+            // The garden (stage 2) and the windmill (stage 3)
+            Wire.Set(resonance, "gardenDormant", garden.Dormant);
+            Wire.Set(resonance, "gardenBloomRoot", garden.Bloom);
+            Wire.Set(resonance, "yardLifeRoot", yardLife);
+            Wire.Set(resonance, "gardenMotes", Phase3Pieces.Motes(garden.Root, "GardenMotes", new Vector3(0f, 1.3f, 0f), new Vector3(9f, 1.6f, 7f),
+                9f, 90, new Color(1f, 0.80f, 0.90f, 1f), new Color(1f, 0.95f, 0.62f, 1f), 0.16f));
+            Wire.Set(resonance, "gardenPulse", GameplayPieces.RingPulse(garden.Root, "GardenPulse", new Vector3(0f, 0.4f, 0f), 8f, 2.2f, 0.35f, 110,
+                new Color(1f, 0.82f, 0.72f, 1f)));
+
+            WindmillRotator rotator = windmill.Root.gameObject.AddComponent<WindmillRotator>();
+            Wire.Set(rotator, "sails", windmill.SailsPivot);
+            Wire.Set(resonance, "windmill", rotator);
+            Wire.Set(resonance, "windmillDamaged", windmill.Damaged);
+            Wire.Set(resonance, "windmillRepaired", windmill.Repaired);
+            Wire.Set(resonance, "villageLifeRoot", villageLife);
+            Transform valleyMotes = Pieces.Group("ValleyMotesRoot", gameplay, Ground(terrain, ValleyLayout.Heart) + Vector3.up * 4f);
+            Wire.Set(resonance, "valleyMotes", Phase3Pieces.Motes(valleyMotes, "ValleyMotes", Vector3.zero, new Vector3(80f, 8f, 80f),
+                12f, 180, new Color(1f, 0.90f, 0.55f, 1f), new Color(1f, 1f, 0.90f, 1f), 0.22f));
+            Wire.Set(resonance, "finalPulse", GameplayPieces.RingPulse(windmill.Root, "FinalPulse", new Vector3(0f, 0.5f, 0f), 16f, 3.6f, 0.8f, 260,
+                new Color(1f, 0.88f, 0.55f, 1f)));
+
+            // ---- Interactables: all of them use the same Interactable framework ----
+            GameObject villager = PlaceVillager(prefabs.Villager, "Mira", ValleyLayout.Villager, Vector2.zero, terrain);
+            NpcInteractable mira = villager.AddComponent<NpcInteractable>();
+            Configure(mira, "Talk to Mira", 3f, "Mira", dialogue, objective);
+            Wire.Set(mira, "endingPanel", ending);
+
+            GameObject keeper = PlaceVillager(prefabs.GardenKeeper, "Wren", ValleyLayout.GardenKeeper, ValleyLayout.Garden, terrain);
+            Configure(keeper.AddComponent<GardenKeeperInteractable>(), "Talk to Wren, the Garden Keeper", 3f, "Wren, the Garden Keeper", dialogue, objective);
+            GameObject restorer = PlaceVillager(prefabs.WindmillRestorer, "Alder", ValleyLayout.WindmillRestorer, ValleyLayout.Windmill, terrain);
+            Configure(restorer.AddComponent<WindmillRestorerInteractable>(), "Talk to Alder, the Windmill Restorer", 3f, "Alder, the Windmill Restorer", dialogue, objective);
+            Wire.Set(resonance, "villagers", new[] { AddIdle(villager, 1, 0f), AddIdle(keeper, 2, 1.3f), AddIdle(restorer, 2, 2.6f) });
             WorkshopInteractable workshop = cottage.InteractionPoint.gameObject.AddComponent<WorkshopInteractable>();
             Configure(workshop, "Use the alchemy workshop", 3.5f, "Alchemy Workshop", dialogue, objective);
             Wire.Set(workshop, "craftingPanel", ui.Crafting);
@@ -129,6 +163,26 @@ namespace Echoes.EditorTools
             if (!EditorSceneManager.SaveScene(scene, AssetPaths.ValleyScene))
                 throw new System.InvalidOperationException("Could not save " + AssetPaths.ValleyScene);
             Debug.Log("[Echoes] Generated " + AssetPaths.ValleyScene);
+        }
+
+        /// <summary>A villager prefab standing on the ground at <paramref name="spot"/>, facing <paramref name="lookAt"/>.</summary>
+        static GameObject PlaceVillager(GameObject prefab, string name, Vector2 spot, Vector2 lookAt, Terrain terrain)
+        {
+            GameObject npc = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            npc.name = name;
+            npc.transform.position = Ground(terrain, spot);
+            Vector2 toward = lookAt - spot;
+            npc.transform.rotation = Quaternion.LookRotation(new Vector3(toward.x, 0f, toward.y));
+            return npc;
+        }
+
+        static NpcIdle AddIdle(GameObject npc, int firstAwakeStage, float phase)
+        {
+            NpcIdle idle = npc.AddComponent<NpcIdle>();
+            Wire.Set(idle, "animator", npc.GetComponent<CharacterAnimator>());
+            Wire.Set(idle, "firstAwakeStage", firstAwakeStage);
+            Wire.Set(idle, "phaseOffset", phase);
+            return idle;
         }
 
         static void Configure(DialogueInteractable interactable, string prompt, float range, string speaker, DialogueBox dialogue, ExplorationObjective objective)
@@ -518,6 +572,70 @@ namespace Echoes.EditorTools
             root.SetActive(false);
             return root;
         }
+
+        /// <summary>
+        /// What makes the village feel lived in once the windmill turns: lantern posts around the plaza, the garden and the
+        /// windmill, extra flower patches and a few blossom saplings. Hidden until stage 3; ResonanceView pops the children up.
+        /// </summary>
+        static GameObject BuildVillageLife(Transform parent, Terrain terrain, PrefabSet prefabs, MaterialLibrary m)
+        {
+            GameObject root = new GameObject("VillageLife");
+            root.transform.SetParent(parent, false);
+            System.Random random = new System.Random(2026);
+
+            Vector2[] lanternSpots =
+            {
+                Polar(10.8f, 45f), Polar(10.8f, 135f), Polar(10.8f, 225f), Polar(10.8f, 315f),
+                ValleyLayout.Garden + new Vector2(-5.2f, 2.2f), ValleyLayout.Garden + new Vector2(-5.2f, -4.4f),
+                ValleyLayout.Windmill + new Vector2(3.6f, -4.2f), ValleyLayout.Windmill + new Vector2(-5.8f, 0.8f)
+            };
+            for (int i = 0; i < lanternSpots.Length; i++)
+            {
+                Transform post = Pieces.Group("LanternPost" + i, root.transform, Ground(terrain, lanternSpots[i]), i * 70f);
+                Pieces.Prim(post, PrimitiveType.Cylinder, "Pole", new Vector3(0f, 0.75f, 0f), new Vector3(0.09f, 0.75f, 0.09f), m["WoodDark"]);
+                Pieces.Prim(post, PrimitiveType.Cube, "Arm", new Vector3(0.18f, 1.5f, 0f), new Vector3(0.4f, 0.05f, 0.05f), m["WoodDark"]);
+                Pieces.Prim(post, PrimitiveType.Sphere, "Lantern", new Vector3(0.36f, 1.34f, 0f), new Vector3(0.3f, 0.38f, 0.3f), m["LanternGlow"]);
+                Pieces.Prim(post, PrimitiveType.Cylinder, "Cap", new Vector3(0.36f, 1.56f, 0f), new Vector3(0.22f, 0.03f, 0.22f), m["Iron"]);
+            }
+
+            int patches = 0;
+            for (int attempt = 0; attempt < 800 && patches < 18; attempt++)
+            {
+                float radius = Mathf.Lerp(11.5f, 27f, Mathf.Sqrt((float)random.NextDouble()));
+                float angle = (float)(random.NextDouble() * Mathf.PI * 2.0);
+                Vector2 p = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                if (ValleyLayout.DistanceToPaths(p) < 2.2f || ValleyLayout.NearGameplaySpot(p, 2.4f) || Vector2.Distance(p, ValleyLayout.Cottage) < 7f
+                    || Vector2.Distance(p, ValleyLayout.Villager) < 2.5f || Vector2.Distance(p, ValleyLayout.Spring) < 5f
+                    || Vector2.Distance(p, ValleyLayout.Pond) < ValleyLayout.PondRadius + 1.5f || Vector2.Distance(p, ValleyLayout.Spawn) < 5f
+                    || ValleyLayout.DistanceToPolyline(p, ValleyLayout.Stream) < 3.4f)
+                    continue;
+
+                GameObject patch = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.FlowerPatches[patches % prefabs.FlowerPatches.Length], root.transform);
+                patch.transform.position = Ground(terrain, p);
+                patch.transform.rotation = Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
+                patch.transform.localScale = Vector3.one * (1.4f + (float)random.NextDouble() * 0.5f);
+                patches++;
+            }
+
+            Vector2[] saplings =
+            {
+                ValleyLayout.Garden + new Vector2(6.8f, 4.2f), ValleyLayout.Garden + new Vector2(-1f, 6.6f),
+                ValleyLayout.Windmill + new Vector2(6.5f, 0.5f), ValleyLayout.Windmill + new Vector2(-6.8f, -3.2f)
+            };
+            for (int i = 0; i < saplings.Length; i++)
+            {
+                GameObject sapling = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.TreeBlossom, root.transform);
+                sapling.transform.position = Ground(terrain, saplings[i]);
+                sapling.transform.rotation = Quaternion.Euler(0f, i * 83f, 0f);
+                sapling.transform.localScale = Vector3.one * 0.6f;
+            }
+
+            root.SetActive(false);
+            return root;
+        }
+
+        static Vector2 Polar(float radius, float degrees) =>
+            new Vector2(Mathf.Cos(degrees * Mathf.Deg2Rad), Mathf.Sin(degrees * Mathf.Deg2Rad)) * radius;
 
         static ParticleSystem BuildSparkles(Transform parent)
         {

@@ -377,7 +377,9 @@ namespace Echoes.Tests
             Assert.AreEqual(1f, lighting.StreamBlend, 0.001f);
             Assert.AreEqual(1f, lighting.HeartBlend, 0.001f, "the opening payoff finished too");
             Assert.Greater(lighting.Sun.intensity, 1.45f, "warm light: heart look plus the stream's golden-hour lift");
-            StringAssert.Contains("Complete", hud.ObjectiveBody);
+            // Phase 3: a finished stream quest hands the objective panel on to the next quest instead of saying "Complete".
+            Assert.AreEqual(QuestLog.GardenHeading, hud.ObjectiveHeading);
+            StringAssert.Contains("Wren", hud.ObjectiveBody);
 
             // Nothing can be delivered or rewarded twice.
             int coins = Session.Coins;
@@ -506,7 +508,8 @@ namespace Echoes.Tests
             Assert.AreEqual(1f, lighting.HeartBlend, 0.001f);
             Assert.AreEqual(0, objective.CompletionCount, "restoring is not completing");
             yield return null;
-            StringAssert.Contains("Complete", hud.ObjectiveBody);
+            Assert.AreEqual(QuestLog.GardenHeading, hud.ObjectiveHeading, "Phase 3: the panel moves on to the garden quest");
+            StringAssert.Contains("Wren", hud.ObjectiveBody);
 
             Session.Inventory.TryAdd(ItemIds.SpringTonic, 1);
             Assert.AreEqual(Outcome.WrongState, Session.TryDeliverSpringTonic());
@@ -650,20 +653,74 @@ namespace Echoes.Tests
             yield return null;
         }
 
+        // Phase 3 behavior change: with a save on disk, the New Game button first asks (Phase 2 started the game at once).
         [UnityTest]
-        public IEnumerator NewGame_IgnoresAnExistingSave_AndStartsClean()
+        public IEnumerator NewGame_WithAnExistingSave_AsksFirst_AndOnlyConfirmingStartsClean()
         {
             GameSession saved = new GameSession();
             saved.Inventory.TryAdd(ItemIds.Ore, 3);
             SaveSystem.Save(saved, out _);
+            string savedText = File.ReadAllText(SaveSystem.MainPath);
 
             Menu.RefreshSaveState();
             Menu.PlayButton.onClick.Invoke();
+            yield return null;
+            Assert.IsTrue(Menu.ConfirmationOpen, "a save exists, so New Game must ask first");
+            StringAssert.Contains("saved game", Menu.ConfirmationMessage);
+            Assert.IsNull(Object.FindFirstObjectByType<PlayerController>(), "asking must not start the game");
+            Assert.AreEqual(savedText, File.ReadAllText(SaveSystem.MainPath), "asking must not touch the save");
+
+            Menu.ConfirmButton.onClick.Invoke();
             yield return WaitForValley();
 
             Assert.IsFalse(GameSessionHost.Instance.LoadedFromSave);
             Assert.AreEqual(0, GameSession.Current.Inventory.UsedSlots);
             Assert.AreEqual(GameSession.StartingCoins, GameSession.Current.Coins);
+            Assert.AreEqual(savedText, File.ReadAllText(SaveSystem.MainPath), "the old save stays on disk until the new game first saves");
+        }
+
+        [UnityTest]
+        public IEnumerator NewGame_Cancel_KeepsTheTitleScreenAndTheSave()
+        {
+            GameSession saved = new GameSession();
+            saved.TryAddCoins(9);
+            SaveSystem.Save(saved, out _);
+
+            Menu.RefreshSaveState();
+            Menu.PlayButton.onClick.Invoke();
+            yield return null;
+            Assert.IsTrue(Menu.ConfirmationOpen);
+            Assert.IsFalse(Menu.PlayButton.interactable, "the buttons behind the question are off while it is open");
+
+            Menu.CancelButton.onClick.Invoke();
+            yield return null;
+
+            Assert.IsFalse(Menu.ConfirmationOpen);
+            Assert.IsTrue(Menu.PlayButton.interactable);
+            Assert.IsTrue(Menu.ContinueButton.interactable, "the save is still usable");
+            Assert.IsNull(Object.FindFirstObjectByType<PlayerController>());
+            Assert.IsTrue(File.Exists(SaveSystem.MainPath));
+        }
+
+        [UnityTest]
+        public IEnumerator NewGame_WithAnUnreadableSave_AlsoAsks_AndKeepsTheFileAside()
+        {
+            Directory.CreateDirectory(SaveSystem.Folder);
+            File.WriteAllText(SaveSystem.MainPath, "{ \"version\": 99 }");
+
+            Menu.RefreshSaveState();
+            Menu.PlayButton.onClick.Invoke();
+            yield return null;
+            Assert.IsTrue(Menu.ConfirmationOpen);
+            StringAssert.Contains("cannot be loaded", Menu.ConfirmationMessage);
+
+            Menu.ConfirmButton.onClick.Invoke();
+            yield return WaitForValley();
+            Assert.IsTrue(GameSessionHost.Instance.SaveNow());
+
+            Assert.IsTrue(File.Exists(SaveSystem.SetAsidePath), "an unreadable save is set aside, never deleted");
+            Assert.AreEqual("{ \"version\": 99 }", File.ReadAllText(SaveSystem.SetAsidePath));
+            Assert.IsTrue(SaveSystem.Load().Ok, "the new game's own save is the main file now");
         }
     }
 }

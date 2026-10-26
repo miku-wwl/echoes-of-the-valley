@@ -18,6 +18,11 @@ namespace Echoes
         /// <summary>0 = standing, 1 = full walking speed.</summary>
         public float Speed01 { get; set; }
 
+        /// <summary>Extra pose added on top of the walk and idle motion (NpcIdle uses it for slumped and cheerful villagers).</summary>
+        public Vector3 PoseOffset { get; set; }
+
+        public Vector3 PoseEuler { get; set; }
+
         void Awake()
         {
             if (body != null) bodyBase = body.localPosition;
@@ -33,7 +38,11 @@ namespace Echoes
             float bob = Mathf.Abs(Mathf.Sin(phase)) * 0.06f * walk;
             float breathe = Mathf.Sin(Time.time * 2f) * 0.012f * (1f - walk);
 
-            if (body != null) body.localPosition = bodyBase + Vector3.up * (bob + breathe);
+            if (body != null)
+            {
+                body.localPosition = bodyBase + Vector3.up * (bob + breathe) + PoseOffset;
+                body.localRotation = Quaternion.Euler(PoseEuler);
+            }
             if (leftFoot != null) leftFoot.localPosition = leftBase + new Vector3(0f, Mathf.Max(0f, swing) * 0.12f, swing * 0.3f);
             if (rightFoot != null) rightFoot.localPosition = rightBase + new Vector3(0f, Mathf.Max(0f, -swing) * 0.12f, -swing * 0.3f);
         }

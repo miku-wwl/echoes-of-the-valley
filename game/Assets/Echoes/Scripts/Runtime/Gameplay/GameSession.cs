@@ -7,8 +7,14 @@ namespace Echoes
 
     public enum StreamQuestStage { NotStarted = 0, Active = 1, Completed = 2 }
 
-    /// <summary>The valley's single authoritative restoration value. Phase 2 implements 0 -> 1 only.</summary>
-    public enum ResonanceStage { SilentValley = 0, AwakeningStream = 1 }
+    /// <summary>Progress of the garden and windmill quests (the stream quest keeps its Phase 2 enum and values).</summary>
+    public enum QuestStage { NotStarted = 0, Active = 1, Completed = 2 }
+
+    /// <summary>
+    /// The valley's single authoritative restoration value, saved as an integer: 0 silent, 1 stream restored,
+    /// 2 garden blooming, 3 windmill turning. Only the quest deliveries below move it, one step at a time.
+    /// </summary>
+    public enum ResonanceStage { SilentValley = 0, AwakeningStream = 1, BloomingGarden = 2, RestoredValley = 3 }
 
     public sealed class ResourceNodeState
     {
@@ -35,6 +41,8 @@ namespace Echoes
         public const int StartingCoins = 20;
         public const int MaxCoins = 9999;
         public const int StreamQuestReward = 25;
+        public const int GardenQuestReward = 30;
+        public const int WindmillQuestReward = 40;
         public const float ChickenProductionSeconds = 15f;
         public const string ChickenName = "Clover";
         public const int ExplorationComplete = 3;   // ObjectiveStep.Complete
@@ -58,7 +66,13 @@ namespace Echoes
         public float ChickenRemaining { get; private set; }
         public int ExplorationStep { get; private set; }
         public StreamQuestStage StreamQuest { get; private set; } = StreamQuestStage.NotStarted;
+        public QuestStage GardenQuest { get; private set; } = QuestStage.NotStarted;
+        public QuestStage WindmillQuest { get; private set; } = QuestStage.NotStarted;
         public ResonanceStage Resonance { get; private set; } = ResonanceStage.SilentValley;
+
+        /// <summary>True once the closing scene has been shown. It is saved, so loading never replays it.</summary>
+        public bool EndingSeen { get; private set; }
+
         public bool ExplorationDone => ExplorationStep >= ExplorationComplete;
         public int NodeCount => nodes.Count;
 
@@ -68,7 +82,10 @@ namespace Echoes
         /// <summary>Short player-facing feedback ("+1 Moonleaf Herb").</summary>
         public event Action<string> Message;
 
-        /// <summary>One-time story beats: "quest_started", "quest_completed".</summary>
+        /// <summary>
+        /// One-time story beats: "quest_started" / "quest_completed" (the stream), "garden_started" / "garden_completed",
+        /// "windmill_started" / "windmill_completed" and "ending_seen". Each is raised exactly once per playthrough.
+        /// </summary>
         public event Action<string> Milestone;
 
         public void Notify(string text) => Message?.Invoke(text);
@@ -223,6 +240,84 @@ namespace Echoes
             return Outcome.Ok;
         }
 
+        // Quest 2 and 3 follow the same shape as the stream quest: start (needs the previous stage), then one delivery that
+        // consumes exactly one item, pays once and moves ResonanceStage up one step. Holding the item before accepting the
+        // quest is fine: the delivery only looks at the satchel.
+
+        /// <summary>Restore the Garden: needs the stream restored (stage 1). Accepting it changes no item.</summary>
+        public Outcome TryStartGardenQuest()
+        {
+            if (GardenQuest != QuestStage.NotStarted) return Outcome.WrongState;
+            if (Resonance != ResonanceStage.AwakeningStream) return Outcome.Locked;
+
+            GardenQuest = QuestStage.Active;
+            Notify("New quest: Restore the Garden");
+            Milestone?.Invoke("garden_started");
+            RaiseChanged();
+            return Outcome.Ok;
+        }
+
+        /// <summary>Gives one of Clover's eggs to the Garden Keeper: stage 1 -> 2, one egg consumed, 30 coins once.</summary>
+        public Outcome TryDeliverEgg()
+        {
+            if (GardenQuest == QuestStage.Completed) return Outcome.WrongState;
+            if (GardenQuest != QuestStage.Active) return Outcome.Locked;
+
+            Outcome result = Inventory.TryApplyQuiet(new[] { new ItemAmount(ItemIds.Egg, 1) }, null);
+            if (result != Outcome.Ok) return result;
+
+            Coins = Math.Min(MaxCoins, Coins + GardenQuestReward);
+            GardenQuest = QuestStage.Completed;
+            Resonance = ResonanceStage.BloomingGarden;
+            Notify("The garden is blooming! +" + GardenQuestReward + " coins");
+            Milestone?.Invoke("garden_completed");
+            RaiseChanged();
+            return Outcome.Ok;
+        }
+
+        /// <summary>Restore the Windmill: needs the garden restored (stage 2).</summary>
+        public Outcome TryStartWindmillQuest()
+        {
+            if (WindmillQuest != QuestStage.NotStarted) return Outcome.WrongState;
+            if (Resonance != ResonanceStage.BloomingGarden) return Outcome.Locked;
+
+            WindmillQuest = QuestStage.Active;
+            Notify("New quest: Restore the Windmill");
+            Milestone?.Invoke("windmill_started");
+            RaiseChanged();
+            return Outcome.Ok;
+        }
+
+        /// <summary>Hands Windmill Braces to the Windmill Restorer: stage 2 -> 3, one pair of braces consumed, 40 coins once.</summary>
+        public Outcome TryDeliverWindmillBraces()
+        {
+            if (WindmillQuest == QuestStage.Completed) return Outcome.WrongState;
+            if (WindmillQuest != QuestStage.Active) return Outcome.Locked;
+
+            Outcome result = Inventory.TryApplyQuiet(new[] { new ItemAmount(ItemIds.WindmillBraces, 1) }, null);
+            if (result != Outcome.Ok) return result;
+
+            Coins = Math.Min(MaxCoins, Coins + WindmillQuestReward);
+            WindmillQuest = QuestStage.Completed;
+            Resonance = ResonanceStage.RestoredValley;
+            Notify("The windmill turns again! +" + WindmillQuestReward + " coins");
+            Milestone?.Invoke("windmill_completed");
+            RaiseChanged();
+            return Outcome.Ok;
+        }
+
+        /// <summary>Records that the closing scene was shown: only once the valley is fully restored, and only once.</summary>
+        public Outcome TryCompleteEnding()
+        {
+            if (EndingSeen) return Outcome.WrongState;
+            if (Resonance != ResonanceStage.RestoredValley) return Outcome.Locked;
+
+            EndingSeen = true;
+            Milestone?.Invoke("ending_seen");
+            RaiseChanged();
+            return Outcome.Ok;
+        }
+
         // ---- Time --------------------------------------------------------------------------------------------------
 
         public void Tick(float deltaSeconds)
@@ -265,7 +360,8 @@ namespace Echoes
 
         /// <summary>Applies already-validated saved values (SaveCodec checks every one before calling this).</summary>
         internal void RestoreCore(int coins, IEnumerable<ItemAmount> items, ChickenPhase chicken, float chickenRemaining,
-            int explorationStep, StreamQuestStage quest, ResonanceStage resonance, IDictionary<string, float> nodeTimers)
+            int explorationStep, StreamQuestStage quest, QuestStage garden, QuestStage windmill, bool endingSeen,
+            ResonanceStage resonance, IDictionary<string, float> nodeTimers)
         {
             Coins = coins;
             Inventory.Restore(items);
@@ -273,6 +369,9 @@ namespace Echoes
             ChickenRemaining = chickenRemaining;
             ExplorationStep = explorationStep;
             StreamQuest = quest;
+            GardenQuest = garden;
+            WindmillQuest = windmill;
+            EndingSeen = endingSeen;
             Resonance = resonance;
             pendingNodeTimers.Clear();
             foreach (KeyValuePair<string, float> timer in nodeTimers) pendingNodeTimers[timer.Key] = timer.Value;

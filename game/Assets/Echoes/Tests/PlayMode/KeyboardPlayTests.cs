@@ -142,5 +142,42 @@ namespace Echoes.Tests
             Assert.IsFalse(crafting.IsOpen);
             Assert.IsFalse(pause.IsPaused);
         }
+
+        [UnityTest]
+        public IEnumerator Ending_ClosingConversationByKeyboard_OpensTheScreen_AndEscapeContinuesWithoutPausing()
+        {
+            yield return RestoreTheWindmill();
+            yield return StandNextTo(npc);
+
+            yield return Tap(Key.E);
+            Assert.IsTrue(dialogue.IsOpen, "E starts Mira's closing conversation");
+            for (int press = 0; press < 12 && dialogue.IsOpen; press++) yield return Tap(Key.E);
+
+            Assert.IsFalse(dialogue.IsOpen);
+            Assert.IsTrue(endingPanel.IsOpen, "the last line closes the conversation and opens the ending");
+            yield return null;
+            Assert.IsTrue(endingPanel.IsOpen, "the same E press must not also close the ending");
+            Assert.IsFalse(GameFlow.GameplayInputAllowed);
+
+            yield return Tap(Key.Escape);
+            Assert.IsFalse(endingPanel.IsOpen, "Esc continues exploring");
+            Assert.IsFalse(pause.IsPaused, "the same Esc press must not also pause");
+            Assert.IsTrue(GameFlow.GameplayInputAllowed);
+
+            yield return Tap(Key.Escape);
+            Assert.IsTrue(pause.IsPaused, "the next Esc pauses as usual");
+        }
+
+        [UnityTest]
+        public IEnumerator Ending_EnterContinuesExploring()
+        {
+            yield return PlayToTheEnding();
+
+            yield return Tap(Key.Enter);
+
+            Assert.IsFalse(endingPanel.IsOpen);
+            Assert.IsTrue(GameFlow.GameplayInputAllowed);
+            Assert.IsFalse(pause.IsPaused);
+        }
     }
 }

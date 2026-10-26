@@ -29,6 +29,12 @@ namespace Echoes
         public static string TempPath => MainPath + ".tmp";
         public static string BackupPath => MainPath + ".bak";
 
+        /// <summary>Where a main file the game cannot read is kept when a new save replaces it (never deleted outright).</summary>
+        public static string SetAsidePath => MainPath + ".unreadable";
+
+        /// <summary>True when a main save or a backup exists on disk, readable or not. New Game asks before it can replace either.</summary>
+        public static bool HasSaveFiles => File.Exists(MainPath) || File.Exists(BackupPath);
+
         /// <summary>Redirects saves (tests and -echoes-save-dir) so the player's real save is never touched.</summary>
         public static void UseFolder(string path) => folderOverride = path;
 
@@ -56,7 +62,9 @@ namespace Echoes
                     if (ReadFile(MainPath).Ok) File.Replace(TempPath, MainPath, BackupPath, true);
                     else
                     {
-                        File.Delete(MainPath);
+                        // Do not destroy what we could not read (damage, or a save from a newer version): set it aside.
+                        if (File.Exists(SetAsidePath)) File.Delete(SetAsidePath);
+                        File.Move(MainPath, SetAsidePath);
                         File.Move(TempPath, MainPath);
                     }
                 }
@@ -90,7 +98,7 @@ namespace Echoes
             {
                 LoadResult backup = ReadFile(BackupPath);
                 if (backup.Ok)
-                    return new LoadResult(SaveStatus.Ok, backup.Session, "The main save was unusable (" + main.Message + "); loaded the backup.", true);
+                    return new LoadResult(SaveStatus.Ok, backup.Session, "The main save was unusable (" + main.Message + "); loaded the backup.", true, backup.SourceVersion);
             }
             return main;
         }

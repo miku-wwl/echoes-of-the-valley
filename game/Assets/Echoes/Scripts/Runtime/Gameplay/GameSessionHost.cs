@@ -70,9 +70,7 @@ namespace Echoes
             return saved;
         }
 
-        void OnMilestone(string key)
-        {
-            if (key == "quest_started" || key == "quest_completed") SaveNow();
-        }
+        /// <summary>Every story beat (a quest starting or finishing, the ending) is worth a save.</summary>
+        void OnMilestone(string key) => SaveNow();
     }
 }

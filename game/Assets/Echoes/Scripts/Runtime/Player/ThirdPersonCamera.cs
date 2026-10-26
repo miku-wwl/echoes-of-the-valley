@@ -35,6 +35,9 @@ namespace Echoes
         public float MaxPitch => maxPitch;
         public float Distance => distance;
 
+        /// <summary>Slow automatic turn around the player (the ending uses it as a backdrop). Zero leaves the camera to the player.</summary>
+        public float AutoOrbitDegreesPerSecond { get; set; }
+
         void Start() => Snap();
 
         void LateUpdate()
@@ -44,6 +47,7 @@ namespace Echoes
 
             // Mouse look is ignored while paused. Per-frame deltas are clamped in ApplyLook, so a focus change cannot spin the camera.
             if (GameFlow.LookAllowed) ApplyLook(GameInput.ReadLook());
+            if (AutoOrbitDegreesPerSecond != 0f) yaw = Mathf.Repeat(yaw + AutoOrbitDegreesPerSecond * Time.deltaTime, 360f);
 
             Follow(Time.deltaTime, false);
         }

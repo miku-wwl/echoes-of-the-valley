@@ -25,6 +25,13 @@ namespace Echoes.EditorTools
 
         public static readonly Vector2 HenYard = new Vector2(22f, -5f);
 
+        // Phase 3: the village garden beside the hen yard (south-east of the Heart) and the old windmill on the northern rise.
+        public static readonly Vector2 Garden = new Vector2(16f, -14f);
+        public static readonly Vector2 Windmill = new Vector2(6f, 32f);
+        public static readonly Vector2 GardenKeeper = Garden + new Vector2(-5.4f, -1.4f);        // by the garden's west gate
+        public static readonly Vector2 WindmillRestorer = Windmill + new Vector2(-3.8f, -3.6f);   // at the windmill's foot
+        public const float WindmillYaw = 180f;                                                    // its front (local +Z) faces the Heart
+
         // Renewable gathering spots, spread so exploring the valley is how the quest gets done.
         public static readonly Vector2[] HerbSpots =
         {
@@ -45,7 +52,9 @@ namespace Echoes.EditorTools
         static readonly Vector2[] PathSouth ={ new Vector2(0f, -32f), new Vector2(0f, -21f), new Vector2(0f, -9f) };
         static readonly Vector2[] PathEast = { new Vector2(9f, 1f), new Vector2(15f, 4f), new Vector2(21f, 8f) };
         static readonly Vector2[] PathWest = { new Vector2(-8f, 5f), new Vector2(-14f, 11f), new Vector2(-19f, 15f) };
-        static readonly Vector2[][] Paths = { PathSouth, PathEast, PathWest };
+        static readonly Vector2[] PathNorth = { new Vector2(0f, 9f), new Vector2(1.5f, 19f), new Vector2(4.5f, 28.5f) };
+        static readonly Vector2[] PathGarden = { new Vector2(7f, -6f), new Vector2(9.5f, -9.5f), new Vector2(11f, -13f) };
+        static readonly Vector2[][] Paths = { PathSouth, PathEast, PathWest, PathNorth, PathGarden };
 
         public static readonly List<Vector2> Stream = Resample(new[]
         {
@@ -75,6 +84,8 @@ namespace Echoes.EditorTools
             flat = Mathf.Max(flat, Mask(Vector2.Distance(p, Spring), 7f, 14f));
             flat = Mathf.Max(flat, Mask(Vector2.Distance(p, Pond), 12f, 20f));
             flat = Mathf.Max(flat, Mask(Vector2.Distance(p, HenYard), 5f, 11f));
+            flat = Mathf.Max(flat, Mask(Vector2.Distance(p, Garden), 8f, 15f));
+            flat = Mathf.Max(flat, Mask(Vector2.Distance(p, Windmill), 9f, 18f));
             flat = Mathf.Max(flat, Mask(DistanceToPaths(p), 3f, 8f));
             flat = Mathf.Max(flat, Mask(DistanceToPolyline(p, Stream), 5f, 11f));
 
@@ -104,6 +115,7 @@ namespace Echoes.EditorTools
             Blend(w, 2, 0.9f * Mask(DistanceToPolyline(p, Stream), 2.0f, 3.4f));
             Blend(w, 2, 0.9f * Mask(Vector2.Distance(p, Pond), PondRadius + 0.5f, PondRadius + 2.4f));
             Blend(w, 3, Mask(p.magnitude, PlazaRadius - 1f, PlazaRadius + 0.8f));
+            Blend(w, 2, 0.9f * Mask(Vector2.Distance(p, Windmill), 3.6f, 5.6f));   // trodden earth around the windmill's foot
         }
 
         static void Blend(float[] w, int layer, float amount)
@@ -154,6 +166,10 @@ namespace Echoes.EditorTools
         public static bool NearGameplaySpot(Vector2 p, float radius)
         {
             if (Vector2.Distance(p, HenYard) < radius + 3f) return true;
+            if (Vector2.Distance(p, Garden) < radius + 6f) return true;
+            if (Vector2.Distance(p, Windmill) < radius + 8f) return true;
+            if (Vector2.Distance(p, GardenKeeper) < radius) return true;
+            if (Vector2.Distance(p, WindmillRestorer) < radius) return true;
             foreach (Vector2 spot in HerbSpots) if (Vector2.Distance(p, spot) < radius) return true;
             foreach (Vector2 spot in FlowerSpots) if (Vector2.Distance(p, spot) < radius) return true;
             foreach (Vector2 spot in OreSpots) if (Vector2.Distance(p, spot) < radius) return true;

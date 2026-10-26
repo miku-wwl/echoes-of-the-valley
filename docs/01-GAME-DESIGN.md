@@ -37,6 +37,24 @@ The official jam theme is a **60-second composition by Jason Grace** ([official 
 
 Numbers are starting **tuning proposals**, not tested balance. Essential inputs regenerate; crafting/quest confirmations must never duplicate rewards or consume unavailable items. Chicken timers pause during menus and never force excessive waiting.
 
+**Deliberate deviation (Phase 3):** the table above proposed *buying* a chicken for S1 → S2. Phase 2 had already shipped Clover as a resident hen with a working feed, wait and collect cycle, so the second quest keeps her and simply asks for an egg: there is no purchase step, no second chicken and no shop (coins are only a reward, see below). This keeps the working Phase 2 hen untouched and removes a place where progression could stall.
+
+## As implemented (Phase 3)
+
+| Stage | `ResonanceStage` | Who and what | What the valley shows |
+| --- | --- | --- | --- |
+| S0 → S1 | `AwakeningStream` | Mira offers *Restore the Stream*; pour a Spring Tonic into the ruined spring | Murky trickle becomes a wide clear stream, the basin fills with a fountain, 18 flower patches and 4 saplings bloom along the banks, a ring of light, golden light |
+| S1 → S2 | `BloomingGarden` | Wren, the Garden Keeper, wants one of Clover's eggs | The withered garden (dry soil, drooping stalks, bare vines) flowers in many colours, the hen yard gets flower pots and bunting, pollen drifts over the garden, a larger ring of light, warmer light, the three villagers stand up and sway |
+| S2 → S3 | `RestoredValley` | Alder, the Windmill Restorer, needs Windmill Braces (4 Echo Ore) | The broken windmill (snapped sails, fallen beams) is mended with glowing ore braces and its sails turn, lanterns and flower patches appear through the village, drifting fireflies, a pulse that crosses the whole valley, the low golden-hour sun, the villagers bounce and turn about |
+| Ending | (unchanged) | Mira's closing conversation | A screen over the restored valley: title, *The valley has found its voice again.*, Silence · Awakening · Resonance · Rest, credits, **Continue Exploring** and **Main Menu** |
+
+- **Everything derives from one integer.** `ResonanceView` draws the world from `GameSession.Resonance` alone; nothing about the garden, the windmill or the lanterns is saved separately. A loaded stage appears at once with no replayed reward or animation; a stage reached while playing runs a short transition. Stage 3 keeps everything stages 1 and 2 showed.
+- **Rewards (coins, once each):** 25, 30, 40. Coins have no sink yet; they are a reward counter, not an economy.
+- **Anti-softlock rules:** every ingredient comes from a renewable node or from Clover; holding the egg or the braces *before* accepting the quest is fine (the delivery only looks at the satchel); a delivery without the item changes nothing and says what is missing; each delivery is rejected the second time; the satchel has one slot per item type, so no stack can block another.
+- **Guidance:** the objective panel is a pure function of the session (`QuestLog`) and always names who to talk to, what is still needed, where to gather, where to craft and where to deliver.
+- **People:** Mira (opening guide, stream quest, the closing conversation), Wren (garden), Alder (windmill). Names and all dialogue are original and AI-written, to be reviewed by the developer.
+- **The ending is real state:** `EndingSeen` is saved. Loading never replays it; Mira afterwards only chats. The screen never traps the player: Enter, E or Esc continue exploring, M or the button leaves for the title.
+
 ## Signature mechanic: Valley Resonance
 
 The *single authoritative* `ResonanceStage` integer (0–3) drives stream animation, plants, light, windmill, NPC reactions and ambient sound. Every scene load rebuilds the correct view from persisted progression; avoid saving dozens of separate scenery booleans. Capture a recognizable before/after clip for each milestone.

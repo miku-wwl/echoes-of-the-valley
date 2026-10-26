@@ -126,11 +126,19 @@ namespace Echoes.EditorTools
         // ---- Restoration effects (child of the spring) -------------------------------------------------------------------
 
         /// <summary>A one-shot ring of light that races outward from the spring.</summary>
-        public static ParticleSystem Pulse(Transform spring)
+        public static ParticleSystem Pulse(Transform spring) =>
+            RingPulse(spring, "ResonancePulse", new Vector3(0f, 0.35f, 0f), 9f, 1.8f, 0.35f, 120, new Color(1f, 0.90f, 0.55f, 1f));
+
+        /// <summary>
+        /// A one-shot ring of light on the ground plane. The ring reaches speed x lifetime metres: about 16 m for the
+        /// stream, 18 m for the garden and 58 m (the whole valley) for the final pulse.
+        /// </summary>
+        public static ParticleSystem RingPulse(Transform parent, string name, Vector3 localPosition, float speed, float lifetime,
+            float size, int count, Color color)
         {
-            GameObject go = new GameObject("ResonancePulse");
-            go.transform.SetParent(spring, false);
-            go.transform.localPosition = new Vector3(0f, 0.35f, 0f);
+            GameObject go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
             go.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
 
             ParticleSystem system = go.AddComponent<ParticleSystem>();
@@ -140,16 +148,16 @@ namespace Echoes.EditorTools
             main.loop = false;
             main.playOnAwake = false;
             main.duration = 1f;
-            main.startLifetime = 1.8f;
-            main.startSpeed = 9f;
-            main.startSize = 0.35f;
-            main.startColor = new Color(1f, 0.90f, 0.55f, 1f);
+            main.startLifetime = lifetime;
+            main.startSpeed = speed;
+            main.startSize = size;
+            main.startColor = color;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = 200;
+            main.maxParticles = Mathf.Max(200, count + 40);
 
             ParticleSystem.EmissionModule emission = system.emission;
             emission.rateOverTime = 0f;
-            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 120) });
+            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, (short)count) });
 
             ParticleSystem.ShapeModule shape = system.shape;
             shape.enabled = true;

@@ -46,6 +46,49 @@ namespace Echoes.EditorTools
             return ui;
         }
 
+        /// <summary>
+        /// The closing screen: a warm veil over the live valley with the title, the line the game has been walking toward,
+        /// the four words, short credits, the two choices and their keys. Added last so it draws above everything else.
+        /// </summary>
+        public static EndingPanel BuildEnding(Canvas canvas, ThirdPersonCamera orbitCamera)
+        {
+            EndingPanel controller = canvas.gameObject.AddComponent<EndingPanel>();
+            Image veil = UiKit.Panel(canvas.transform, "EndingPanel", new Color(0.12f, 0.08f, 0.04f, 0.34f), false);
+            veil.rectTransform.Fill();
+            veil.raycastTarget = true;
+
+            Image card = UiKit.Panel(veil.transform, "Card", new Color(0.08f, 0.10f, 0.16f, 0.84f));
+            // 800 high and nudged down, so it clears the objective panel (ends 164 px from the top) and the controls hint
+            card.rectTransform.Place(UiKit.Center, UiKit.Center, new Vector2(0f, -28f), new Vector2(1360f, 800f));
+
+            Text title = UiKit.Label(card.transform, "Title", "Echoes of the Valley", 88, UiKit.Cream, TextAnchor.UpperCenter, FontStyle.Bold);
+            title.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -26f), new Vector2(1280f, 112f));
+            Text headline = UiKit.Label(card.transform, "Headline", "The valley has found its voice again.", 50, UiKit.Gold, TextAnchor.UpperCenter, FontStyle.Bold);
+            headline.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -142f), new Vector2(1280f, 68f));
+            Text story = UiKit.Label(card.transform, "Story",
+                "Silence became a stream. The stream woke the garden. The garden lifted the windmill's sails, and now the whole valley hums, with you inside the song.",
+                34, UiKit.Cream, TextAnchor.UpperCenter);
+            story.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -222f), new Vector2(1140f, 138f));
+            Text stages = UiKit.Label(card.transform, "Stages", "Silence   ·   Awakening   ·   Resonance   ·   Rest", 42, UiKit.Gold, TextAnchor.UpperCenter, FontStyle.Bold);
+            stages.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -380f), new Vector2(1280f, 60f));
+            Text credits = UiKit.Label(card.transform, "Credits",
+                "A game for thatgamejam #02  ·  Made with Unity\nCode, writing and placeholder art made with AI assistance (Anthropic Claude Code)\nThank you for listening.",
+                26, new Color(1f, 0.95f, 0.84f, 0.92f), TextAnchor.UpperCenter);
+            credits.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -456f), new Vector2(1280f, 120f));
+
+            Button continueButton = UiKit.MakeButton(card.transform, "ContinueButton", "Continue Exploring", UiKit.BottomCenter, new Vector2(-250f, 140f), new Vector2(440f, 88f));
+            Button menuButton = UiKit.MakeButton(card.transform, "MainMenuButton", "Main Menu", UiKit.BottomCenter, new Vector2(250f, 140f), new Vector2(360f, 88f));
+            Text controls = UiKit.Label(card.transform, "Controls", "Enter / E / Esc  Continue exploring        M  Main menu", 26, UiKit.Gold, TextAnchor.LowerCenter);
+            controls.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 40f), new Vector2(1100f, 40f));
+
+            Wire.Set(controller, "panel", veil.gameObject);
+            Wire.Set(controller, "continueButton", continueButton);
+            Wire.Set(controller, "mainMenuButton", menuButton);
+            Wire.Set(controller, "orbitCamera", orbitCamera);
+            veil.gameObject.SetActive(false);
+            return controller;
+        }
+
         static InventoryPanel BuildInventory(Canvas canvas)
         {
             InventoryPanel controller = canvas.gameObject.AddComponent<InventoryPanel>();

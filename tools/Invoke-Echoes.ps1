@@ -4,18 +4,19 @@
 #   Setup     compile, configure the project and (re)generate prefabs, MainMenu and Valley (idempotent)
 #   TestEdit  EditMode tests          TestPlay  PlayMode tests
 #   Preview   render editor camera shots of both scenes to artifacts\logs\preview-shots (no Play Mode, no overlay UI)
+#   DryRun    rehearse the smoke scenario in the Editor's Play Mode (batch mode) before spending a build; screenshots may be skipped there
 #   Build     Windows x64 Mono development build into artifacts\build\win64
-#   Smoke     start the built player with the scripted smoke run (-echoes-smoke) and report its exit code
+#   Smoke     start the built player with the scripted full-game smoke run (-echoes-smoke: New Game to the ending) and report its exit code
 # Logs, test results and screenshots go to the git-ignored artifacts\logs folder.
 
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('Compile', 'Setup', 'TestEdit', 'TestPlay', 'Preview', 'Build', 'Smoke')]
+    [ValidateSet('Compile', 'Setup', 'TestEdit', 'TestPlay', 'Preview', 'DryRun', 'Build', 'Smoke')]
     [string] $Task,
     [string] $UnityExe = 'D:\Unity\Downloads\6000.3.27f1\Editor\Unity.exe',
     [string] $TempDirectory = 'D:\Unity\Temp\Echoes',
-    [int] $SmokeTimeoutSeconds = 300
+    [int] $SmokeTimeoutSeconds = 480   # the full-game run waits for Clover's eggs in real time; the player gives up itself after 420 s
 )
 
 $ErrorActionPreference = 'Stop'
@@ -87,6 +88,28 @@ switch ($Task) {
         $code = Invoke-Unity @('-quit', '-executeMethod', 'Echoes.EditorTools.PreviewTools.CaptureAll', '-echoesShots', ('"' + $shots + '"')) $log
         Write-Host ("TASK=Preview UNITY_EXIT=$code SHOTS=" + (@(Get-ChildItem -LiteralPath $shots -Filter *.png -ErrorAction SilentlyContinue).Count) + " in $shots")
         Show-LogSummary $log
+        exit $code
+    }
+    'DryRun' {
+        $log = Join-Path $logDir 'dryrun.log'
+        $saveDir = Join-Path $logDir 'dryrun-save'
+        $shots = Join-Path $logDir 'dryrun-shots'
+        New-Item -ItemType Directory -Force -Path $shots | Out-Null
+        Remove-Item -LiteralPath $log -ErrorAction SilentlyContinue
+        $arguments = @('-executeMethod', 'Echoes.EditorTools.SmokeDryRun.Run', '-echoes-smoke',
+            '-echoes-shots', ('"' + $shots + '"'), '-echoes-save-dir', ('"' + $saveDir + '"'))
+        $all = @('-batchmode', '-projectPath', ('"' + $project + '"')) + $arguments + @('-logFile', ('"' + $log + '"'))
+        $process = Start-Process -FilePath $UnityExe -ArgumentList $all -PassThru -WindowStyle Hidden
+        $exited = $process.WaitForExit($SmokeTimeoutSeconds * 1000)
+        if ($exited) { $code = $process.ExitCode; Write-Host "TASK=DryRun UNITY_EXIT=$code (natural exit)" }
+        else { $process.Kill(); $code = 124; Write-Host "TASK=DryRun TIMEOUT_KILLED after $SmokeTimeoutSeconds s" }
+        if (Test-Path -LiteralPath $log) {
+            Select-String -LiteralPath $log -Pattern '\[Echoes\]\[SMOKE\]' | ForEach-Object { Write-Host ('  ' + $_.Line.Trim()) }
+            $bad = @(Select-String -LiteralPath $log -Pattern 'Exception|NullReference|error CS' -CaseSensitive:$false)
+            Write-Host ('LOG_EXCEPTION_LINES=' + $bad.Count)
+            $bad | Select-Object -First 8 | ForEach-Object { Write-Host ('  ' + $_.Line.Trim()) }
+        }
+        else { Write-Host "LOG_MISSING=$log" }
         exit $code
     }
     'Build' {

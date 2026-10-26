@@ -11,6 +11,8 @@ namespace Echoes.EditorTools
         public GameObject Rock;
         public GameObject Hero;
         public GameObject Villager;
+        public GameObject GardenKeeper;
+        public GameObject WindmillRestorer;
         public GameObject HerbNode;
         public GameObject FlowerNode;
         public GameObject OreNode;
@@ -32,12 +34,9 @@ namespace Echoes.EditorTools
             set.Rock = Save(Pieces.Rock(m));
             set.Hero = Save(Pieces.Character("Hero", m, "TunicHero", "HairHero", "Scarf", hat: false, longHair: false, skirt: false, satchel: true));
 
-            GameObject villager = Pieces.Character("Villager", m, "TunicMira", "HairMira", "Cream", hat: true, longHair: true, skirt: true, satchel: false);
-            CapsuleCollider collider = villager.AddComponent<CapsuleCollider>();
-            collider.center = new Vector3(0f, 0.8f, 0f);
-            collider.height = 1.6f;
-            collider.radius = 0.34f;
-            set.Villager = Save(villager);
+            set.Villager = Save(Villager(Pieces.Character("Villager", m, "TunicMira", "HairMira", "Cream", hat: true, longHair: true, skirt: true, satchel: false)));
+            set.GardenKeeper = Save(Villager(Pieces.Character("GardenKeeper", m, "TunicKeeper", "HairKeeper", "Cream", hat: true, longHair: false, skirt: true, satchel: false)));
+            set.WindmillRestorer = Save(Villager(Pieces.Character("WindmillRestorer", m, "TunicRestorer", "HairRestorer", "ScarfRestorer", hat: false, longHair: false, skirt: false, satchel: true)));
 
             set.HerbNode = Save(GameplayPieces.HerbNode(m));
             set.FlowerNode = Save(GameplayPieces.FlowerNode(m));
@@ -51,6 +50,16 @@ namespace Echoes.EditorTools
 
             AssetDatabase.SaveAssets();
             return set;
+        }
+
+        /// <summary>Villagers block the player like a post: a capsule the size of the character.</summary>
+        static GameObject Villager(GameObject character)
+        {
+            CapsuleCollider collider = character.AddComponent<CapsuleCollider>();
+            collider.center = new Vector3(0f, 0.8f, 0f);
+            collider.height = 1.6f;
+            collider.radius = 0.34f;
+            return character;
         }
 
         static GameObject Save(GameObject temporary)

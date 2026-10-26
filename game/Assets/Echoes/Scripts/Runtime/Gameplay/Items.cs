@@ -85,9 +85,9 @@ namespace Echoes
             new ItemDef(ItemIds.Flower, "Dawn Blossom", "Petals that open at first light. Good for tonics and feed.", new Color(1.00f, 0.60f, 0.38f)),
             new ItemDef(ItemIds.Ore, "Echo Ore", "A pale stone that rings like a bell when struck.", new Color(0.55f, 0.80f, 0.95f)),
             new ItemDef(ItemIds.ChickenFeed, "Chicken Feed", "Sweet seed mash. Clover loves it.", new Color(0.95f, 0.82f, 0.45f)),
-            new ItemDef(ItemIds.Egg, "Hen's Egg", "Warm and fresh. Someone in the valley will want it.", new Color(0.98f, 0.95f, 0.88f)),
+            new ItemDef(ItemIds.Egg, "Hen's Egg", "Warm and fresh. The Garden Keeper wants one.", new Color(0.98f, 0.95f, 0.88f)),
             new ItemDef(ItemIds.SpringTonic, "Spring Tonic", "Bottled dew and moonleaf. It wakes sleeping water.", new Color(0.45f, 0.85f, 0.95f)),
-            new ItemDef(ItemIds.WindmillBraces, "Windmill Braces", "Ringing ore struts for the old windmill (a later task).", new Color(0.70f, 0.74f, 0.82f))
+            new ItemDef(ItemIds.WindmillBraces, "Windmill Braces", "Ringing ore struts to hold up the old windmill.", new Color(0.70f, 0.74f, 0.82f))
         };
 
         static readonly Dictionary<string, ItemDef> byId = Index();

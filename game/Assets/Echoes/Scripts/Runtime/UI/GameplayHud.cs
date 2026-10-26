@@ -16,8 +16,6 @@ namespace Echoes
         [SerializeField] Text[] toastLines;
         [SerializeField] float toastSeconds = 3.5f;
 
-        public const string QuestHeading = "Restore the Stream";
-
         string[] toastTexts;
         float[] toastAges;
         GameSession subscribed;
@@ -60,7 +58,11 @@ namespace Echoes
             {
                 if (coinText != null) coinText.text = "Coins  " + session.Coins;
                 if (chickenText != null) chickenText.text = GameSession.ChickenName + ": " + ChickenStatus(session);
-                if (session.ExplorationDone && hud != null) hud.SetObjective(QuestHeading, QuestBody(session));
+                if (session.ExplorationDone && hud != null)
+                {
+                    QuestLine line = QuestLog.Current(session);
+                    hud.SetObjective(line.Heading, line.Body);
+                }
             }
             FadeToasts();
         }
@@ -75,31 +77,30 @@ namespace Echoes
             }
         }
 
-        /// <summary>The quest line shown in the objective panel, derived from real session state.</summary>
-        public static string QuestBody(GameSession session)
-        {
-            switch (session.StreamQuest)
-            {
-                case StreamQuestStage.NotStarted:
-                    return "Speak to Mira about the dry stream.";
-                case StreamQuestStage.Active:
-                    int herbs = session.Inventory.Count(ItemIds.Herb);
-                    int flowers = session.Inventory.Count(ItemIds.Flower);
-                    if (session.Inventory.Has(ItemIds.SpringTonic, 1)) return "Pour the Spring Tonic into the ruined spring.";
-                    if (herbs >= 2 && flowers >= 1) return "Mix a Spring Tonic at the alchemy workshop.";
-                    return "Gather Moonleaf Herb " + Math.Min(herbs, 2) + "/2 and Dawn Blossom " + Math.Min(flowers, 1) + "/1.";
-                default:
-                    return "Complete - the stream flows again. Look after Clover while the valley wakes.";
-            }
-        }
-
         void OnMilestone(string key)
         {
             if (hud == null) return;
-            if (key == "quest_started")
-                hud.ShowBanner("New Quest", QuestHeading, 6f);
-            else if (key == "quest_completed")
-                hud.ShowBanner("The Stream Flows Again", "Clear water and warm light spread through the valley.", 9f);
+            switch (key)
+            {
+                case "quest_started":
+                    hud.ShowBanner("New Quest", QuestLog.StreamHeading, 6f);
+                    break;
+                case "quest_completed":
+                    hud.ShowBanner("The Stream Flows Again", "Clear water and warm light spread through the valley.", 9f);
+                    break;
+                case "garden_started":
+                    hud.ShowBanner("New Quest", QuestLog.GardenHeading, 6f);
+                    break;
+                case "garden_completed":
+                    hud.ShowBanner("The Garden Blooms", "Colour and warmth spread through the village.", 9f);
+                    break;
+                case "windmill_started":
+                    hud.ShowBanner("New Quest", QuestLog.WindmillHeading, 6f);
+                    break;
+                case "windmill_completed":
+                    hud.ShowBanner("The Windmill Turns", "The whole valley hums with life again.", 9f);
+                    break;
+            }
         }
 
         void Unsubscribe()
