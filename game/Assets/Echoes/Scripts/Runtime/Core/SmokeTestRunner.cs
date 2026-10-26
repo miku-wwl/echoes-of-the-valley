@@ -245,6 +245,7 @@ namespace Echoes
             Capture("02-valley-start");
             CheckSoundscape(ResonanceStage.SilentValley);
             Require(Director.TotalCues == 0, "a new game started with sounds already played (" + Director.TotalCues + ")");
+            if (HasArgument("-echoes-art-audit")) yield return ArtAudit("S0");
         }
 
         IEnumerator MoveAndUseTheWorkshop()
@@ -603,6 +604,7 @@ namespace Echoes
             // Two pictures with the sails in different positions, and the angles that prove the rotation
             float angleA = view.Windmill.TotalDegrees;
             yield return ShootWindmill("13a-windmill-turning");
+            if (HasArgument("-echoes-art-audit")) yield return ArtAudit("S3");
             yield return new WaitForSecondsRealtime(1.2f);
             float angleB = view.Windmill.TotalDegrees;
             yield return ShootWindmill("13b-windmill-turning");
@@ -897,6 +899,35 @@ namespace Echoes
         {
             Vector3 center = view.GardenPosition;
             yield return ShootFrom(shotName, center + new Vector3(-10f, 0f, -5f), 3.4f, center + new Vector3(0f, 0.6f, 0f));
+        }
+
+        // Optional QA views only. No save or progression edits; restore player/camera afterwards.
+        IEnumerator ArtAudit(string stage)
+        {
+            Vector3 previous = player.transform.position;
+            Quaternion rotation = player.transform.rotation;
+            Vector3 center = view.Windmill.transform.position;
+            Vector3 foot = center + new Vector3(-1.3f, 0f, -8f);
+            Terrain terrain = Terrain.activeTerrain;
+            foot.y = terrain.SampleHeight(foot) + terrain.transform.position.y + 0.1f;
+            player.Teleport(foot);
+            player.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+            yield return new WaitForSecondsRealtime(0.3f);
+            yield return ShootFrom("A1-" + stage + "-windmill-hero", center + new Vector3(-3f, 0f, -18f), 3.6f, center + new Vector3(0f, 4.6f, 0f));
+            // Supplementary unobstructed art views; the first A1 retains the normal UI for comparison.
+            hud.HideBanner();
+            yield return ShootFrom("A1-" + stage + "-clean", center + new Vector3(-3f, 0f, -18f), 3.6f, center + new Vector3(0f, 4.6f, 0f));
+            yield return ShootFrom("A4-" + stage + "-hero-front", foot + new Vector3(0f, 0f, -2.6f), 1.10f, foot + Vector3.up * 0.92f);
+            yield return ShootFrom("A4-" + stage + "-hero-side", foot + new Vector3(2.6f, 0f, 0f), 1.10f, foot + Vector3.up * 0.92f);
+            yield return ShootFrom("A2-" + stage + "-workshop", new Vector3(13f, 0f, 1f), 3.3f, new Vector3(25f, 2f, 8f));
+            yield return ShootGarden("A3-" + stage + "-garden");
+            foreach(var npc in new Interactable[]{mira,wren,alder})
+                yield return ShootFrom("NPC-"+npc.name+"-"+stage,npc.transform.position+npc.transform.forward*(npc==wren?1.1f:2.7f),npc==wren?1.35f:1.15f,npc.transform.position+Vector3.up*(npc==wren?1.30f:.95f));
+            yield return ShootFrom("Clover-"+stage,hen.transform.position+hen.transform.forward*2f,.65f,hen.transform.position+Vector3.up*.4f);
+            player.Teleport(previous);
+            player.transform.rotation = rotation;
+            yield return null;
+            rig.Snap();
         }
 
         IEnumerator ShootWindmill(string shotName)

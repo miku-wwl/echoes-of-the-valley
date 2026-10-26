@@ -36,11 +36,15 @@ CREDITS
   sprites that are built into Unity.
 
 AI DISCLOSURE
-  This game was made with AI assistance. Anthropic Claude Code (Claude Sonnet 5.5), directed by the
-  developer, wrote all of the game's code, the dialogue, quest and story text, the 3D art (simple
-  shapes assembled by code, with procedural textures) and all of its music and sound effects (original
-  audio synthesised by code; nothing is sampled or taken from a library). OpenAI Codex helped with
-  early planning and documentation. The official theme recording is not used in this game.
+  This game was made with AI assistance, directed by the developer. Anthropic Claude Code
+  (Claude Sonnet 5.5) wrote the original game code, dialogue, quests, story, primitive art,
+  procedural textures and synthesised music/sound effects. OpenAI Codex assisted planning
+  and documentation, and authored the Phase 5.1 original Blender character/chicken/tree,
+  windmill and prop meshes, material/texture code, world detailing, UI icons and QA tooling.
+  No external model, texture, audio or font file was imported. Unity built-in resources
+  are used. No official Atelier Ryza content or official jam theme recording is included.
+  Human visual, gameplay and audio approval are pending. Characters use rigid procedural
+  animation rather than skinned humanoid rigs.
 
 The game's original source code is available under the MIT license in its repository; art, audio and
 text are not covered by that license.

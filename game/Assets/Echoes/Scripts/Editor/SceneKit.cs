@@ -20,6 +20,8 @@ namespace Echoes.EditorTools
             light.intensity = intensity;
             light.shadows = LightShadows.Soft;
             light.shadowStrength = 0.8f;
+            light.shadowBias = .02f;
+            light.shadowNormalBias = .10f;
             RenderSettings.sun = light;
             return light;
         }
@@ -91,12 +93,15 @@ namespace Echoes.EditorTools
                 profile = ScriptableObject.CreateInstance<VolumeProfile>();
                 AssetDatabase.CreateAsset(profile, profilePath);
             }
-            foreach (Object old in AssetDatabase.LoadAllAssetRepresentationsAtPath(profilePath))
+            // LoadAllAssetRepresentationsAtPath excludes hidden subassets. Volume overrides are hidden,
+            // so using it accumulated orphan components on every generation.
+            profile.components.Clear();
+            foreach (Object old in AssetDatabase.LoadAllAssetsAtPath(profilePath))
             {
+                if (!(old is VolumeComponent)) continue;
                 AssetDatabase.RemoveObjectFromAsset(old);
                 Object.DestroyImmediate(old, true);
             }
-            profile.components.Clear();
 
             Bloom bloom = profile.Add<Bloom>(true);
             bloom.intensity.value = bloomIntensity;

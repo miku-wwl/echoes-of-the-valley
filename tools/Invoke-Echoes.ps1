@@ -23,7 +23,12 @@ param(
     [string] $UnityExe = 'D:\Unity\Downloads\6000.3.27f1\Editor\Unity.exe',
     [string] $TempDirectory = 'D:\Unity\Temp\Echoes',
     [int] $SmokeTimeoutSeconds = 480,   # the full-game run waits for Clover's eggs in real time; the player gives up itself after 420 s
-    [string] $ReleaseName = 'EchoesOfTheValley-Windows-x64-RC1'
+    [string] $ReleaseName = 'EchoesOfTheValley-Windows-x64-RC1',
+    [string] $BuildDirectory = '',
+    [string] $LogDirectory = '',
+    [string] $BuildVersion = '',
+    [string] $ReleaseDirectory = '',
+    [string] $PlayerReadmePath = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -33,10 +38,18 @@ $logDir = Join-Path $repoRoot 'artifacts\logs'
 $buildDir = Join-Path $repoRoot 'artifacts\build\win64'
 $player = Join-Path $buildDir 'EchoesOfTheValley.exe'
 $releaseBuildDir = Join-Path $repoRoot 'artifacts\build\win64-release'
+if ($BuildDirectory) {
+    $buildDir = [IO.Path]::GetFullPath($BuildDirectory)
+    $releaseBuildDir = $buildDir
+    $player = Join-Path $buildDir 'EchoesOfTheValley.exe'
+}
+if ($LogDirectory) { $logDir = [IO.Path]::GetFullPath($LogDirectory) }
 $releaseDir = Join-Path $repoRoot 'artifacts\release'
+if ($ReleaseDirectory) { $releaseDir = [IO.Path]::GetFullPath($ReleaseDirectory) }
 $stageDir = Join-Path $releaseDir $ReleaseName
 $zipPath = Join-Path $releaseDir ($ReleaseName + '.zip')
 $playerReadme = Join-Path $PSScriptRoot 'release-readme.txt'
+if ($PlayerReadmePath) { $playerReadme = [IO.Path]::GetFullPath($PlayerReadmePath) }
 
 if (-not (Test-Path -LiteralPath $UnityExe -PathType Leaf)) { throw "Unity editor not found: $UnityExe" }
 New-Item -ItemType Directory -Force -Path $logDir, $TempDirectory | Out-Null
@@ -135,9 +148,11 @@ function Invoke-BuildRelease {
     $env:BEE_BUILD_THREADS = '4'
     $os = Get-CimInstance Win32_OperatingSystem
     Write-Host ('MEMORY free commit {0:N1} GB, free physical {1:N1} GB, BEE_BUILD_THREADS={2}' -f ($os.FreeVirtualMemory / 1MB), ($os.FreePhysicalMemory / 1MB), $env:BEE_BUILD_THREADS)
-    if (Test-Path -LiteralPath $releaseBuildDir) { Remove-Item -LiteralPath $releaseBuildDir -Recurse -Force }
+    if (Test-Path -LiteralPath $releaseBuildDir) { throw "Build output already exists; preserve it and choose a fresh -BuildDirectory: $releaseBuildDir" }
     $log = Join-Path $logDir 'build-release.log'
-    $code = Invoke-Unity @('-quit', '-executeMethod', 'Echoes.EditorTools.BuildTools.BuildWindowsRelease', '-echoesBuildPath', ('"' + $releaseBuildDir + '"')) $log
+    $arguments = @('-quit', '-executeMethod', 'Echoes.EditorTools.BuildTools.BuildWindowsRelease', '-echoesBuildPath', ('"' + $releaseBuildDir + '"'))
+    if ($BuildVersion) { $arguments += @('-echoesBuildVersion', ('"' + $BuildVersion + '"')) }
+    $code = Invoke-Unity $arguments $log
     $exe = Join-Path $releaseBuildDir 'EchoesOfTheValley.exe'
     Write-Host "TASK=BuildRelease UNITY_EXIT=$code PLAYER_EXISTS=$(Test-Path -LiteralPath $exe) BUILD_ID=$(Get-BuildId $log)"
     Show-LogSummary $log
@@ -151,8 +166,7 @@ function New-ReleasePackage {
     if (-not (Test-Path -LiteralPath $playerReadme -PathType Leaf)) { throw "Player README missing: $playerReadme" }
 
     New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
-    if (Test-Path -LiteralPath $stageDir) { Remove-Item -LiteralPath $stageDir -Recurse -Force }
-    if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
+    if ((Test-Path -LiteralPath $stageDir) -or (Test-Path -LiteralPath $zipPath)) { throw "Package output already exists; choose a fresh -ReleaseName or -ReleaseDirectory: $zipPath" }
     New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
 
     foreach ($item in Get-ChildItem -LiteralPath $releaseBuildDir -Force) {
@@ -331,13 +345,18 @@ function Test-ReleasePackage {
     $cold = Start-Process -FilePath $exeCopy -ArgumentList @('-screen-fullscreen', '0', '-screen-width', '1280', '-screen-height', '720', '-logFile', ('"' + $coldLog + '"')) -WorkingDirectory $extracted -PassThru
     Start-Sleep -Seconds 12
     $coldAlive = -not $cold.HasExited
-    if ($coldAlive) { [void] $cold.CloseMainWindow(); Start-Sleep -Seconds 2; if (-not $cold.HasExited) { $cold.Kill() } }
+    $coldForced = $false
+    if ($coldAlive) { [void] $cold.CloseMainWindow(); Start-Sleep -Seconds 2; if (-not $cold.HasExited) { $cold.Kill(); $coldForced = $true } }
+    $cold.WaitForExit()
+    $coldExitCode = $cold.ExitCode
     $coldBad = if (Test-Path -LiteralPath $coldLog) { @(Select-String -LiteralPath $coldLog -Pattern 'Exception|NullReference|Shader error|LogError|LogException|Assertion failed' -CaseSensitive:$false).Count } else { -1 }
     $coldMenu = (Test-Path -LiteralPath $coldLog) -and (@(Select-String -LiteralPath $coldLog -Pattern 'MainMenu ready').Count -gt 0)
-    Write-Host "COLD_START alive_after_12s=$coldAlive main_menu_ready=$coldMenu exception_lines=$coldBad"
+    Write-Host "COLD_START alive_after_12s=$coldAlive main_menu_ready=$coldMenu exception_lines=$coldBad exit_code=$coldExitCode forced=$coldForced"
     if (-not $coldAlive) { $problems.Add('the extracted player did not stay running for 12 s') }
     if (-not $coldMenu) { $problems.Add('the extracted player never reported the main menu ready') }
     if ($coldBad -ne 0) { $problems.Add("the cold start logged $coldBad error lines") }
+    if ($coldForced) { $problems.Add('the cold-start player required forced termination') }
+    if ($coldExitCode -ne 0) { $problems.Add("the cold-start player exited with code $coldExitCode") }
 
     # The scripted run is repeated (up to 3 times) only to tell a failing game from the intermittent Unity window-teardown fault seen once
     # in Phase 4 (a null read in UnityPlayer.dll after the run had logged PASS, process exit code 0xC000041D). Every attempt is recorded.
@@ -388,6 +407,8 @@ function Test-ReleasePackage {
         extractedTo = $extracted
         zipEntriesRead = $entryCount
         coldStartAlive = $coldAlive
+        coldStartExitCode = $coldExitCode
+        coldStartForcedTermination = $coldForced
         smokeAttempts = $attempts.ToArray()
         smokeExitFaultsAfterPass = $exitFaults
         smokeExitCode = $smoke.ExitCode

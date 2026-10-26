@@ -74,20 +74,8 @@ namespace Echoes.EditorTools
 
         // ---- Nature --------------------------------------------------------------------------------------------
 
-        public static GameObject Tree(string name, MaterialLibrary m, string leafMain, string leafTop, float trunkHeight)
-        {
-            GameObject root = new GameObject(name);
-            Transform t = root.transform;
-            float h = trunkHeight;
-            Prim(t, PrimitiveType.Cylinder, "Trunk", new Vector3(0f, h * 0.5f, 0f), new Vector3(0.34f, h * 0.5f, 0.34f), m["Trunk"], Col.Auto);
-            Prim(t, PrimitiveType.Sphere, "Root", new Vector3(0f, 0.12f, 0f), new Vector3(0.80f, 0.34f, 0.80f), m["Trunk"]);
-            Prim(t, PrimitiveType.Sphere, "Leaves", new Vector3(0f, h + 0.7f, 0f), new Vector3(2.6f, 2.1f, 2.6f), m[leafMain]);
-            Prim(t, PrimitiveType.Sphere, "LeavesTop", new Vector3(0.15f, h + 1.75f, -0.1f), new Vector3(1.7f, 1.5f, 1.7f), m[leafTop]);
-            Prim(t, PrimitiveType.Sphere, "LeavesSide", new Vector3(-0.9f, h + 0.3f, 0.55f), new Vector3(1.5f, 1.3f, 1.5f), m[leafTop]);
-            Prim(t, PrimitiveType.Sphere, "LeavesLow", new Vector3(0.95f, h + 0.15f, -0.55f), new Vector3(1.35f, 1.15f, 1.35f), m[leafMain]);
-            Prim(t, PrimitiveType.Sphere, "LeavesCrown", new Vector3(-0.35f, h + 2.3f, 0.3f), new Vector3(0.95f, 0.85f, 0.95f), m[leafTop]);
-            return root;
-        }
+        public static GameObject Tree(string name, MaterialLibrary m, string leafMain, string leafTop, float trunkHeight) =>
+            PilotArt.Tree(name,trunkHeight,m,leafMain,leafTop);
 
         public static GameObject Rock(MaterialLibrary m)
         {
@@ -95,26 +83,19 @@ namespace Echoes.EditorTools
             Prim(root.transform, PrimitiveType.Sphere, "Boulder", new Vector3(0f, 0.38f, 0f), new Vector3(1.7f, 1.0f, 1.35f), m["Rock"], Col.Box, new Vector3(0f, 20f, 4f));
             Prim(root.transform, PrimitiveType.Sphere, "Chip", new Vector3(0.9f, 0.18f, 0.35f), new Vector3(0.7f, 0.45f, 0.6f), m["Rock"]);
             Prim(root.transform, PrimitiveType.Sphere, "Moss", new Vector3(0.05f, 0.72f, -0.05f), new Vector3(1.15f, 0.34f, 0.92f), m["GrassBladeLight"], Col.None, new Vector3(0f, 20f, 4f));
+            root.transform.Find("Boulder").GetComponent<MeshFilter>().sharedMesh=WorldArt.Rock();
+            root.transform.Find("Chip").GetComponent<MeshFilter>().sharedMesh=WorldArt.Rock();
             return root;
         }
 
         public static GameObject FlowerPatch(string name, MaterialLibrary m, string petals)
         {
-            GameObject root = new GameObject(name);
-            Vector2[] spots =
-            {
-                new Vector2(0.0f, 0.0f), new Vector2(0.45f, 0.20f), new Vector2(-0.40f, 0.30f),
-                new Vector2(0.20f, -0.45f), new Vector2(-0.30f, -0.35f), new Vector2(0.65f, -0.20f)
-            };
-            for (int i = 0; i < spots.Length; i++)
-            {
-                float stem = 0.20f + 0.05f * (i % 3);
-                Vector3 p = new Vector3(spots[i].x, 0f, spots[i].y);
-                Prim(root.transform, PrimitiveType.Cylinder, "Stem" + i, p + new Vector3(0f, stem * 0.5f, 0f), new Vector3(0.035f, stem * 0.5f, 0.035f), m["Stem"]);
-                Prim(root.transform, PrimitiveType.Sphere, "Bloom" + i, p + new Vector3(0f, stem + 0.04f, 0f), new Vector3(0.17f, 0.11f, 0.17f), m[petals]);
-            }
-            NoShadows(root);
-            return root;
+            var root=PilotArt.Prop("Flowers",null,Vector3.zero,0,1);
+            root.name=name;
+            foreach(var r in root.GetComponentsInChildren<MeshRenderer>())
+                if(r.name.Contains("Petal"))r.sharedMaterial=m[petals];
+            return root.gameObject;
         }
+
     }
 }

@@ -25,6 +25,8 @@ namespace Echoes.EditorTools
                 ConfigureRenderPipeline();
 
                 MaterialLibrary materials = new MaterialLibrary();
+                PilotArt.Bake();
+                PilotArt.ApplyWorldMaterials(materials);
                 PrefabSet prefabs = PrefabLibrary.Build(materials);
                 AudioSet audio = AudioLibrary.Generate();
                 AssetPaths.EnsureFolder(AssetPaths.Scenes);

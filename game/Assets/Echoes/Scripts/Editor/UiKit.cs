@@ -10,10 +10,10 @@ namespace Echoes.EditorTools
     /// </summary>
     internal static class UiKit
     {
-        public static readonly Color PanelColor = new Color(0.11f, 0.09f, 0.19f, 0.80f);
-        public static readonly Color ModalColor = new Color(0.11f, 0.09f, 0.19f, 0.95f);
+        public static readonly Color PanelColor = new Color(0.145f, 0.227f, 0.235f, 0.92f);
+        public static readonly Color ModalColor = new Color(0.105f, 0.18f, 0.19f, 0.97f);
         public static readonly Color Cream = new Color(1f, 0.95f, 0.84f, 1f);
-        public static readonly Color Gold = new Color(1f, 0.82f, 0.46f, 1f);
+        public static readonly Color Gold = new Color(.90f, 0.75f, 0.47f, 1f);
         public static readonly Color Ink = new Color(0.22f, 0.15f, 0.11f, 1f);
         public static readonly Color EdgeGold = new Color(1f, 0.82f, 0.46f, 0.40f);
         public static readonly Color EdgeBrown = new Color(0.50f, 0.32f, 0.16f, 0.85f);

@@ -28,6 +28,13 @@ namespace Echoes.EditorTools
 
             // The valley starts muted and cool; CompletionFeedback warms it up.
             Light sun = SceneKit.CreateSun(Quaternion.Euler(48f, 38f, 0f), new Color(0.86f, 0.90f, 1f), 1.0f);
+            // A quiet skylight fill keeps faces and cloth readable on the shaded approach.
+            Light fill = new GameObject("SkyFill").AddComponent<Light>();
+            fill.type = LightType.Directional;
+            fill.transform.rotation = Quaternion.Euler(28f, 200f, 0f);
+            fill.color = new Color(.76f,.86f,1f);
+            fill.intensity = .22f;
+            fill.shadows = LightShadows.None;
             SceneKit.ConfigureEnvironment(m["SkyValley"], new Color(0.50f, 0.58f, 0.72f), new Color(0.46f, 0.48f, 0.54f),
                 new Color(0.30f, 0.30f, 0.32f), new Color(0.62f, 0.68f, 0.76f), 0.007f);
 
@@ -42,6 +49,8 @@ namespace Echoes.EditorTools
             GameplayPieces.HenYardFence(world.transform, Ground(terrain, ValleyLayout.HenYard), m);
             Scatter(world.transform, terrain, prefabs);
             Scenery.Build(world.transform, terrain, m);
+            WorldArt.Banks(world.transform,terrain,m);
+            WorldArt.TreeLine(world.transform,terrain);
             BuildBoundaries(world.transform);
             Pieces.MakeStatic(world);
             // Things that move, scale or swap materials at runtime must not be statically batched.
@@ -60,6 +69,7 @@ namespace Echoes.EditorTools
             // Each has a "before" and an "after" that ResonanceView switches between; none of it is static.
             GardenParts garden = Phase3Pieces.Garden(gameplay, Ground(terrain, ValleyLayout.Garden), m);
             WindmillParts windmill = Phase3Pieces.Windmill(gameplay, Ground(terrain, ValleyLayout.Windmill), ValleyLayout.WindmillYaw, m);
+            PilotArt.Dress(world.transform, terrain, windmill.Root.position);
             GameObject yardLife = Phase3Pieces.YardLife(gameplay, Ground(terrain, ValleyLayout.HenYard), m);
             GameObject villageLife = BuildVillageLife(gameplay, terrain, prefabs, m);
 
@@ -103,6 +113,26 @@ namespace Echoes.EditorTools
             GameSessionHost host = systems.AddComponent<GameSessionHost>();
             ResonanceView resonance = systems.AddComponent<ResonanceView>();
             Wire.Set(lighting, "sun", sun);
+            // Warm highlights retain blue ambient fill; progression authority and blending stay unchanged.
+            Wire.Set(lighting, "heartSun", new Color(1f,.95f,.85f));
+            Wire.Set(lighting, "heartAmbientEquator", new Color(.60f,.68f,.74f));
+            Wire.Set(lighting, "heartAmbientGround", new Color(.32f,.40f,.42f));
+            Wire.Set(lighting, "heartFog", new Color(.78f,.85f,.85f));
+            Wire.Set(lighting, "streamSunShift", new Color(0f,-.015f,-.025f,0));
+            Wire.Set(lighting, "gardenSunShift", new Color(0f,-.008f,-.015f,0));
+            Wire.Set(lighting, "valleySunShift", new Color(0f,-.022f,-.045f,0));
+            Wire.Set(lighting, "streamAmbientShift", new Color(.01f,.01f,.02f,0));
+            Wire.Set(lighting, "gardenAmbientShift", new Color(.01f,.01f,0f,0));
+            Wire.Set(lighting, "valleyAmbientShift", new Color(.01f,0f,.01f,0));
+            Wire.Set(lighting, "bloomShifts", new Vector4(.02f,.02f,.02f,.03f));
+            Wire.Set(lighting, "postExposureShifts", new Vector4(.04f,.01f,.01f,.02f));
+            Wire.Set(lighting, "saturationShifts", new Vector4(5f,2f,2f,2f));
+            Wire.Set(lighting, "streamHorizonShift", new Color(.02f,0,-.01f,0));
+            Wire.Set(lighting, "gardenHorizonShift", new Color(.01f,0,-.01f,0));
+            Wire.Set(lighting, "valleyHorizonShift", new Color(.015f,-.005f,-.025f,0));
+            Wire.Set(lighting, "streamFogShift", new Color(.01f,0,-.01f,0));
+            Wire.Set(lighting, "gardenFogShift", new Color(.005f,0,-.005f,0));
+            Wire.Set(lighting, "valleyFogShift", new Color(.015f,-.005f,-.015f,0));
             Wire.Set(lighting, "volume", SceneKit.CreateVolume("PostProcessing", AssetPaths.Settings + "/ValleyPostProcessing.asset", 0.22f, 0.92f, 0.22f, -8f));
             BuildClouds(m);
             AudioWiring.Add(audio, true);
@@ -219,9 +249,9 @@ namespace Echoes.EditorTools
             AssetPaths.EnsureFolder(AssetPaths.Textures);
             TerrainLayer[] layers =
             {
-                MakeLayer("Grass", new Color(0.50f, 0.74f, 0.36f), 0.09f, 6, 101, new Color(0.78f, 0.90f, 0.52f), 0.010f),
-                MakeLayer("Meadow", new Color(0.66f, 0.78f, 0.40f), 0.10f, 5, 202, new Color(1.00f, 0.95f, 0.70f), 0.016f),
-                MakeLayer("Path", new Color(0.84f, 0.74f, 0.54f), 0.07f, 8, 303, new Color(0.62f, 0.52f, 0.38f), 0.020f),
+                MakeLayer("Grass", new Color(0.45f, 0.56f, 0.37f), 0.12f, 6, 101, new Color(0.66f, 0.70f, 0.47f), 0.002f),
+                MakeLayer("Meadow", new Color(0.52f, 0.61f, 0.42f), 0.12f, 5, 202, new Color(0.71f, 0.73f, 0.51f), 0.003f),
+                MakeLayer("Path", new Color(0.75f, 0.66f, 0.53f), 0.10f, 8, 303, new Color(0.52f, 0.47f, 0.39f), 0.025f),
                 MakeLayer("Stone", new Color(0.68f, 0.64f, 0.58f), 0.08f, 6, 404, new Color(0.50f, 0.48f, 0.45f), 0.014f)
             };
 

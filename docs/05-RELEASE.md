@@ -28,12 +28,12 @@
 
 **Known issues**
 
-1. **Intermittent exit fault.** In one of the three Phase 4 development-build smoke runs the process exited with `0xC000041D` *after* the run had logged PASS: Unity's window teardown (`UiaDisconnectAllProviders` pumping messages) dispatched a message into its own window procedure and read a null pointer inside `UnityPlayer.dll`. It did not repeat in the other runs and is not in game code, but a player quitting could in principle meet it (the crash handler would write a dump to the temp folder and the window would close). The verification repeats the scripted run up to three times, records every attempt, and counts such exits as 0 in this run.
+1. **Intermittent exit fault.** In one of the three Phase 4 development-build smoke runs the process exited with `0xC000041D` *after* the run had logged PASS: Unity's window teardown (`UiaDisconnectAllProviders` pumping messages) dispatched a message into its own window procedure and read a null pointer inside `UnityPlayer.dll`. It did not repeat in the other runs. The observed native stack does not establish the root cause or prove that game behavior cannot contribute; a player quitting could in principle meet it (the crash handler would write a dump to the temp folder and the window would close). The verification repeats the scripted run up to three times, records every attempt, and counts such exits as 0 in this run.
 2. **Colour.** The restored valley is a strong yellow-green with a lot of bloom in the stills the assistant read; a human may want it toned down (it is two numbers in `ValleyLighting` and the golden filter).
 3. **Scripted frame times** (above) were measured with the player standing near the spawn; they are not a promise for every view. One-off hitches of 50-100 ms appear in the first seconds of an effect.
 4. The Unity **splash screen** is left on (default). The font is Unity's built-in `LegacyRuntime`; inspecting the build data shows it holds no font file (it names the operating system's Arial), so no font ships in the package, but that is the assistant's reading of the binary, not documentation.
 
-5. **Generator hygiene.** `SceneKit.CreateVolume` leaves orphaned `VolumeComponent` sub-objects in the two post-processing profile assets (the committed files hold 28 objects where 4 are needed, and every Setup run or generator test adds 3 more). Nothing references them, so nothing changes at run time and only the asset files carry the dead weight; the fix (rewrite the profile asset from scratch) was left out so the verified release candidate was not regenerated. After running Setup or the EditMode tests, `git checkout` the generated scenes, prefabs and `Art/Settings` assets unless you mean to change them (the scenes also get renumbered internal IDs).
+5. **Generator hygiene (historical, fixed in Phase 5.1).** The RC1-era generator accumulated hidden VolumeComponent subassets. Phase 5.1 uses `LoadAllAssetsAtPath`, preserves profile GUIDs, and tests repeated rebuilds: one profile plus three overrides (4 objects) remains. Internal scene/prefab IDs still change on regeneration; preserve matching generated references together and never discard user changes to reduce diff churn. See [06](06-PHASE51.md).
 
 ## Decisions only the developer can make (open items)
 
@@ -99,10 +99,12 @@ About 45 seconds, 1080p, no voice, the game's own music:
 
 **Capture:** run the player at 1920x1080 windowed, record with any screen recorder, and play it through once by hand (the scripted run teleports and is only a test). Use the ending card's drifting camera for the final shot.
 
-## Rebuilding and verifying
+## Rebuilding and verifying (historical RC1 command)
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Echoes.ps1 -Task Release
 ```
 
 `BuildRelease` makes the non-development build; `Package` stages it (without the Burst debug folder or any `.pdb`), replaces the build machine's PDB path inside `Echoes.Runtime.dll` with its bare file name, adds `README.txt` (`tools/release-readme.txt`) and zips it with a SHA-256; `VerifyRelease` reads every zip entry, extracts to a temporary folder, compares every file, checks the required files, scans every file for local paths and user names, starts the extracted player cold, and runs the full-game smoke test on it with `-echoes-expect-release` (up to three attempts, all recorded). The result is written to `artifacts/release/release-metadata.json`. `-Task Smoke` runs the same scripted game on the development build.
+
+**Phase 5.1 update:** the newer art candidate and exact verification paths are recorded in [06](06-PHASE51.md) and its local final report. The wrapper now refuses existing build/package destinations. Use fresh output paths, a new release name and an explicit build version; the RC1 archive above is retained unchanged.

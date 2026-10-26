@@ -46,3 +46,24 @@ The submission description must be edited to reflect the **final** shipping work
 > This game contains AI-assisted content. AI coding assistants (OpenAI Codex for early planning and documentation; Anthropic Claude Code for [replace with the verified final coding/art/text scope]) assisted with research, planning, documentation and code. The final shipped AI-generated assets are [exact list, or an audited statement that none are included].
 
 Replace every bracketed placeholder before upload (the drafts in [05](05-RELEASE.md) already state the actual scope of the AI use; only the creator name is a placeholder). The release zip carries the AI disclosure in its `README.txt`, the in-game credits and the ending card. Keep source code under the repository MIT license **only for original code**; art, audio, docs, font and theme recording are **not MIT-licensed**. Include actual license notices and credits in the final game/entry.
+
+## Phase 5.1 pilot (2026-10-27 NZDT, owner visual approval pending)
+
+OpenAI Codex authored the original Blender script `tools/art/build_pilot.py`, the editable source/interchange exports in `tools/art/source/`, the mesh intermediate in `game/Assets/Echoes/Art/PilotSource/`, and Unity baking/material/scenery integration in `Scripts/Editor/PilotArt.cs`. The script constructs original human surfaces, hair, clothing, boots, satchel, windmill masonry/timber/shingles, branching trees, solid leaves/petals and yard props. The native meshes and 256px procedural color/normal textures in `Art/Pilot/` are generated from that code; none is downloaded, ripped or sampled. These art outputs are not covered by the repository source-code MIT grant. No external asset license was needed or assumed.
+
+Koei Tecmo's official [Ryza gallery](https://www.koeitecmoamerica.com/ryza/movie.html) was viewed for general landscape layering, contrast and rural material study. Official pictures stay in the ignored local evidence folder for study only, and are excluded from source commits, game assets and builds. The user-supplied art direction kit is local reference material, not an in-game asset. No franchise model, costume, map, texture, UI or music was imported.
+
+AI assistance: OpenAI Codex wrote the Phase 5.1 Blender/C# art code, test/capture tooling and documentation, directed by the developer. Character modelling/animation fidelity and artistic quality remain subject to owner review. The existing audio is preserved; no official theme recording was added. Human gameplay, audio and visual approval remain PENDING.
+
+### Phase 5.1 whole-valley extension
+
+The final scope also includes original Blender geometry for Mira (sage robe, apron, braid and herb basket), Wren (ochre work clothes, apron, straw hat and trowel), Alder (slate work clothes, cap, beard and mallet), and Clover (shaped body/head, beak, comb, wings, tail feathers, legs and toes). These are role variants of an original anatomical base, with rigid procedural animation. Original branch/leaf tree variants, petalled flowers, broadleaf herbs, rough mineral rocks, native cottage detailing, bank pebbles and the seven procedural item sprites are integrated by `PilotArt.cs`, `WorldArt.cs`, the existing generators and the small display-only change in `InventoryPanel.cs`. No new gameplay item, recipe, quest, sound file or external asset was added.
+
+| Original asset family | Reproducible source | Provenance / actual use | Rights boundary |
+| --- | --- | --- | --- |
+| People, Clover, windmill shell, foliage, props | `tools/art/build_pilot.py`, editable `.blend`/FBX, `Art/PilotSource/pilot-meshes.json` | Authored with OpenAI Codex assistance during this phase; 164 material/rig groups, 53,040 source triangles | Original AI-assisted output; repository code MIT grant does not license art |
+| Color/normal textures and materials | `Scripts/Editor/PilotArt.cs` | Original seeded/procedural 256px textures, shared URP Lit materials | Same art boundary; no sampled photographs or official art |
+| Cottage detail, stone mesh, stream-bank/skyline dressing | `Scripts/Editor/WorldArt.cs` and existing scene generators | Original native Unity geometry and deterministic placement | Original AI-assisted output; no acquired model |
+| Seven item sprites | `WorldArt.Icon`, `InventoryPanel` bindings | Original 64px transparent procedural silhouettes keyed to the existing item ids | Original AI-assisted UI art; no imported icon/font pack |
+
+AI disclosure is included in the in-game credits and the new package README. Human approval remains pending. The original 36 synthesised WAVs are preserved. No official reference picture, source-kit screenshot, unmodified theme WAV, paid asset, ripped asset or marketplace content is staged or shipped.

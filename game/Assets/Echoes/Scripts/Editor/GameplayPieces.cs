@@ -25,6 +25,7 @@ namespace Echoes.EditorTools
             Pieces.Prim(depleted, PrimitiveType.Sphere, "SproutB", new Vector3(-0.08f, 0.05f, -0.04f), new Vector3(0.11f, 0.10f, 0.11f), m["HerbDark"]);
             depleted.gameObject.SetActive(false);
             Pieces.NoShadows(root);
+            WorldArt.Resources(root,false,m);
             return root;
         }
 
@@ -45,6 +46,7 @@ namespace Echoes.EditorTools
             }
             depleted.gameObject.SetActive(false);
             Pieces.NoShadows(root);
+            WorldArt.Resources(root,true,m);
             return root;
         }
 
@@ -64,6 +66,7 @@ namespace Echoes.EditorTools
             }
             depleted.gameObject.SetActive(false);
             Pieces.NoShadows(ready.gameObject);
+            root.transform.Find("Base").GetComponent<MeshFilter>().sharedMesh=WorldArt.Rock();
             return root;
         }
 
@@ -80,18 +83,7 @@ namespace Echoes.EditorTools
             }
 
             Transform body = Pieces.Group("Body", root.transform, Vector3.zero);
-            Pieces.Prim(body, PrimitiveType.Sphere, "Torso", new Vector3(0f, 0.36f, 0f), new Vector3(0.55f, 0.46f, 0.70f), m["ChickenWhite"]);
-            Pieces.Prim(body, PrimitiveType.Sphere, "Head", new Vector3(0f, 0.64f, 0.30f), Vector3.one * 0.27f, m["ChickenWhite"]);
-            Pieces.Prim(body, PrimitiveType.Cube, "Comb", new Vector3(0f, 0.80f, 0.30f), new Vector3(0.06f, 0.12f, 0.15f), m["ChickenComb"]);
-            Pieces.Prim(body, PrimitiveType.Cube, "Beak", new Vector3(0f, 0.62f, 0.45f), new Vector3(0.09f, 0.06f, 0.12f), m["ChickenBeak"]);
-            Pieces.Prim(body, PrimitiveType.Sphere, "Wattle", new Vector3(0f, 0.54f, 0.39f), new Vector3(0.05f, 0.09f, 0.05f), m["ChickenComb"]);
-            Pieces.Prim(body, PrimitiveType.Sphere, "EyeL", new Vector3(-0.10f, 0.68f, 0.41f), Vector3.one * 0.045f, m["Eye"]);
-            Pieces.Prim(body, PrimitiveType.Sphere, "EyeR", new Vector3(0.10f, 0.68f, 0.41f), Vector3.one * 0.045f, m["Eye"]);
-            Pieces.Prim(body, PrimitiveType.Sphere, "Tail", new Vector3(0f, 0.5f, -0.36f), new Vector3(0.30f, 0.36f, 0.22f), m["ChickenWhite"], Col.None, new Vector3(-28f, 0f, 0f));
-            Pieces.Prim(body, PrimitiveType.Sphere, "WingL", new Vector3(-0.27f, 0.4f, 0f), new Vector3(0.12f, 0.30f, 0.46f), m["ChickenWhite"]);
-            Pieces.Prim(body, PrimitiveType.Sphere, "WingR", new Vector3(0.27f, 0.4f, 0f), new Vector3(0.12f, 0.30f, 0.46f), m["ChickenWhite"]);
-            Pieces.Prim(body, PrimitiveType.Cylinder, "LegL", new Vector3(-0.1f, 0.1f, 0.02f), new Vector3(0.035f, 0.1f, 0.035f), m["ChickenBeak"]);
-            Pieces.Prim(body, PrimitiveType.Cylinder, "LegR", new Vector3(0.1f, 0.1f, 0.02f), new Vector3(0.035f, 0.1f, 0.035f), m["ChickenBeak"]);
+            PilotArt.AddModel("Clover",body);
 
             // State feedback: hungry bubble, laying star, and the egg waiting in the nest.
             GameObject hungry = Pieces.Prim(root.transform, PrimitiveType.Sphere, "HungryIcon", new Vector3(0f, 1.25f, 0f), Vector3.one * 0.22f, m["IconHungry"]);

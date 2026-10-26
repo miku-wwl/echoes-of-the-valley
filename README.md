@@ -10,6 +10,8 @@ An original, short, peaceful fantasy adventure about **bringing a silent valley 
 
 ## Current truth
 
+- **Phase 5.1 (visual overhaul): implemented; overall art acceptance PARTIAL.** Original Blender human/NPC/Clover/foliage/windmill meshes, textured rural detail, terrain/lighting and item-icon updates replace the prototype presentation across the valley. Character rigs remain rigid and human visual/gameplay/audio approval is pending. Technical evidence and reproduction: [06](docs/06-PHASE51.md). RC1 is preserved; nothing is pushed or uploaded.
+
 - **Competition:** [thatgamejam #02](https://itch.io/jam/thatgamejam02), hosted by thatgamecompany.
 - **Start:** 2026-10-24 20:00 NZDT; **deadline:** **2026-11-08 20:59 NZDT**. Internal upload target: 2026-11-07.
 - **Phase 1 (foundation): PASS** on 2026-10-25 against its gate (23/23 EditMode, 18/18 PlayMode, Windows build, smoke test). Pushed to `origin/main` as `8849495` and `587ebf4`. Evidence: [02](docs/02-BUILD-PLAN.md#phase-1-status-2026-10-25).
@@ -71,6 +73,8 @@ The signature feature is **Valley Resonance**: each important restoration create
 | `.\tools\Invoke-Echoes.ps1 -Task Build` | Windows x64 Mono development build to `artifacts\build\win64\EchoesOfTheValley.exe`. It caps Unity's compiler at 4 threads (`BEE_BUILD_THREADS`) because a full-parallel build ran out of memory on this machine. |
 | `.\tools\Invoke-Echoes.ps1 -Task Smoke` | Start that build with `-echoes-smoke`: a scripted playthrough of the **whole game** (menu, opening objective, the three restorations with gathering, crafting and the hen, save and Continue, the ending, Continue Exploring, the New Game question, back to the menu) using the game's real entry points and an isolated save folder, saving screenshots and exiting with code 0 (pass) or 1. It teleports the player instead of walking and is **not** a human playtest. |
 | `.\tools\Invoke-Echoes.ps1 -Task BuildRelease` / `-Task Package` / `-Task VerifyRelease` / `-Task Release` | The release candidate: a **non-development** Windows x64 build (no watermark) in `artifacts\build\win64-release`; a zip (without Burst debug folders or `.pdb` files, with the player `README.txt` from `tools\release-readme.txt` and the build machine path removed from our own assembly) in `artifacts\release`; then a check that reads every zip entry, extracts to a temporary folder, compares every file, scans for local paths, starts the extracted player cold and runs the full-game smoke test on it (up to 3 attempts, all recorded in `release-metadata.json`). `Release` does all three. Nothing under `artifacts` is committed, and nothing is uploaded. |
+
+**Release preservation (Phase 5.1):** existing build/package destinations are now refused. For another candidate pass fresh `-BuildDirectory`, `-ReleaseDirectory`/`-ReleaseName` and an explicit `-BuildVersion`; see [06](docs/06-PHASE51.md). The old default RC1 commands no longer overwrite a verified archive.
 
 Scenes and prefabs are **generated**: edit `game/Assets/Echoes/Scripts/Editor` (also under the **Echoes** menu in the Editor) and re-run `Setup` rather than editing `.unity`/`.prefab` files by hand.
 

@@ -165,24 +165,16 @@ namespace Echoes.EditorTools
         /// <summary>A flower whose origin is its foot, so scaling it from zero makes it grow upwards.</summary>
         static void Flower(Transform parent, string name, Vector3 foot, float height, MaterialLibrary m, string petals)
         {
-            Transform flower = Pieces.Group(name, parent, foot);
-            Pieces.Prim(flower, PrimitiveType.Cylinder, "Stem", new Vector3(0f, height * 0.5f, 0f), new Vector3(0.04f, height * 0.5f, 0.04f), m["Stem"]);
-            Pieces.Prim(flower, PrimitiveType.Sphere, "Bloom", new Vector3(0f, height + 0.03f, 0f), new Vector3(0.3f, 0.18f, 0.3f), m[petals]);
-            Pieces.Prim(flower, PrimitiveType.Sphere, "Heart", new Vector3(0f, height + 0.1f, 0f), Vector3.one * 0.11f, m["BlossomGlow"]);
+            var flower=PilotArt.Prop("Flowers",parent,foot,0,height/.4f);
+            flower.name=name;
+            foreach(var renderer in flower.GetComponentsInChildren<MeshRenderer>())if(renderer.name.Contains("Petal"))renderer.sharedMaterial=m[petals];
         }
 
-        /// <summary>A leafy bush dotted with blossoms; origin at its centre.</summary>
         static void Bush(Transform parent, string name, Vector3 center, float size, MaterialLibrary m, System.Random random)
         {
-            Transform bush = Pieces.Group(name, parent, center);
-            Pieces.Prim(bush, PrimitiveType.Sphere, "Leaves", Vector3.zero, new Vector3(size, size * 0.8f, size), m["GardenGreen"]);
-            Pieces.Prim(bush, PrimitiveType.Sphere, "LeavesTop", new Vector3(0.05f * size, 0.22f * size, 0f), new Vector3(size * 0.6f, size * 0.45f, size * 0.6f), m["GardenGreenLight"]);
-            for (int k = 0; k < 4; k++)
-            {
-                float angle = (k * 90f + (float)random.NextDouble() * 40f) * Mathf.Deg2Rad;
-                Vector3 at = new Vector3(Mathf.Cos(angle) * size * 0.42f, size * (0.05f + 0.12f * (k % 2)), Mathf.Sin(angle) * size * 0.42f);
-                Pieces.Prim(bush, PrimitiveType.Sphere, "Blossom" + k, at, Vector3.one * (0.13f * Mathf.Max(0.8f, size)), m[Petals[(k + (int)(size * 10f)) % Petals.Length]]);
-            }
+            var bush=PilotArt.Prop("Broadleaf",parent,center,Range(random,0,360),size*2);
+            bush.name=name;
+            PilotArt.Prop("Flowers",bush,new Vector3(0,.08f,0),Range(random,0,360),.65f);
         }
 
         static float Range(System.Random random, float min, float max) => min + (float)random.NextDouble() * (max - min);
@@ -197,21 +189,16 @@ namespace Echoes.EditorTools
         {
             Transform root = Pieces.Group("Windmill", parent, position, yaw);
 
-            Pieces.Prim(root, PrimitiveType.Cylinder, "Foundation", new Vector3(0f, 0.35f, 0f), new Vector3(5.6f, 0.35f, 5.6f), m["Stone"], Col.Mesh);
-            Pieces.Prim(root, PrimitiveType.Cylinder, "TowerLower", new Vector3(0f, 2.4f, 0f), new Vector3(4.4f, 1.7f, 4.4f), m["Plaster"], Col.Mesh);
-            Pieces.Prim(root, PrimitiveType.Cylinder, "TowerUpper", new Vector3(0f, 5.6f, 0f), new Vector3(3.7f, 1.5f, 3.7f), m["Plaster"], Col.Mesh);
-            Pieces.Prim(root, PrimitiveType.Cylinder, "Band", new Vector3(0f, 4.1f, 0f), new Vector3(4.0f, 0.07f, 4.0f), m["WoodDark"]);
-            Pieces.Prim(root, PrimitiveType.Cube, "DoorFrame", new Vector3(0f, 1.6f, 2.2f), new Vector3(1.35f, 1.95f, 0.14f), m["WoodDark"]);
-            Pieces.Prim(root, PrimitiveType.Cube, "Door", new Vector3(0f, 1.55f, 2.25f), new Vector3(1.05f, 1.8f, 0.12f), m["Wood"]);
-            Landmarks.WindowGlow(Pieces.Prim(root, PrimitiveType.Cube, "WindowFront", new Vector3(0f, 4.9f, 1.88f), new Vector3(0.7f, 0.9f, 0.12f), m["Window"]), false);
-            Landmarks.WindowGlow(Pieces.Prim(root, PrimitiveType.Cube, "WindowLeft", new Vector3(-1.88f, 4.9f, 0f), new Vector3(0.12f, 0.9f, 0.7f), m["Window"]), false);
-            Landmarks.WindowGlow(Pieces.Prim(root, PrimitiveType.Cube, "WindowRight", new Vector3(1.88f, 4.9f, 0f), new Vector3(0.12f, 0.9f, 0.7f), m["Window"]), false);
-            Pieces.Prim(root, PrimitiveType.Sphere, "Cap", new Vector3(0f, 7.2f, 0f), new Vector3(4.0f, 2.6f, 4.0f), m["Roof"]);
-            Pieces.Prim(root, PrimitiveType.Sphere, "CapTip", new Vector3(0f, 8.55f, 0f), Vector3.one * 0.32f, m["WoodDark"]);
-            Pieces.Prim(root, PrimitiveType.Cylinder, "Axle", new Vector3(0f, 7.2f, 2.0f), new Vector3(0.32f, 0.5f, 0.32f), m["WoodDark"], Col.None, new Vector3(90f, 0f, 0f));
+            PilotArt.Tower(root);
 
             Transform pivot = Pieces.Group("SailsPivot", root, new Vector3(0f, 7.2f, 2.6f));
-            Pieces.Prim(pivot, PrimitiveType.Sphere, "Hub", Vector3.zero, Vector3.one * 0.6f, m["Wood"]);
+            Pieces.Prim(pivot, PrimitiveType.Cylinder, "Hub", Vector3.zero, new Vector3(.65f,.15f,.65f), PilotArt.Timber, Col.None, new Vector3(90,0,0));
+            Pieces.Prim(pivot, PrimitiveType.Cylinder, "AxleBolt", new Vector3(0,0,.18f), new Vector3(.14f,.08f,.14f), PilotArt.Iron, Col.None,new Vector3(90,0,0));
+            for(int i=0;i<6;i++)
+            {
+                float a=i*Mathf.PI/3;
+                Pieces.Prim(pivot,PrimitiveType.Cube,"HubBolt",new Vector3(Mathf.Cos(a)*.25f,Mathf.Sin(a)*.25f,.17f),Vector3.one*.055f,PilotArt.Iron);
+            }
 
             // The whole sails: four full arms with cloth
             Transform intact = Pieces.Group("IntactSails", pivot, Vector3.zero);
@@ -260,13 +247,15 @@ namespace Echoes.EditorTools
         {
             Transform arm = Pieces.Group(name, parent, Vector3.zero);
             arm.localRotation = Quaternion.Euler(0f, 0f, angle);
-            Pieces.Prim(arm, PrimitiveType.Cube, "Spar", new Vector3(0f, 0.15f + length * 0.5f, 0f), new Vector3(0.22f, length, 0.14f), m["WoodDark"]);
+            Pieces.Prim(arm, PrimitiveType.Cube, "Spar", new Vector3(0f, 0.15f + length * 0.5f, 0f), new Vector3(0.22f, length, 0.14f), PilotArt.Timber);
             if (lattice && latticeFraction > 0f)
             {
                 float span = (length - 0.7f) * latticeFraction;
                 Pieces.Prim(arm, PrimitiveType.Cube, "Lattice", new Vector3(0.55f, 0.9f + span * 0.5f, 0.02f), new Vector3(0.95f, span, 0.05f), m["SailCloth"]);
-                for (int k = 0; k < 3; k++)
-                    Pieces.Prim(arm, PrimitiveType.Cube, "Bar" + k, new Vector3(0.55f, 0.9f + span * (k + 0.5f) / 3f, 0.05f), new Vector3(0.95f, 0.06f, 0.07f), m["Wood"]);
+                for (int k = 0; k < 8; k++)
+                    Pieces.Prim(arm, PrimitiveType.Cube, "Bar" + k, new Vector3(0.55f, 0.9f + span * (k + 0.5f) / 8f, 0.05f), new Vector3(1.10f, 0.05f, 0.07f), PilotArt.Timber);
+                for (int j = 0; j < 3; j++)
+                    Pieces.Prim(arm, PrimitiveType.Cube, "Longeron" + j, new Vector3(.1f + j * .45f, .9f + span * .5f, .075f), new Vector3(.04f, span, .07f), PilotArt.Timber);
             }
             return arm;
         }

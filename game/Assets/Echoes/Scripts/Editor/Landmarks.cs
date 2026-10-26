@@ -220,6 +220,7 @@ namespace Echoes.EditorTools
             Pieces.Prim(yard, PrimitiveType.Cylinder, "SignFlaskNeck", new Vector3(-0.4f, 1.55f, 1.85f), new Vector3(0.07f, 0.07f, 0.05f), m["PotionBlue"], Col.None, new Vector3(90f, 0f, 0f));
 
             Transform point = Pieces.Group("WorkshopInteraction", root, new Vector3(0f, 0f, front + 1.5f));
+            WorldArt.Cottage(root,m);
             return new CottageParts { Root = root, InteractionPoint = point };
         }
     }

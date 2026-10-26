@@ -36,7 +36,8 @@ namespace Echoes.EditorTools
             if (scenes.Length == 0) throw new InvalidOperationException("No scenes in Build Settings; run ProjectSetup.GenerateAll first.");
 
             string previousVersion = PlayerSettings.bundleVersion;
-            if (release) PlayerSettings.bundleVersion = ReleaseVersion;
+            string releaseVersion = ReadArgument("-echoesBuildVersion") ?? ReleaseVersion;
+            if (release) PlayerSettings.bundleVersion = releaseVersion;
 
             BuildPlayerOptions options = new BuildPlayerOptions
             {
@@ -49,7 +50,7 @@ namespace Echoes.EditorTools
 
             BuildSummary summary = BuildPipeline.BuildPlayer(options).summary;
             PlayerSettings.bundleVersion = previousVersion;
-            Debug.Log("[Echoes] BUILD " + summary.result + " (" + (release ? "release" : "development") + ", version " + (release ? ReleaseVersion : previousVersion)
+            Debug.Log("[Echoes] BUILD " + summary.result + " (" + (release ? "release" : "development") + ", version " + (release ? releaseVersion : previousVersion)
                 + "): errors=" + summary.totalErrors + " warnings=" + summary.totalWarnings
                 + " size=" + summary.totalSize + " bytes time=" + summary.totalTime + " id=" + summary.guid + " scenes=" + string.Join(",", scenes)
                 + " output=" + summary.outputPath);

@@ -27,6 +27,8 @@
 
 # Local development files and build artifacts
 artifacts/
+# User art directions and private reference studies are not game assets.
+art-direction-reference/
 TestResults/
 node_modules/
 .venv/

@@ -17,7 +17,7 @@ namespace Echoes
         public static readonly string[] EndingLines =
         {
             "A game for thatgamejam #02  ·  Made with Unity",
-            "Code, writing, art and sound made with AI assistance (Anthropic Claude Code)",
+            "AI assistance: Anthropic Claude Code and OpenAI Codex",
             "Full credits are on the title screen  ·  Thank you for listening."
         };
 
@@ -29,7 +29,7 @@ namespace Echoes
             CreatorLine,
             "",
             "Made with AI assistance",
-            "All code, dialogue and story text, the 3D art (simple shapes assembled by code) and all music and sound effects (synthesised by code) were created with AI assistance: Anthropic Claude Code, directed by the developer.",
+            "Code, writing, procedural art and sound: Anthropic Claude Code. Original Blender art, visual overhaul and tooling: OpenAI Codex. AI assistance was directed by the developer.",
             "",
             "Assets",
             "No external art, music, sound or font files are used. Music and sounds are original and synthesised procedurally. The interface uses the font and sprites built into Unity.",

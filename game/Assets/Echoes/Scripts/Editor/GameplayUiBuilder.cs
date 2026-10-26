@@ -127,6 +127,7 @@ namespace Echoes.EditorTools
             Wire.Set(controller, "rowNames", names);
             Wire.Set(controller, "rowCounts", counts);
             Wire.Set(controller, "rowIcons", icons);
+            Wire.Set(controller, "itemSprites", WorldArt.Icons());
             panel.gameObject.SetActive(false);
             return controller;
         }
@@ -152,6 +153,10 @@ namespace Echoes.EditorTools
                 float y = -138f - i * 158f;
                 names[i] = UiKit.Label(panel.transform, "RecipeName" + i, string.Empty, 36, UiKit.Gold, TextAnchor.UpperLeft, FontStyle.Bold);
                 names[i].rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(40f, y), new Vector2(760f, 46f));
+                Image recipeIcon=UiKit.Panel(panel.transform,"RecipeIcon"+i,UiKit.Gold,false);
+                recipeIcon.sprite=WorldArt.Icon(new[]{ItemIds.SpringTonic,ItemIds.ChickenFeed,ItemIds.WindmillBraces}[i]);
+                recipeIcon.rectTransform.Place(UiKit.TopLeft,UiKit.TopLeft,new Vector2(38f,y-3),new Vector2(32,32));
+                names[i].rectTransform.Place(UiKit.TopLeft,UiKit.TopLeft,new Vector2(82f,y),new Vector2(718f,46f));
                 details[i] = UiKit.Label(panel.transform, "RecipeDetail" + i, string.Empty, 26, UiKit.Cream, TextAnchor.UpperLeft);
                 details[i].rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(40f, y - 52f), new Vector2(790f, 90f));
                 buttons[i] = UiKit.MakeButton(panel.transform, "CraftButton" + i, "Craft", UiKit.TopLeft, new Vector2(950f, y - 60f), new Vector2(200f, 70f));

@@ -11,6 +11,7 @@ namespace Echoes
         [SerializeField] Text[] rowNames;
         [SerializeField] Text[] rowCounts;
         [SerializeField] Image[] rowIcons;
+        [SerializeField] Sprite[] itemSprites; // ItemCatalog order; visual identity follows the actual stack id, never the row.
 
         public bool IsOpen { get; private set; }
         public int RowCount => rowNames != null ? rowNames.Length : 0;
@@ -88,6 +89,10 @@ namespace Echoes
                 {
                     Color tint = filled ? ItemCatalog.Get(stacks[i].Id).Tint : new Color(1f, 1f, 1f, 0.12f);
                     rowIcons[i].color = tint;
+                    rowIcons[i].sprite=null;
+                    if(filled && itemSprites!=null)
+                        for(int icon=0;icon<ItemCatalog.All.Count && icon<itemSprites.Length;icon++)
+                            if(ItemCatalog.All[icon].Id==stacks[i].Id)rowIcons[i].sprite=itemSprites[icon];
                 }
             }
         }
