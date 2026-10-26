@@ -16,6 +16,7 @@ An original, short, peaceful fantasy adventure about **bringing a silent valley 
 - **Phase 2 (playable slice): automated gate PASS** on 2026-10-25: 111 EditMode and 49 PlayMode tests, a Windows x64 Mono development build and a scripted standalone gameplay smoke test. Pushed to `origin/main` as `f8847b6`. Evidence, design numbers and limits: [02](docs/02-BUILD-PLAN.md#phase-2-status-2026-10-25).
 - **Phase 3 (full greybox): automated gate PASS** on 2026-10-26: 168 EditMode and 68 PlayMode tests, a Windows x64 Mono development build and a scripted standalone full-game smoke test (New Game to the ending, save, Continue, Continue Exploring). The whole game runs from New Game to the ending: three restorations (`ResonanceStage` 0 to 3), a closing conversation and an ending screen. Committed locally; **not pushed**. Evidence, design numbers and limits: [02](docs/02-BUILD-PLAN.md#phase-3-status-2026-10-26).
 - **Phase 4 (cohesive visuals and sound): automated gate PASS** on 2026-10-26: 196 EditMode and 83 PlayMode tests, a Windows x64 Mono development build and the standalone full-game smoke (it also checks the soundscape of every stage). New: original characters and scenery, a gradient sky, post-processing, a stage-by-stage colour grade, clouds, flowing water, glowing windows, a restyled interface with a Credits screen and volume sliders, and **36 original sound files synthesised by code** (music in layers that grow with the valley, ambience, effects, an ending piece). Committed locally; **not pushed**. Evidence and limits: [02](docs/02-BUILD-PLAN.md#phase-4-status-2026-10-26).
+- **Phase 5 (Windows release candidate): automated preparation PASS** on 2026-10-26. A non-development Windows x64 build (`1.0.0-rc1`, build id `008df7e74ad8443faa7db6a90d2f4776`) is packed as `EchoesOfTheValley-Windows-x64-RC1.zip` (61.7 MB, SHA-256 `EB9BFC0D9B0BA60A0E9E8367ADF3BA4EB4D4F3EFE8F0F6FCD58A2AB4FDA3112A`; in the git-ignored `artifacts/release`, **not in Git**). `VerifyRelease` read the zip, extracted it to a temporary folder, compared every file, scanned for local paths (0 found), started the **extracted** player cold and played the whole game on it to the ending (save, Continue, Continue Exploring) with a natural exit code 0, 0 error lines and no network use. **Not played or listened to by a human, not uploaded, not submitted.** The record, the itch.io copy and the human QA checklist are in [05](docs/05-RELEASE.md).
 - **Manual gameplay QA: PENDING.** No human has played the Windows build, looked at it in motion or **listened to it**, so mouse and keyboard feel, real clicks, how good the visuals and music actually are, the real length of a play, performance beyond the scripted measurement and whether the game is fun are **not verified**. This is deferred until before final submission.
 - **Environment:** Phase 0.5 **PASS** was for a separately tested blank-template probe (see [baseline](docs/04-BASELINE.md)); Phases 1 and 2 exercised the toolchain on this project.
 - **Official theme:** released; the supplied 60-second audio's dynamics have been measured and interpreted. The emotional interpretation remains a **design choice**, not a claim of direct human listening.
@@ -43,12 +44,13 @@ One compact valley, one original protagonist, three short NPC quests, herbs/ore,
 
 The signature feature is **Valley Resonance**: each important restoration creates a clear, persistent before/after change in color, vegetation, activity and sound. The game does **not** need to be a rhythm game or ship with the official theme audio.
 
-## Docs: four short working references
+## Docs: five short working references
 
 1. [01 — Game vision and musical theme](docs/01-GAME-DESIGN.md)
 2. [02 — Implementation and acceptance gates](docs/02-BUILD-PLAN.md)
 3. [03 — Jam rules, provenance and AI disclosure](docs/03-RULES-CREDITS.md)
 4. [04 — Verified Phase 0.5 baseline](docs/04-BASELINE.md)
+5. [05 — Release candidate, submission copy and human QA](docs/05-RELEASE.md)
 
 ## Unity project (Windows)
 
@@ -68,6 +70,7 @@ The signature feature is **Valley Resonance**: each important restoration create
 | `.\tools\Invoke-Echoes.ps1 -Task DryRun` | Rehearse the smoke scenario inside the Editor's Play Mode (batch mode) so mistakes show up before a build is spent on them. Screenshots are skipped there (no Game view), so it is only a rehearsal; the standalone `Smoke` run is the evidence. |
 | `.\tools\Invoke-Echoes.ps1 -Task Build` | Windows x64 Mono development build to `artifacts\build\win64\EchoesOfTheValley.exe`. It caps Unity's compiler at 4 threads (`BEE_BUILD_THREADS`) because a full-parallel build ran out of memory on this machine. |
 | `.\tools\Invoke-Echoes.ps1 -Task Smoke` | Start that build with `-echoes-smoke`: a scripted playthrough of the **whole game** (menu, opening objective, the three restorations with gathering, crafting and the hen, save and Continue, the ending, Continue Exploring, the New Game question, back to the menu) using the game's real entry points and an isolated save folder, saving screenshots and exiting with code 0 (pass) or 1. It teleports the player instead of walking and is **not** a human playtest. |
+| `.\tools\Invoke-Echoes.ps1 -Task BuildRelease` / `-Task Package` / `-Task VerifyRelease` / `-Task Release` | The release candidate: a **non-development** Windows x64 build (no watermark) in `artifacts\build\win64-release`; a zip (without Burst debug folders or `.pdb` files, with the player `README.txt` from `tools\release-readme.txt` and the build machine path removed from our own assembly) in `artifacts\release`; then a check that reads every zip entry, extracts to a temporary folder, compares every file, scans for local paths, starts the extracted player cold and runs the full-game smoke test on it (up to 3 attempts, all recorded in `release-metadata.json`). `Release` does all three. Nothing under `artifacts` is committed, and nothing is uploaded. |
 
 Scenes and prefabs are **generated**: edit `game/Assets/Echoes/Scripts/Editor` (also under the **Echoes** menu in the Editor) and re-run `Setup` rather than editing `.unity`/`.prefab` files by hand.
 

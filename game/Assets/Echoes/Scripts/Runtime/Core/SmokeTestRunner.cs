@@ -690,13 +690,15 @@ namespace Echoes
         IEnumerator Performance()
         {
             player.Teleport(player.RespawnPoint.position + Vector3.up * 0.2f);
-            yield return new WaitForSecondsRealtime(1f);
+            // The player remembers its last window size, so ask for each size explicitly and let it settle before measuring.
+            Screen.SetResolution(1280, 720, FullScreenMode.Windowed);
+            yield return new WaitForSecondsRealtime(2.5f);
             yield return MeasureFrames(8f, "the restored valley, every effect and sound running");
             Screen.SetResolution(1920, 1080, FullScreenMode.Windowed);
-            yield return new WaitForSecondsRealtime(1.5f);
+            yield return new WaitForSecondsRealtime(2.5f);
             yield return MeasureFrames(8f, "the restored valley, every effect and sound running");
             Screen.SetResolution(1280, 720, FullScreenMode.Windowed);
-            yield return new WaitForSecondsRealtime(1f);
+            yield return new WaitForSecondsRealtime(1.5f);
         }
 
         IEnumerator ReloadAfterTheEnding()

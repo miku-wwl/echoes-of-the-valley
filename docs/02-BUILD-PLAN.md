@@ -27,7 +27,7 @@
 | **P2 Playable slice · Oct 26–29** | Nodes/inventory/coins, three recipes, hen states, save/load and **first stream repair** | Real player **gather → craft → deliver → S1**, quantity/dupe tests, hen and saved-state roundtrip. **Status: automated gate A-N PASS, human playtest pending - see [below](#phase-2-status-2026-10-25).** |
 | **P3 Full greybox · Oct 29–31** | Three quests, S0→S3, clear ending, pacing | Entire fresh-save run, repeat-confirm tests, save/reload at each restoration, no softlock. **Status: automated gate A-O PASS, human playtest and pacing pending - see [below](#phase-3-status-2026-10-26).** |
 | **P4 Cohesive art · Nov 1–4** | Original hero/hen/village kit, color transitions, light FX, English UI and licensed sound | Styled Windows build; no pink assets; all quests still work; provenance documented. **Status: automated gate A-O PASS (done 2026-10-26, ahead of plan); visual and audio *quality* pending human review - see [below](#phase-4-status-2026-10-26).** |
-| **P5 QA + Release · Nov 5–7** | Polish, performance, credits/AI disclosure, archive, itch.io entry | Unpacked Windows EXE works with its data folder; full ending; upload is visible in jam before Nov 8 20:59 NZDT. |
+| **P5 QA + Release · Nov 5–7** | Polish, performance, credits/AI disclosure, archive, itch.io entry | Unpacked Windows EXE works with its data folder; full ending; upload is visible in jam before Nov 8 20:59 NZDT. **Status: automated release preparation PASS (done 2026-10-26, ahead of plan: the extracted non-development player plays the whole game); human QA, the creator name and the upload are open - see [below](#phase-5-status-2026-10-26) and [05](05-RELEASE.md).** |
 
 **PASS** = directly observed evidence; **PARTIAL** = missing evidence/criteria; **FAIL** = build failure, material bug, wrong rights or disqualifying rule violation. End each phase with tests, exact status, commit SHA if committed and remaining blockers. Never label an untouched stock-template player as a game test.
 
@@ -172,6 +172,23 @@ Frame time in the built player, four data points only (1280x720 windowed, vSync 
 **Known limitations:** nobody has watched or listened to the game; characters and props are still simple primitives with procedural textures; sound is 2D (no distance falloff or stereo placement); the melody and mix are the assistant's design and unjudged; the S2 and S3 palette is strongly yellow-green; the Unity splash screen and Development Build watermark are still on in this build; the creator's display name is not in the credits (open item); the intermittent exit fault above; scene files get new internal IDs on every regeneration.
 
 **Manual QA deferred (human, Windows, before submission):** the list in [05](05-RELEASE.md#human-qa-checklist-windows-1280x720-and-1920x1080), above all: *listen* to every stage and the ending, judge the visuals in motion, play a full run and time it.
+
+## Phase 5 status (2026-10-26)
+
+**Automated release preparation: PASS.** `MANUAL_GAMEPLAY_QA_STATUS=PENDING`, `ACTUAL_PLAYER_DURATION_STATUS=NOT_VERIFIED`, `SUBMISSION_STATUS=NOT_SUBMITTED`. The full record (what was checked, the exact numbers, the open items for the developer, the itch.io draft, the human QA checklist and the trailer plan) is [05](05-RELEASE.md); in short:
+
+| Gate | Observed evidence |
+| --- | --- |
+| Non-development Windows x64 build | `BuildRelease`: Succeeded, version `1.0.0-rc1`, build id `008df7e74ad8443faa7db6a90d2f4776`, 0 errors, 0 warnings, 144,398,106 bytes. The player reports `build: release player` and the screenshots carry no Development Build watermark. |
+| Package | `EchoesOfTheValley-Windows-x64-RC1.zip`, 64,679,296 bytes, SHA-256 `EB9BFC0D9B0BA60A0E9E8367ADF3BA4EB4D4F3EFE8F0F6FCD58A2AB4FDA3112A`, 181 files, forward-slash entry names under one folder; no Burst debug folder, `.pdb` or log. Outside Git. |
+| Verified as extracted | Every zip entry read, extracted to a temporary folder, 181 files with 0 hash mismatches, required files present, **0** local-path or user-name strings in any file (the build machine's PDB path in `Echoes.Runtime.dll` was replaced by its bare file name; code-signed vendor files are untouched), cold start 12 s without errors. |
+| Full game on the extracted player | `-echoes-smoke -echoes-expect-release`: `PASS` in 65 s, 20 screenshots, natural exit code 0, 0 error lines, reached the ending, save, Continue and Continue Exploring passed, **0** remote network connections seen. 1 attempt was needed (up to 3 allowed, all recorded). |
+| Frame time (scripted, extracted release player) | restored valley, every effect and sound: 4.1 ms (243 FPS) at 1280x720 and 4.5 ms (223 FPS) at 1920x1080 on the Radeon 780M. One scripted view; not a human's impression. |
+| Tests on the final tree | EditMode **196/196** and PlayMode **83/83** passed, re-run after the last code change (read from the result XML). |
+
+**What the verification found and fixed along the way** (each caught by the check, not by luck): the packaged assembly carried the developer's local PDB path; Windows PowerShell 5.1 wrote backslash separators into the zip entry names; a first version of the path scrub also touched code-signed vendor binaries (narrowed to our own assembly before it was used); the CIM-backed network sampler (`Get-NetTCPConnection`) coincided with frame times about 1.7 times slower in one run, and replacing it with `netstat` brought them back to the development build's level (an inference from two runs, not an isolated test).
+
+**Open items for the developer, none done by the assistant:** the creator's display name, the human QA pass (play, listen, time it), the AI-disclosure wording, the Unity splash and font notices, and the upload itself.
 
 ## Next action
 
