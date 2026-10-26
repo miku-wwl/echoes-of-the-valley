@@ -54,6 +54,20 @@ namespace Echoes
         SpringInteractable spring;
         HeartInteractable heart;
         EndingPanel ending;
+        AudioDirector director;
+        float lastBloom = -1f;
+        float lastSaturation;
+
+        /// <summary>The layers each stage adds to the soundscape (see AudioLibrary.ValleyLayers); every stage keeps the ones before it.</summary>
+        static readonly string[][] LayersAdded =
+        {
+            new[] { "bells", "wind" },
+            new[] { "harp", "water" },
+            new[] { "marimba", "pad", "chimes", "birds" },
+            new[] { "lead", "sails" }
+        };
+
+        AudioDirector Director => director != null ? director : (director = FindFirstObjectByType<AudioDirector>());
 
         static bool SmokeRequested => Array.IndexOf(Environment.GetCommandLineArgs(), "-echoes-smoke") >= 0;
 
@@ -136,6 +150,9 @@ namespace Echoes
             Log("started: " + Application.productName + " " + Application.version + ", scene=" + SceneManager.GetActiveScene().name
                 + ", " + Screen.width + "x" + Screen.height + ", " + SystemInfo.graphicsDeviceType + " / " + SystemInfo.graphicsDeviceName);
             Require(SceneManager.GetActiveScene().name == SceneNames.MainMenu, "startup scene is " + SceneManager.GetActiveScene().name + ", not MainMenu");
+            Log("build: " + (Debug.isDebugBuild ? "DEVELOPMENT" : "release") + " player, editor=" + Application.isEditor + ", audio output "
+                + AudioSettings.outputSampleRate + " Hz " + AudioSettings.speakerMode + ", quality " + QualitySettings.names[QualitySettings.GetQualityLevel()]);
+            if (HasArgument("-echoes-expect-release")) Require(!Debug.isDebugBuild && !Application.isEditor, "a release player was expected but this is a development build");
 
             yield return Section("StartANewGame", StartANewGame());
             yield return Section("MoveAndUseTheWorkshop", MoveAndUseTheWorkshop());
@@ -147,6 +164,7 @@ namespace Echoes
             yield return Section("RestoreTheWindmill", RestoreTheWindmill());
             yield return Section("TheEnding", TheEnding());
             yield return Section("ContinueExploring", ContinueExploring());
+            yield return Section("Performance", Performance());
             yield return Section("ReloadAfterTheEnding", ReloadAfterTheEnding());
         }
 
@@ -177,6 +195,29 @@ namespace Echoes
             Require(!SaveSystem.HasSaveFiles, "the isolated save folder is not empty");
             Log("menu save status: " + menu.SaveMessage);
 
+            // The title screen's sound, credits and volume sliders
+            AudioDirector welcome = Director;
+            Require(welcome != null && !welcome.FollowsStage, "the title screen has no welcome music");
+            for (int i = 0; i < welcome.LayerCount; i++)
+                Require(welcome.LayerStarted(welcome.LayerName(i)) && welcome.LayerTarget(welcome.LayerName(i)) > 0f, "title layer " + welcome.LayerName(i) + " is not playing");
+            Log("title screen music: " + welcome.LayerCount + " layers started, " + welcome.TotalCues + " cues so far");
+            menu.CreditsButton.onClick.Invoke();
+            Require(menu.CreditsOpen && menu.CreditsLabel.text.Contains("AI assistance") && !menu.PlayButton.interactable, "the credits did not open");
+            yield return null;
+            yield return EndOfFrame();
+            Capture("01b-credits");
+            menu.CloseCredits();
+            Require(!menu.CreditsOpen && menu.PlayButton.interactable, "closing the credits did not give the menu back");
+            VolumeControl sliders = FindFirstObjectByType<VolumeControl>();
+            Require(sliders != null, "no volume sliders on the title screen");
+            float musicBefore = GameSettings.MusicVolume;
+            sliders.MusicSlider.value = 0.55f;
+            yield return null;
+            Require(Mathf.Approximately(GameSettings.MusicVolume, 0.55f), "the music slider did not change the volume");
+            Require(Mathf.Abs(welcome.LayerTarget("bells") - welcome.StageVolume("bells", ResonanceStage.SilentValley) * 0.55f) < 0.002f, "the music volume did not change the mix");
+            sliders.MusicSlider.value = musicBefore;
+            yield return null;
+
             menu.PlayButton.onClick.Invoke();   // the real New Game button: with no save on disk it starts at once
             Require(!menu.ConfirmationOpen, "New Game asked a question although no save exists");
 
@@ -202,6 +243,8 @@ namespace Echoes
                 && !view.Windmill.Spinning && !view.VillageLifeShown, "the silent valley should show the withered garden and the broken windmill");
             yield return EndOfFrame();
             Capture("02-valley-start");
+            CheckSoundscape(ResonanceStage.SilentValley);
+            Require(Director.TotalCues == 0, "a new game started with sounds already played (" + Director.TotalCues + ")");
         }
 
         IEnumerator MoveAndUseTheWorkshop()
@@ -296,6 +339,8 @@ namespace Echoes
             Require(detector.TryInteract() && dialogue.IsOpen, "Mira did not speak after the objective");
             ReadAll();
             Require(session.StreamQuest == StreamQuestStage.Active, "Mira did not start the stream quest");
+            Require(Director.CueCount(SoundCue.QuestStart) == 1, "starting the stream quest did not sound once");
+            CheckGrading("the awakened Heart");
             Require(File.Exists(SaveSystem.MainPath), "starting the quest should autosave");
 
             // The spring does nothing without the tonic.
@@ -365,6 +410,11 @@ namespace Echoes
             yield return EndOfFrame();
             Capture("07-stream-restored");
             Require(!view.IsTransitioning && Mathf.Approximately(lighting.StreamBlend, 1f), "the restoration transition did not finish");
+            CheckSoundscape(ResonanceStage.AwakeningStream);
+            CheckGrading("the stream");
+            Require(Director.CueCount(SoundCue.StreamRestored) == 1, "the stream's restoration sound did not play exactly once");
+            Require(Director.CueCount(SoundCue.Craft) >= 2 && Director.CueCount(SoundCue.GatherHerb) >= 2 && Director.CueCount(SoundCue.FeedHen) == 1, "gathering, crafting or feeding made no sound");
+            Require(Mathf.Abs(Director.LayerVolume("harp") - Director.LayerTarget("harp")) <= 0.1f * Director.LayerTarget("harp") + 0.01f, "the harp never faded in");
             Require(session.TryDeliverSpringTonic() == Outcome.WrongState, "a second delivery was not rejected");
             Require(hud.ObjectiveHeading == QuestLog.GardenHeading && hud.ObjectiveBody.Contains("Wren"),
                 "the objective panel does not point to the garden: " + hud.ObjectiveHeading + " / " + hud.ObjectiveBody);
@@ -404,6 +454,10 @@ namespace Echoes
             GameSession loaded = GameSession.Current;
             Require(host.LoadedFromSave && !ReferenceEquals(loaded, session), "Continue did not load the saved session");
             Require(loaded.StreamQuest == StreamQuestStage.Completed && loaded.Resonance == ResonanceStage.AwakeningStream, "the restoration was not saved");
+            CheckSoundscape(ResonanceStage.AwakeningStream);
+            Require(Director.TotalCues == 0, "loading a save replayed " + Director.TotalCues + " sounds");
+            for (int i = 0; i < Director.LayerCount; i++)
+                Require(Mathf.Abs(Director.LayerVolume(Director.LayerName(i)) - Director.LayerTarget(Director.LayerName(i))) < 0.01f, Director.LayerName(i) + " was not heard at once after loading");
             Require(loaded.GardenQuest == QuestStage.NotStarted && loaded.WindmillQuest == QuestStage.NotStarted && !loaded.EndingSeen, "later progress appeared from nowhere");
             Require(loaded.Coins == coinsSaved, "coins changed across the save");
             Require(loaded.Inventory.Count(ItemIds.ChickenFeed) == feedSaved && loaded.Inventory.Count(ItemIds.Egg) == 0, "inventory changed across the save");
@@ -471,6 +525,9 @@ namespace Echoes
             yield return MeasureFrames(4f, "the garden restoration");
             Require(!view.IsTransitioning && Mathf.Approximately(lighting.GardenBlend, 1f) && Mathf.Approximately(lighting.StreamBlend, 1f), "the garden transition did not finish");
             Require(view.GardenMotesPlaying, "no pollen over the garden");
+            CheckSoundscape(ResonanceStage.BloomingGarden);
+            CheckGrading("the garden");
+            Require(Director.CueCount(SoundCue.GardenRestored) == 1 && Director.CueCount(SoundCue.CollectEgg) == 1, "the garden's or the egg's sound did not play exactly once");
             foreach (NpcIdle villager in view.Villagers) Require(villager.Level == 1, villager.name + " did not perk up");
             yield return ShootGarden("11-garden-restored");
             Require(session.TryDeliverEgg() == Outcome.WrongState, "a second egg delivery was not rejected");
@@ -536,6 +593,12 @@ namespace Echoes
                 "the golden-hour lighting did not settle");
             Require(Mathf.Approximately(view.Windmill.CurrentSpeed, view.Windmill.FullSpeed), "the sails never reached full speed");
             foreach (NpcIdle villager in view.Villagers) Require(villager.Level == 2, villager.name + " is not cheerful");
+            CheckSoundscape(ResonanceStage.RestoredValley);
+            CheckGrading("the windmill");
+            // (This valley's director is new since the reload in SaveAndContinue, so it has only heard the garden and the windmill.)
+            Require(Director.CueCount(SoundCue.WindmillRestored) == 1 && Director.CueCount(SoundCue.GardenRestored) == 1 && Director.CueCount(SoundCue.StreamRestored) == 0,
+                "a restoration sound did not play exactly once");
+            Require(Director.CueCount(SoundCue.QuestStart) == 2, "the garden and windmill quests should sound once each when accepted, not " + Director.CueCount(SoundCue.QuestStart));
 
             // Two pictures with the sails in different positions, and the angles that prove the rotation
             float angleA = view.Windmill.TotalDegrees;
@@ -558,6 +621,10 @@ namespace Echoes
         IEnumerator TheEnding()
         {
             GameSession session = GameSession.Current;
+            // A banner still on screen when the player rushes to Mira must not sit over the ending's title.
+            hud.ShowBanner("The windmill turns again!", "Mira is waiting for you.", 30f);
+            yield return new WaitForSecondsRealtime(0.6f);
+            Require(hud.IsBannerVisible, "the test banner is not showing");
             yield return StandBeside(mira);
             Require(detector.TryInteract() && dialogue.IsOpen, "Mira did not start the closing conversation");
             Require(dialogue.CurrentLine.Contains("feel it"), "this is not Mira's closing conversation: " + dialogue.CurrentLine);
@@ -572,6 +639,13 @@ namespace Echoes
             Require(GameFlow.IsPanelOpen && !GameFlow.GameplayInputAllowed && Cursor.visible, "the ending must wait for the player with a free cursor");
             Require(File.Exists(SaveSystem.MainPath) && SaveSystem.Load().Session.EndingSeen, "the ending was not saved when it began");
             Require(ending.ContinueButton.interactable && ending.MainMenuButton.interactable, "an ending button is disabled");
+            Require(!hud.IsBannerVisible, "a banner still covers the ending card");
+            yield return null;
+            Require(Director.CueCount(SoundCue.EndingBegins) == 1 && Director.EndingMusicPlaying, "the ending piece did not start");
+            Require(Director.EndingClip != null && Director.EndingClip.length > 30f, "the ending piece is missing or too short");
+            Require(Director.ShownStage == ResonanceStage.RestoredValley && view.ShownStage == ResonanceStage.RestoredValley, "the ending is not shown over the fully restored valley");
+            Log("ending music: " + Director.EndingClip.length.ToString("F1") + " s, beds ducked to "
+                + (Director.LayerTarget("lead") / Mathf.Max(0.0001f, Director.StageVolume("lead", ResonanceStage.RestoredValley) * GameSettings.MusicVolume)).ToString("F2"));
 
             float yawBefore = rig.Yaw;
             yield return new WaitForSecondsRealtime(1.5f);
@@ -612,6 +686,19 @@ namespace Echoes
             Capture("16-continue-exploring");
         }
 
+        /// <summary>Frame time in the fully restored valley at two window sizes. One scripted run on this machine; not a benchmark and not a human's impression.</summary>
+        IEnumerator Performance()
+        {
+            player.Teleport(player.RespawnPoint.position + Vector3.up * 0.2f);
+            yield return new WaitForSecondsRealtime(1f);
+            yield return MeasureFrames(8f, "the restored valley, every effect and sound running");
+            Screen.SetResolution(1920, 1080, FullScreenMode.Windowed);
+            yield return new WaitForSecondsRealtime(1.5f);
+            yield return MeasureFrames(8f, "the restored valley, every effect and sound running");
+            Screen.SetResolution(1280, 720, FullScreenMode.Windowed);
+            yield return new WaitForSecondsRealtime(1f);
+        }
+
         IEnumerator ReloadAfterTheEnding()
         {
             GameSession session = GameSession.Current;
@@ -650,6 +737,8 @@ namespace Echoes
                 && loaded.WindmillQuest == QuestStage.Completed && loaded.EndingSeen, "the finished game was not saved");
             Require(loaded.Coins == coinsSaved, "coins changed across the save");
             Require(!ending.IsOpen && ending.TimesShown == 0 && GameFlow.GameplayInputAllowed, "loading forced the ending to play again");
+            CheckSoundscape(ResonanceStage.RestoredValley);
+            Require(Director.TotalCues == 0 && !Director.EndingMusicPlaying, "loading the finished game replayed sound (" + Director.TotalCues + " cues)");
             Require(view.ShownStage == ResonanceStage.RestoredValley && !view.IsTransitioning && view.WindmillRepairedShown && !view.WindmillDamagedShown
                 && view.GardenBloomShown && view.ClearStreamShown && view.VillageLifeShown, "the finished world was not shown at once after loading");
             Require(Mathf.Approximately(lighting.ValleyBlend, 1f) && Mathf.Approximately(lighting.GardenBlend, 1f) && Mathf.Approximately(lighting.StreamBlend, 1f),
@@ -671,6 +760,46 @@ namespace Echoes
         }
 
         // ---- Helpers ---------------------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The soundscape the director was asked for at this stage: every layer started, exactly the layers of this and the earlier
+        /// stages audible. Whether it can be heard is not known to the script (the output device is unobserved).
+        /// </summary>
+        void CheckSoundscape(ResonanceStage stage)
+        {
+            AudioDirector sound = Director;
+            Require(sound != null, "no AudioDirector in the Valley");
+            Require(sound.ShownStage == stage, "the soundscape follows " + sound.ShownStage + ", not " + stage);
+            HashSet<string> audible = new HashSet<string>();
+            for (int s = 0; s <= (int)stage; s++) audible.UnionWith(LayersAdded[s]);
+
+            int playing = 0;
+            for (int i = 0; i < sound.LayerCount; i++)
+            {
+                string layer = sound.LayerName(i);
+                Require(sound.LayerClip(i) != null && sound.LayerSource(i) != null, layer + " has no clip or source");
+                Require(sound.LayerStarted(layer), layer + " was never started");
+                if (sound.LayerSource(i).isPlaying) playing++;
+                bool wanted = sound.LayerTarget(layer) > 0f;
+                Require(wanted == audible.Contains(layer), "layer " + layer + " should" + (audible.Contains(layer) ? "" : " not") + " be audible at " + stage);
+            }
+            Log("soundscape at " + stage + ": " + sound.LayerCount + " layers started (" + playing + " AudioSources report playing), audible " + string.Join("+", audible)
+                + "; music " + GameSettings.MusicVolume.ToString("F2") + ", sound " + GameSettings.SoundVolume.ToString("F2") + ", cues so far " + sound.TotalCues);
+        }
+
+        /// <summary>The colour grading never goes backwards: every restoration deepens the saturation and the glow.</summary>
+        void CheckGrading(string what)
+        {
+            float bloom = lighting.GradedBloom;
+            float saturation = lighting.GradedSaturation;
+            Log("colour grading after " + what + ": saturation " + saturation.ToString("F1") + ", bloom " + bloom.ToString("F2"));
+            if (lastBloom >= 0f)
+                Require(bloom > lastBloom + 0.005f && saturation > lastSaturation + 0.5f, "the colour grading did not deepen after " + what);
+            lastBloom = bloom;
+            lastSaturation = saturation;
+        }
+
+        static bool HasArgument(string name) => Array.IndexOf(Environment.GetCommandLineArgs(), name) >= 0;
 
         void FindWorld()
         {

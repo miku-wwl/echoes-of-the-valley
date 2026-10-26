@@ -24,9 +24,13 @@ namespace Echoes.EditorTools
             string directory = ReadArgument("-echoesShots")
                 ?? Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "artifacts", "logs", "preview-shots"));
             Directory.CreateDirectory(directory);
+            ShaderUtil.allowAsyncCompilation = false;   // otherwise the first stills show placeholder colours while shaders compile
 
             EditorSceneManager.OpenScene(AssetPaths.ValleyScene, OpenSceneMode.Single);
             Camera camera = Camera.main;
+            // The very first render in a fresh editor still shows placeholder colours for some materials; render once and discard it.
+            Shot(camera, directory, "warmup", new Vector3(0f, 3.4f, -38f), new Vector3(0f, 2f, -20f));
+            File.Delete(Path.Combine(directory, "warmup.png"));
             Shot(camera, directory, "valley-1-spawn", new Vector3(0f, 3.4f, -38f), new Vector3(0f, 2f, -20f));
             Shot(camera, directory, "valley-2-heart", new Vector3(-6f, 3.5f, -13f), new Vector3(0f, 2.2f, 0f));
             Shot(camera, directory, "valley-3-cottage", new Vector3(11f, 3.4f, 0f), new Vector3(24f, 2.4f, 8f));
@@ -36,6 +40,12 @@ namespace Echoes.EditorTools
             Shot(camera, directory, "valley-7-hen-yard", At(15f, -11f, 3.2f), At(22f, -5f, 0.6f));
             Shot(camera, directory, "valley-8-herbs", At(-14f, 4f, 2.4f), At(-19.5f, 8.5f, 0.3f));
             Shot(camera, directory, "valley-9-flowers-ore", At(30f, 12f, 3f), At(35f, 18f, 0.6f));
+
+            // The four characters, seen from the front
+            Shot(camera, directory, "char-1-caretaker", At(0f, -29.2f, 1.45f), At(0f, -32f, 0.95f));
+            Shot(camera, directory, "char-2-mira", Front(ValleyLayout.Villager, new Vector2(-14.2f, -5.4f), 2.5f, 1.45f), At(ValleyLayout.Villager.x, ValleyLayout.Villager.y, 0.95f));
+            Shot(camera, directory, "char-3-wren", Front(ValleyLayout.GardenKeeper, ValleyLayout.Garden - ValleyLayout.GardenKeeper, 2.5f, 1.45f), At(ValleyLayout.GardenKeeper.x, ValleyLayout.GardenKeeper.y, 0.95f));
+            Shot(camera, directory, "char-4-alder", Front(ValleyLayout.WindmillRestorer, ValleyLayout.Windmill - ValleyLayout.WindmillRestorer, 2.6f, 1.5f), At(ValleyLayout.WindmillRestorer.x, ValleyLayout.WindmillRestorer.y, 0.95f));
 
             // Phase 3 places in their silent state (stage 0): the withered garden, the broken windmill, the new villagers
             Vector2 garden = ValleyLayout.Garden;
@@ -78,6 +88,9 @@ namespace Echoes.EditorTools
             SetText(menuCanvas.transform, "ConfirmPanel/Box/Message",
                 "You have a saved game. Starting a new game replaces it the first time the new game saves. Continue keeps it until then.");
             Shot(Camera.main, directory, "ui-main-menu-confirm", Camera.main.transform.position, new Vector3(0f, 4f, 22f), 1280, 720);
+            menuCanvas.transform.Find("ConfirmPanel").gameObject.SetActive(false);
+            menuCanvas.transform.Find("CreditsPanel").gameObject.SetActive(true);
+            Shot(Camera.main, directory, "ui-main-menu-credits", Camera.main.transform.position, new Vector3(0f, 4f, 22f), 1280, 720);
             Debug.Log("[Echoes] Preview shots written to " + directory);
         }
 
@@ -108,7 +121,8 @@ namespace Echoes.EditorTools
 
             root.Find("Banner").GetComponent<CanvasGroup>().alpha = 0f;
             root.Find("InteractionPrompt").gameObject.SetActive(false);
-            SetText(root, "Dialogue/Speaker", "Mira");
+            SetText(root, "Dialogue/NamePlate/Speaker", "Mira");
+            root.Find("Dialogue/NamePlate").GetComponent<Image>().color = DialogueBox.SpeakerColor("Mira");
             SetText(root, "Dialogue/Line", "Gather two Moonleaf Herbs and a Dawn Blossom from the meadows, then mix them at the alchemy workshop, my cottage with the cauldron.");
             root.Find("Dialogue").gameObject.SetActive(true);
             Shot(camera, directory, "ui-dialogue", position, lookAt, 1280, 720);
@@ -158,7 +172,8 @@ namespace Echoes.EditorTools
             root.Find("Banner").GetComponent<CanvasGroup>().alpha = 0f;
             root.Find("InteractionPrompt").gameObject.SetActive(false);
 
-            SetText(root, "Dialogue/Speaker", "Alder, the Windmill Restorer");
+            SetText(root, "Dialogue/NamePlate/Speaker", "Alder, the Windmill Restorer");
+            root.Find("Dialogue/NamePlate").GetComponent<Image>().color = DialogueBox.SpeakerColor("Alder, the Windmill Restorer");
             SetText(root, "Dialogue/Line", "I need Windmill Braces to mend the supports. Gather 4 Echo Ore from the pale outcrops around the valley's edge (you have 0), mix Windmill Braces at the workshop and bring them here.");
             root.Find("Dialogue").gameObject.SetActive(true);
             Shot(camera, directory, "ui-dialogue-alder", position, lookAt, 1280, 720);
@@ -180,6 +195,13 @@ namespace Echoes.EditorTools
             Transform target = root.Find(path);
             if (target == null) throw new InvalidOperationException("Preview: no UI element '" + path + "' under " + root.name);
             target.GetComponent<Text>().text = value;
+        }
+
+        /// <summary>A camera position in front of a character that faces <paramref name="facing"/>, at the given distance and height above the ground.</summary>
+        static Vector3 Front(Vector2 spot, Vector2 facing, float distance, float above)
+        {
+            Vector2 p = spot + facing.normalized * distance;
+            return At(p.x, p.y, above);
         }
 
         static Vector3 At(float x, float z, float above)
@@ -218,11 +240,21 @@ namespace Echoes.EditorTools
             for (int i = 0; i < damaged.arraySize; i++) ((GameObject)damaged.GetArrayElementAtIndex(i).objectReferenceValue).SetActive(!valley);
             for (int i = 0; i < repaired.arraySize; i++) ((GameObject)repaired.GetArrayElementAtIndex(i).objectReferenceValue).SetActive(valley);
 
-            // The mood of the later stages, approximated for stills: a warmer, lower sun
-            Light sun = (Light)new SerializedObject(UnityEngine.Object.FindFirstObjectByType<ValleyLighting>()).FindProperty("sun").objectReferenceValue;
-            sun.color = stage >= 3 ? new Color(1f, 0.74f, 0.42f) : stage >= 2 ? new Color(1f, 0.82f, 0.58f) : new Color(1f, 0.86f, 0.62f);
-            sun.intensity = 1.35f + 0.1f * stage;
-            sun.transform.rotation = Quaternion.Euler(stage >= 3 ? 38f : 48f, 38f, 0f);
+            // Looping effects that belong to the stage, and the stage's real mood (the same code the game runs)
+            SetSystemActive(so, "fountain", stream);
+            SetSystemActive(so, "gardenMotes", garden);
+            SetSystemActive(so, "valleyMotes", valley);
+            UnityEngine.Object.FindFirstObjectByType<ValleyLighting>().ApplyNow(stream ? 1f : 0f, stream ? 1f : 0f, garden ? 1f : 0f, valley ? 1f : 0f);
+        }
+
+        static void SetSystemActive(SerializedObject owner, string field, bool active) =>
+            ((ParticleSystem)owner.FindProperty(field).objectReferenceValue).gameObject.SetActive(active);
+
+        /// <summary>Looping particle systems are advanced a few seconds so the stills show them (Play Mode is not running).</summary>
+        static void SimulateLoopingParticles()
+        {
+            foreach (ParticleSystem system in UnityEngine.Object.FindObjectsByType<ParticleSystem>(FindObjectsSortMode.None))
+                if (system.gameObject.activeInHierarchy && system.main.loop) system.Simulate(4f, false, true);
         }
 
         static void SetActive(SerializedObject owner, string field, bool active) =>
@@ -232,6 +264,7 @@ namespace Echoes.EditorTools
         {
             camera.transform.position = position;
             camera.transform.LookAt(lookAt);
+            SimulateLoopingParticles();
 
             RenderTexture target = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32);
             camera.targetTexture = target;

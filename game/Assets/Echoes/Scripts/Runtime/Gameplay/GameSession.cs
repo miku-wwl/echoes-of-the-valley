@@ -88,7 +88,13 @@ namespace Echoes
         /// </summary>
         public event Action<string> Milestone;
 
+        /// <summary>A sound to play (see SoundCue). Raised after a commit, never by a loaded save.</summary>
+        public event Action<SoundCue> Cue;
+
         public void Notify(string text) => Message?.Invoke(text);
+
+        /// <summary>Raises a sound cue without touching any state (a refused action says "Denied", the Heart wakes).</summary>
+        public void RaiseCue(SoundCue cue) => Cue?.Invoke(cue);
 
         // ---- Resource nodes ----------------------------------------------------------------------------------------
 
@@ -128,6 +134,7 @@ namespace Echoes
 
             node.Remaining = node.Cooldown;
             Notify("+" + node.Yield + " " + ItemCatalog.NameOf(node.ItemId));
+            RaiseCue(node.ItemId == ItemIds.Ore ? SoundCue.GatherOre : node.ItemId == ItemIds.Flower ? SoundCue.GatherFlower : SoundCue.GatherHerb);
             RaiseChanged();
             return Outcome.Ok;
         }
@@ -143,6 +150,7 @@ namespace Echoes
             if (result != Outcome.Ok) return result;
 
             Notify("Crafted " + ItemCatalog.NameOf(recipe.Output.Id) + (recipe.Output.Count > 1 ? " x" + recipe.Output.Count : ""));
+            RaiseCue(SoundCue.Craft);
             RaiseChanged();
             return Outcome.Ok;
         }
@@ -159,6 +167,7 @@ namespace Echoes
             Chicken = ChickenPhase.Producing;
             ChickenRemaining = ChickenProductionSeconds;
             Notify(ChickenName + " munches the feed happily.");
+            RaiseCue(SoundCue.FeedHen);
             RaiseChanged();
             return Outcome.Ok;
         }
@@ -173,6 +182,7 @@ namespace Echoes
             Chicken = ChickenPhase.Hungry;
             ChickenRemaining = 0f;
             Notify("+1 " + ItemCatalog.NameOf(ItemIds.Egg));
+            RaiseCue(SoundCue.CollectEgg);
             RaiseChanged();
             return Outcome.Ok;
         }
@@ -214,6 +224,7 @@ namespace Echoes
 
             StreamQuest = StreamQuestStage.Active;
             Notify("New quest: Restore the Stream");
+            RaiseCue(SoundCue.QuestStart);
             Milestone?.Invoke("quest_started");
             RaiseChanged();
             return Outcome.Ok;
@@ -235,6 +246,7 @@ namespace Echoes
             StreamQuest = StreamQuestStage.Completed;
             Resonance = ResonanceStage.AwakeningStream;
             Notify("The stream is restored! +" + StreamQuestReward + " coins");
+            RaiseCue(SoundCue.StreamRestored);
             Milestone?.Invoke("quest_completed");
             RaiseChanged();
             return Outcome.Ok;
@@ -252,6 +264,7 @@ namespace Echoes
 
             GardenQuest = QuestStage.Active;
             Notify("New quest: Restore the Garden");
+            RaiseCue(SoundCue.QuestStart);
             Milestone?.Invoke("garden_started");
             RaiseChanged();
             return Outcome.Ok;
@@ -270,6 +283,7 @@ namespace Echoes
             GardenQuest = QuestStage.Completed;
             Resonance = ResonanceStage.BloomingGarden;
             Notify("The garden is blooming! +" + GardenQuestReward + " coins");
+            RaiseCue(SoundCue.GardenRestored);
             Milestone?.Invoke("garden_completed");
             RaiseChanged();
             return Outcome.Ok;
@@ -283,6 +297,7 @@ namespace Echoes
 
             WindmillQuest = QuestStage.Active;
             Notify("New quest: Restore the Windmill");
+            RaiseCue(SoundCue.QuestStart);
             Milestone?.Invoke("windmill_started");
             RaiseChanged();
             return Outcome.Ok;
@@ -301,6 +316,7 @@ namespace Echoes
             WindmillQuest = QuestStage.Completed;
             Resonance = ResonanceStage.RestoredValley;
             Notify("The windmill turns again! +" + WindmillQuestReward + " coins");
+            RaiseCue(SoundCue.WindmillRestored);
             Milestone?.Invoke("windmill_completed");
             RaiseChanged();
             return Outcome.Ok;
@@ -313,6 +329,7 @@ namespace Echoes
             if (Resonance != ResonanceStage.RestoredValley) return Outcome.Locked;
 
             EndingSeen = true;
+            RaiseCue(SoundCue.EndingBegins);
             Milestone?.Invoke("ending_seen");
             RaiseChanged();
             return Outcome.Ok;

@@ -60,6 +60,7 @@ namespace Echoes
 
             Outcome outcome = session.TryGather(nodeId);
             if (outcome == Outcome.Ok) return;   // the session already announced what was picked up
+            session.RaiseCue(SoundCue.Denied);
 
             string itemName = ItemCatalog.NameOf(itemId);
             if (outcome == Outcome.NotReady) session.Notify(itemName + " is still regrowing.");

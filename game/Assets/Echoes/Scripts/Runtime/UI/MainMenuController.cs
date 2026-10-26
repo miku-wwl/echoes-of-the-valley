@@ -21,6 +21,11 @@ namespace Echoes
         [SerializeField] Text confirmText;
         [SerializeField] Button confirmButton;
         [SerializeField] Button cancelButton;
+        [SerializeField] Button creditsButton;
+        [SerializeField] GameObject creditsPanel;
+        [SerializeField] Text creditsText;
+        [SerializeField] Button creditsCloseButton;
+        [SerializeField] Text versionText;
 
         Vector3 cameraBasePosition;
 
@@ -29,9 +34,14 @@ namespace Echoes
         public Button QuitButton => quitButton;
         public Button ConfirmButton => confirmButton;
         public Button CancelButton => cancelButton;
+        public Button CreditsButton => creditsButton;
+        public Button CreditsCloseButton => creditsCloseButton;
+        public Text CreditsLabel => creditsText;
         public bool ConfirmationOpen => confirmPanel != null && confirmPanel.activeSelf;
+        public bool CreditsOpen => creditsPanel != null && creditsPanel.activeSelf;
         public string ConfirmationMessage => confirmText != null ? confirmText.text : string.Empty;
         public string SaveMessage => saveStatusText != null ? saveStatusText.text : string.Empty;
+        public string VersionLabel => versionText != null ? versionText.text : string.Empty;
 
         void Awake()
         {
@@ -44,7 +54,12 @@ namespace Echoes
             if (quitButton != null) quitButton.onClick.AddListener(Quit);
             if (confirmButton != null) confirmButton.onClick.AddListener(NewGame);
             if (cancelButton != null) cancelButton.onClick.AddListener(CancelNewGame);
+            if (creditsButton != null) creditsButton.onClick.AddListener(OpenCredits);
+            if (creditsCloseButton != null) creditsCloseButton.onClick.AddListener(CloseCredits);
             if (confirmPanel != null) confirmPanel.SetActive(false);
+            if (creditsPanel != null) creditsPanel.SetActive(false);
+            if (creditsText != null) creditsText.text = GameCredits.Text;
+            if (versionText != null) versionText.text = "v" + Application.version;
             if (cameraRig != null) cameraBasePosition = cameraRig.position;
             RefreshSaveState();
             Debug.Log("[Echoes] MainMenu ready.");
@@ -60,6 +75,7 @@ namespace Echoes
         void Update()
         {
             if (ConfirmationOpen && GameInput.PausePressed) CancelNewGame();
+            else if (CreditsOpen && GameInput.PausePressed) CloseCredits();
             if (cameraRig == null) return;
             float t = Time.unscaledTime;
             cameraRig.position = cameraBasePosition + new Vector3(Mathf.Sin(t * 0.08f) * 2f, Mathf.Sin(t * 0.11f) * 0.25f, 0f);
@@ -111,6 +127,25 @@ namespace Echoes
             if (EventSystem.current != null && first != null) EventSystem.current.SetSelectedGameObject(first.gameObject);
         }
 
+        /// <summary>Shows the credits (what is AI-made, what is original) over the title screen.</summary>
+        public void OpenCredits()
+        {
+            if (creditsPanel == null || CreditsOpen) return;
+            SetMainButtonsInteractable(false);
+            creditsPanel.SetActive(true);
+            if (EventSystem.current != null && creditsCloseButton != null) EventSystem.current.SetSelectedGameObject(creditsCloseButton.gameObject);
+        }
+
+        public void CloseCredits()
+        {
+            if (!CreditsOpen) return;
+            creditsPanel.SetActive(false);
+            SetMainButtonsInteractable(true);
+            RefreshSaveState();
+            Button first = continueButton != null && continueButton.interactable ? continueButton : playButton;
+            if (EventSystem.current != null && first != null) EventSystem.current.SetSelectedGameObject(first.gameObject);
+        }
+
         /// <summary>Starts a clean game unconditionally (the confirmation, tests and the smoke run call this).</summary>
         public void NewGame()
         {
@@ -122,6 +157,7 @@ namespace Echoes
         {
             if (playButton != null) playButton.interactable = enabled;
             if (quitButton != null) quitButton.interactable = enabled;
+            if (creditsButton != null) creditsButton.interactable = enabled;
             if (continueButton != null) continueButton.interactable = enabled && continueButton.interactable;
         }
 

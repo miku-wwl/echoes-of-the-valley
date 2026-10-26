@@ -65,6 +65,7 @@ namespace Echoes
             IsOpen = true;
             if (panel != null) panel.SetActive(true);
             GameFlow.SetPanelOpen(true);
+            AudioDirector.PlayStatic(SoundCue.PanelOpen);
             if (statusText != null) statusText.text = "Choose a recipe.";
             Refresh();
         }
@@ -75,6 +76,7 @@ namespace Echoes
             IsOpen = false;
             if (panel != null) panel.SetActive(false);
             GameFlow.SetPanelOpen(false);
+            AudioDirector.PlayStatic(SoundCue.PanelClose);
         }
 
         /// <summary>Crafts recipe number <paramref name="index"/>. Failures change nothing and say why.</summary>
@@ -85,6 +87,7 @@ namespace Echoes
 
             Recipe recipe = RecipeBook.All[index];
             Outcome result = session.TryCraft(recipe.Id);
+            if (result != Outcome.Ok) session.RaiseCue(SoundCue.Denied);
             if (statusText != null)
             {
                 if (result == Outcome.Ok) statusText.text = "Crafted " + recipe.Name + ".";

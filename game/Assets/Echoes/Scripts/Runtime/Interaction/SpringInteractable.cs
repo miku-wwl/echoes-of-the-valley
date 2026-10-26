@@ -52,6 +52,7 @@ namespace Echoes
             if (session != null && session.StreamQuest == StreamQuestStage.Active)
             {
                 Outcome result = session.TryDeliverSpringTonic();
+                if (result != Outcome.Ok) session.RaiseCue(SoundCue.Denied);
                 Dialogue.Open(Speaker, result == Outcome.Ok ? restoredLines : needTonicLines);
                 return;
             }

@@ -91,14 +91,17 @@ namespace Echoes
             {
                 case ChickenPhase.Hungry:
                     Outcome fed = session.TryFeedChicken();
+                    if (fed != Outcome.Ok) session.RaiseCue(SoundCue.Denied);
                     if (fed == Outcome.Insufficient) session.Notify(GameSession.ChickenName + " is hungry. Mix Chicken Feed at the workshop.");
                     else if (fed != Outcome.Ok) session.Notify(OutcomeText.Describe(fed));
                     break;
                 case ChickenPhase.Producing:
                     session.Notify(GameSession.ChickenName + " is busy laying an egg.");
+                    session.RaiseCue(SoundCue.Denied);
                     break;
                 default:
                     Outcome collected = session.TryCollectEgg();
+                    if (collected != Outcome.Ok) session.RaiseCue(SoundCue.Denied);
                     if (collected == Outcome.NoRoom) session.Notify("Your satchel has no room for the egg.");
                     else if (collected != Outcome.Ok) session.Notify(OutcomeText.Describe(collected));
                     break;

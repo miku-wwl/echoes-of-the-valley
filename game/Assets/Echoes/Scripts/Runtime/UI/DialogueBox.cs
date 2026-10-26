@@ -14,6 +14,7 @@ namespace Echoes
         [SerializeField] Text speakerText;
         [SerializeField] Text bodyText;
         [SerializeField] Text hintText;
+        [SerializeField] Image namePlate;
 
         string[] lines;
         int index;
@@ -44,13 +45,25 @@ namespace Echoes
             GameFlow.IsDialogueOpen = true;
 
             if (speakerText != null) speakerText.text = speaker;
+            if (namePlate != null) namePlate.color = SpeakerColor(speaker);
             if (panel != null) panel.SetActive(true);
             ShowLine();
+        }
+
+        /// <summary>A tint for the name plate, so each villager is recognisable at a glance; places and things share a plum.</summary>
+        public static Color SpeakerColor(string speaker)
+        {
+            if (string.IsNullOrEmpty(speaker)) return new Color(0.34f, 0.28f, 0.52f, 0.95f);
+            if (speaker.StartsWith("Mira")) return new Color(0.66f, 0.30f, 0.40f, 0.95f);
+            if (speaker.StartsWith("Wren")) return new Color(0.26f, 0.50f, 0.34f, 0.95f);
+            if (speaker.StartsWith("Alder")) return new Color(0.62f, 0.40f, 0.16f, 0.95f);
+            return new Color(0.34f, 0.28f, 0.52f, 0.95f);
         }
 
         public void Advance()
         {
             if (!IsOpen) return;
+            AudioDirector.PlayStatic(SoundCue.DialogueTick);
             index++;
             if (index >= lines.Length) Close();
             else ShowLine();

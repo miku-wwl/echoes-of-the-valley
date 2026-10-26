@@ -95,10 +95,66 @@ namespace Echoes.EditorTools
             return new SpringParts { Root = root, Water = water.GetComponent<Renderer>() };
         }
 
+        /// <summary>A thin curl of soft white smoke that rises from the chimney, drifts with the wind and fades.</summary>
+        static void ChimneySmoke(Transform parent, Vector3 localPosition)
+        {
+            GameObject go = new GameObject("ChimneySmoke");
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
+            go.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+
+            ParticleSystem system = go.AddComponent<ParticleSystem>();
+            system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            ParticleSystem.MainModule main = system.main;
+            main.loop = true;
+            main.playOnAwake = true;
+            main.prewarm = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(4.5f, 6.5f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.35f, 0.6f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.45f, 0.7f);
+            main.startColor = new Color(1f, 0.98f, 0.95f, 0.5f);
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 40;
+            ParticleSystem.EmissionModule emission = system.emission;
+            emission.rateOverTime = 3f;
+            ParticleSystem.ShapeModule shape = system.shape;
+            shape.shapeType = ParticleSystemShapeType.Cone;
+            shape.angle = 7f;
+            shape.radius = 0.14f;
+            ParticleSystem.VelocityOverLifetimeModule drift = system.velocityOverLifetime;
+            drift.enabled = true;
+            drift.space = ParticleSystemSimulationSpace.World;
+            // x, y and z must all use the same curve mode or Unity logs an error every time the system starts
+            drift.x = new ParticleSystem.MinMaxCurve(0.25f, 0.5f);
+            drift.y = new ParticleSystem.MinMaxCurve(0f, 0f);
+            drift.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+            ParticleSystem.SizeOverLifetimeModule grow = system.sizeOverLifetime;
+            grow.enabled = true;
+            grow.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.45f), new Keyframe(1f, 1.8f)));
+            ParticleSystem.ColorOverLifetimeModule fade = system.colorOverLifetime;
+            fade.enabled = true;
+            fade.color = new ParticleSystem.MinMaxGradient(SceneKit.FadeInOut(Color.white, 0.6f));
+            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = SceneKit.ParticleMaterial();
+        }
+
+        /// <summary>Gives a window a StageGlow: dim in the silent valley, warm and bright once it is restored (or always lit at dusk on the title screen).</summary>
+        public static void WindowGlow(GameObject window, bool constant)
+        {
+            StageGlow glow = window.AddComponent<StageGlow>();
+            Wire.Set(glow, "target", window.GetComponent<Renderer>());
+            Wire.Set(glow, "color", new Color(1f, 0.78f, 0.38f));
+            Wire.Set(glow, "phase", window.name.Length * 1.7f);
+            if (constant)
+            {
+                Wire.Set(glow, "constant", true);
+                Wire.Set(glow, "constantIntensity", 1.2f);
+            }
+        }
+
         // ---- Workshop cottage ----------------------------------------------------------------------------------
 
         /// <summary>Gable-front cottage: the door and workshop yard are on local +Z.</summary>
-        public static CottageParts Cottage(Transform parent, Vector3 position, float yaw, MaterialLibrary m)
+        public static CottageParts Cottage(Transform parent, Vector3 position, float yaw, MaterialLibrary m, bool dusk = false)
         {
             Transform root = Pieces.Group("WorkshopCottage", parent, position, yaw);
             const float width = 5f, depth = 4f, wall = 2.4f, floor = 0.2f;
@@ -115,6 +171,7 @@ namespace Echoes.EditorTools
             Pieces.Prim(root, PrimitiveType.Cube, "RoofLeft", new Vector3(-width * 0.26f, eave + width * 0.26f, 0f), new Vector3(slabLength, 0.14f, depth + 0.7f), m["Roof"], Col.None, new Vector3(0f, 0f, 45f));
             Pieces.Prim(root, PrimitiveType.Cube, "RidgeCap", new Vector3(0f, eave + width * 0.5f + 0.06f, 0f), new Vector3(0.3f, 0.3f, depth + 0.75f), m["WoodDark"], Col.None, new Vector3(0f, 0f, 45f));
             Pieces.Prim(root, PrimitiveType.Cube, "Chimney", new Vector3(1.35f, eave + 1.55f, -0.9f), new Vector3(0.6f, 1.7f, 0.6f), m["Stone"], Col.None);
+            ChimneySmoke(root, new Vector3(1.35f, eave + 2.5f, -0.9f));
 
             // Front: door, step, windows, round attic window
             float front = depth * 0.5f;
@@ -124,14 +181,14 @@ namespace Echoes.EditorTools
             for (int side = -1; side <= 1; side += 2)
             {
                 Pieces.Prim(root, PrimitiveType.Cube, "FrontFrame" + side, new Vector3(side * 1.65f, 1.6f, front + 0.02f), new Vector3(0.95f, 0.95f, 0.08f), m["WoodDark"]);
-                Pieces.Prim(root, PrimitiveType.Cube, "FrontWindow" + side, new Vector3(side * 1.65f, 1.6f, front + 0.06f), new Vector3(0.78f, 0.78f, 0.08f), m["Window"]);
+                WindowGlow(Pieces.Prim(root, PrimitiveType.Cube, "FrontWindow" + side, new Vector3(side * 1.65f, 1.6f, front + 0.06f), new Vector3(0.78f, 0.78f, 0.08f), m["Window"]), dusk);
                 Pieces.Prim(root, PrimitiveType.Cube, "SideFrame" + side, new Vector3(side * (width * 0.5f + 0.02f), 1.6f, 0f), new Vector3(0.08f, 0.95f, 0.95f), m["WoodDark"]);
-                Pieces.Prim(root, PrimitiveType.Cube, "SideWindow" + side, new Vector3(side * (width * 0.5f + 0.06f), 1.6f, 0f), new Vector3(0.08f, 0.78f, 0.78f), m["Window"]);
+                WindowGlow(Pieces.Prim(root, PrimitiveType.Cube, "SideWindow" + side, new Vector3(side * (width * 0.5f + 0.06f), 1.6f, 0f), new Vector3(0.08f, 0.78f, 0.78f), m["Window"]), dusk);
                 Pieces.Prim(root, PrimitiveType.Cube, "FlowerBox" + side, new Vector3(side * 1.65f, 0.95f, front + 0.18f), new Vector3(1.0f, 0.2f, 0.3f), m["Wood"]);
                 Pieces.Prim(root, PrimitiveType.Sphere, "BoxBloomA" + side, new Vector3(side * 1.65f - 0.25f, 1.12f, front + 0.18f), Vector3.one * 0.22f, m[side < 0 ? "FlowerPink" : "FlowerYellow"]);
                 Pieces.Prim(root, PrimitiveType.Sphere, "BoxBloomB" + side, new Vector3(side * 1.65f + 0.25f, 1.12f, front + 0.18f), Vector3.one * 0.22f, m[side < 0 ? "FlowerWhite" : "FlowerLilac"]);
             }
-            Pieces.Prim(root, PrimitiveType.Cylinder, "AtticWindow", new Vector3(0f, eave + 1.0f, front + 0.02f), new Vector3(0.6f, 0.04f, 0.6f), m["Window"], Col.None, new Vector3(90f, 0f, 0f));
+            WindowGlow(Pieces.Prim(root, PrimitiveType.Cylinder, "AtticWindow", new Vector3(0f, eave + 1.0f, front + 0.02f), new Vector3(0.6f, 0.04f, 0.6f), m["Window"], Col.None, new Vector3(90f, 0f, 0f)), dusk);
 
             // Workshop yard: cauldron, table with bottles, herb crates, barrels and a sign
             Transform yard = Pieces.Group("Yard", root, new Vector3(0f, 0f, front + 1.4f));

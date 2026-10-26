@@ -11,6 +11,9 @@ namespace Echoes.EditorTools
         public const string Materials = Root + "/Art/Materials";
         public const string Terrain = Root + "/Art/Terrain";
         public const string Meshes = Root + "/Art/Meshes";
+        public const string Textures = Root + "/Art/Textures";
+        public const string Settings = Root + "/Art/Settings";
+        public const string Audio = Root + "/Audio";
         public const string Prefabs = Root + "/Prefabs";
         public const string Scenes = Root + "/Scenes";
         public const string MainMenuScene = Scenes + "/MainMenu.unity";

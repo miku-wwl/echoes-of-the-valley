@@ -9,7 +9,7 @@ namespace Echoes.EditorTools
     /// <summary>Title screen: a sunset diorama of the ruined valley behind the menu, with drifting fireflies.</summary>
     internal static class MainMenuSceneBuilder
     {
-        public static void Build(MaterialLibrary m, PrefabSet prefabs)
+        public static void Build(MaterialLibrary m, PrefabSet prefabs, AudioSet audio)
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -26,7 +26,7 @@ namespace Echoes.EditorTools
                 Pieces.Prim(root, PrimitiveType.Sphere, "Hill" + i, hills[i], hillSizes[i], m[i % 2 == 0 ? "HillMenu" : "GroundMenu"]);
 
             HeartParts heart = Landmarks.Heart(root, new Vector3(5f, 0f, 22f), m);
-            Landmarks.Cottage(root, new Vector3(-15f, 0f, 26f), 40f, m);
+            Landmarks.Cottage(root, new Vector3(-15f, 0f, 26f), 40f, m, dusk: true);
 
             Vector3[] treeSpots =
             {
@@ -46,6 +46,8 @@ namespace Echoes.EditorTools
             Pieces.MakeDynamic(heart.CrystalPivot.gameObject);
 
             BuildFireflies();
+            SceneKit.CreateVolume("PostProcessing", AssetPaths.Settings + "/MenuPostProcessing.asset", 0.42f, 0.78f, 0.30f, 8f);
+            AudioWiring.Add(audio, false);
 
             Camera camera = SceneKit.CreateCamera(new Vector3(0f, 2.4f, -6f), Quaternion.Euler(-5f, 4f, 0f), 52f);
             SceneKit.CreateEventSystem();
@@ -92,7 +94,7 @@ namespace Echoes.EditorTools
             fade.enabled = true;
             fade.color = new ParticleSystem.MinMaxGradient(SceneKit.FadeInOut(Color.white, 1f));
 
-            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = SceneKit.ParticleMaterial();
+            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = SceneKit.GlowMaterial();
         }
 
         static void BuildMenuUi(Transform cameraTransform)
@@ -114,21 +116,46 @@ namespace Echoes.EditorTools
             Text subtitle = UiKit.Label(root, "Subtitle", "Silence   ·   Awakening   ·   Resonance   ·   Rest", 36, UiKit.Gold, TextAnchor.MiddleCenter, FontStyle.Bold);
             subtitle.rectTransform.Place(UiKit.Center, UiKit.Center, new Vector2(0f, 150f), new Vector2(1400f, 56f));
 
-            Button continueGame = UiKit.MakeButton(root, "ContinueButton", "Continue", UiKit.Center, new Vector2(0f, 20f), new Vector2(380f, 80f));
-            Button play = UiKit.MakeButton(root, "PlayButton", "New Game", UiKit.Center, new Vector2(0f, -76f), new Vector2(380f, 80f));
-            Button quit = UiKit.MakeButton(root, "QuitButton", "Quit", UiKit.Center, new Vector2(0f, -172f), new Vector2(380f, 80f));
+            Button continueGame = UiKit.MakeButton(root, "ContinueButton", "Continue", UiKit.Center, new Vector2(0f, -10f), new Vector2(380f, 76f));
+            Button play = UiKit.MakeButton(root, "PlayButton", "New Game", UiKit.Center, new Vector2(0f, -100f), new Vector2(380f, 76f));
+            Button credits = UiKit.MakeButton(root, "CreditsButton", "Credits", UiKit.Center, new Vector2(0f, -190f), new Vector2(380f, 76f));
+            Button quit = UiKit.MakeButton(root, "QuitButton", "Quit", UiKit.Center, new Vector2(0f, -280f), new Vector2(380f, 76f));
             Text saveStatus = UiKit.Label(root, "SaveStatus", "No saved game yet.", 26, new Color(1f, 0.95f, 0.84f, 0.95f), TextAnchor.MiddleCenter);
-            saveStatus.rectTransform.Place(UiKit.Center, UiKit.Center, new Vector2(0f, -250f), new Vector2(1200f, 40f));
+            saveStatus.rectTransform.Place(UiKit.Center, UiKit.Center, new Vector2(0f, -356f), new Vector2(680f, 40f));
 
-            Text footer = UiKit.Label(root, "Footer", "A quiet valley is waiting to be heard   |   Phase 3 greybox   |   thatgamejam #02", 24,
+            Text footer = UiKit.Label(root, "Footer", "A quiet valley is waiting to be heard   |   thatgamejam #02", 24,
                 new Color(1f, 0.95f, 0.84f, 0.85f), TextAnchor.LowerCenter);
-            footer.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 26f), new Vector2(1500f, 40f));
+            footer.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 26f), new Vector2(1200f, 40f));
+            Text version = UiKit.Label(root, "Version", "v0", 22, new Color(1f, 0.95f, 0.84f, 0.7f), TextAnchor.LowerLeft);
+            version.rectTransform.Place(UiKit.BottomLeft, UiKit.BottomLeft, new Vector2(32f, 26f), new Vector2(300f, 34f));
+
+            // Music and sound volume, bottom-right
+            Image volumePanel = UiKit.Panel(root, "VolumePanel", UiKit.PanelColor, true, true);
+            volumePanel.rectTransform.Place(UiKit.BottomRight, UiKit.BottomRight, new Vector2(-32f, 84f), new Vector2(580f, 150f));
+            Text volumeTitle = UiKit.Label(volumePanel.transform, "Title", "Volume", 26, UiKit.Gold, TextAnchor.UpperLeft, FontStyle.Bold);
+            volumeTitle.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(30f, -10f), new Vector2(300f, 34f));
+            UiKit.VolumeSliders(volumePanel.transform, UiKit.Center, new Vector2(0f, -14f));
+
+            // The credits: what is AI-made and what is original (text comes from GameCredits at run time)
+            Image creditsDim = UiKit.Panel(root, "CreditsPanel", new Color(0.04f, 0.03f, 0.08f, 0.78f), false);
+            creditsDim.rectTransform.Fill();
+            creditsDim.raycastTarget = true;
+            Image creditsBox = UiKit.Panel(creditsDim.transform, "Box", UiKit.ModalColor, true, true);
+            creditsBox.rectTransform.Place(UiKit.Center, UiKit.Center, Vector2.zero, new Vector2(1280f, 900f));
+            Text creditsTitle = UiKit.Label(creditsBox.transform, "Title", "Credits", 66, UiKit.Gold, TextAnchor.UpperCenter, FontStyle.Bold);
+            creditsTitle.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -30f), new Vector2(1100f, 84f));
+            Text creditsBody = UiKit.Label(creditsBox.transform, "Body", GameCredits.Text, 28, UiKit.Cream, TextAnchor.UpperCenter);
+            creditsBody.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -130f), new Vector2(1120f, 620f));
+            Button creditsClose = UiKit.MakeButton(creditsBox.transform, "CloseButton", "Close", UiKit.BottomCenter, new Vector2(0f, 98f), new Vector2(320f, 76f));
+            Text creditsHint = UiKit.Label(creditsBox.transform, "Hint", "Esc  Close", 22, new Color(1f, 0.95f, 0.84f, 0.75f), TextAnchor.LowerCenter);
+            creditsHint.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 14f), new Vector2(400f, 30f));
+            creditsDim.gameObject.SetActive(false);
 
             // "Start a new game?" - shown only when a save exists; the save is not touched by asking
             Image dim = UiKit.Panel(root, "ConfirmPanel", new Color(0.04f, 0.03f, 0.08f, 0.72f), false);
             dim.rectTransform.Fill();
             dim.raycastTarget = true;
-            Image box = UiKit.Panel(dim.transform, "Box", new Color(0.08f, 0.11f, 0.18f, 0.96f));
+            Image box = UiKit.Panel(dim.transform, "Box", UiKit.ModalColor, true, true);
             box.rectTransform.Place(UiKit.Center, UiKit.Center, Vector2.zero, new Vector2(1180f, 520f));
             Text question = UiKit.Label(box.transform, "Question", "Start a new game?", 66, UiKit.Gold, TextAnchor.UpperCenter, FontStyle.Bold);
             question.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -36f), new Vector2(1080f, 88f));
@@ -142,6 +169,12 @@ namespace Echoes.EditorTools
             Wire.Set(controller, "confirmButton", startNew);
             Wire.Set(controller, "cancelButton", cancel);
             dim.gameObject.SetActive(false);
+
+            Wire.Set(controller, "creditsButton", credits);
+            Wire.Set(controller, "creditsPanel", creditsDim.gameObject);
+            Wire.Set(controller, "creditsText", creditsBody);
+            Wire.Set(controller, "creditsCloseButton", creditsClose);
+            Wire.Set(controller, "versionText", version);
 
             Wire.Set(controller, "continueButton", continueGame);
             Wire.Set(controller, "playButton", play);

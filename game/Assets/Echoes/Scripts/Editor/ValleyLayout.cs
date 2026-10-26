@@ -31,6 +31,7 @@ namespace Echoes.EditorTools
         public static readonly Vector2 GardenKeeper = Garden + new Vector2(-5.4f, -1.4f);        // by the garden's west gate
         public static readonly Vector2 WindmillRestorer = Windmill + new Vector2(-3.8f, -3.6f);   // at the windmill's foot
         public const float WindmillYaw = 180f;                                                    // its front (local +Z) faces the Heart
+        public const float WindmillKnollHeight = 2.2f;                                            // the level top of the knoll it stands on
 
         // Renewable gathering spots, spread so exploring the valley is how the quest gets done.
         public static readonly Vector2[] HerbSpots =
@@ -62,6 +63,9 @@ namespace Echoes.EditorTools
             new Vector2(-27.5f, -1f), new Vector2(-28.5f, -7f), new Vector2(-28f, -12f)
         }, 8);
 
+        /// <summary>The five dirt paths as polylines (scenery follows them).</summary>
+        public static System.Collections.Generic.IReadOnlyList<Vector2[]> PathLines => Paths;
+
         public static float Smooth(float from, float to, float value) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(from, to, value));
 
         /// <summary>1 inside "full", fading to 0 at "fade".</summary>
@@ -85,11 +89,14 @@ namespace Echoes.EditorTools
             flat = Mathf.Max(flat, Mask(Vector2.Distance(p, Pond), 12f, 20f));
             flat = Mathf.Max(flat, Mask(Vector2.Distance(p, HenYard), 5f, 11f));
             flat = Mathf.Max(flat, Mask(Vector2.Distance(p, Garden), 8f, 15f));
-            flat = Mathf.Max(flat, Mask(Vector2.Distance(p, Windmill), 9f, 18f));
             flat = Mathf.Max(flat, Mask(DistanceToPaths(p), 3f, 8f));
             flat = Mathf.Max(flat, Mask(DistanceToPolyline(p, Stream), 5f, 11f));
 
             float height = Mathf.Lerp(natural, 0f, flat);
+
+            // The windmill stands on a gentle knoll, level at the top and blending smoothly into the hills. (Flattening it
+            // to ground level instead dug a steep bowl into the surrounding hill.)
+            height = Mathf.Lerp(height, WindmillKnollHeight, Mask(Vector2.Distance(p, Windmill), 9f, 26f));
 
             float streamCut = 0.8f * (1f - Smooth(0.5f, 2.2f, DistanceToPolyline(p, Stream)));
             float pondCut = 1.0f * (1f - Smooth(3f, 8f, Vector2.Distance(p, Pond)));
@@ -109,9 +116,9 @@ namespace Echoes.EditorTools
             float dx = Height(x + 0.8f, z) - Height(x - 0.8f, z);
             float dz = Height(x, z + 0.8f) - Height(x, z - 0.8f);
             float slope = Mathf.Sqrt(dx * dx + dz * dz) / 1.6f;
-            Blend(w, 3, Smooth(0.85f, 1.3f, slope));
+            Blend(w, 3, Smooth(1.15f, 1.8f, slope));
 
-            Blend(w, 2, Mask(DistanceToPaths(p), 1.1f, 2.0f));
+            Blend(w, 2, Mask(DistanceToPaths(p), 1.4f, 2.4f));
             Blend(w, 2, 0.9f * Mask(DistanceToPolyline(p, Stream), 2.0f, 3.4f));
             Blend(w, 2, 0.9f * Mask(Vector2.Distance(p, Pond), PondRadius + 0.5f, PondRadius + 2.4f));
             Blend(w, 3, Mask(p.magnitude, PlazaRadius - 1f, PlazaRadius + 0.8f));

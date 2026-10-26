@@ -57,6 +57,10 @@ namespace Echoes
             offset = Vector3.Lerp(offset, targetOffset, blend);
             animator.PoseEuler = euler;
             animator.PoseOffset = offset;
+
+            // A joyful villager greets the world with a wave every few seconds
+            float cycle = Mathf.Repeat(t, 9f);
+            animator.Wave = Level == 2 && cycle < 3f ? Mathf.Sin(cycle / 3f * Mathf.PI) : 0f;
         }
     }
 }

@@ -203,9 +203,9 @@ namespace Echoes.EditorTools
             Pieces.Prim(root, PrimitiveType.Cylinder, "Band", new Vector3(0f, 4.1f, 0f), new Vector3(4.0f, 0.07f, 4.0f), m["WoodDark"]);
             Pieces.Prim(root, PrimitiveType.Cube, "DoorFrame", new Vector3(0f, 1.6f, 2.2f), new Vector3(1.35f, 1.95f, 0.14f), m["WoodDark"]);
             Pieces.Prim(root, PrimitiveType.Cube, "Door", new Vector3(0f, 1.55f, 2.25f), new Vector3(1.05f, 1.8f, 0.12f), m["Wood"]);
-            Pieces.Prim(root, PrimitiveType.Cube, "WindowFront", new Vector3(0f, 4.9f, 1.88f), new Vector3(0.7f, 0.9f, 0.12f), m["Window"]);
-            Pieces.Prim(root, PrimitiveType.Cube, "WindowLeft", new Vector3(-1.88f, 4.9f, 0f), new Vector3(0.12f, 0.9f, 0.7f), m["Window"]);
-            Pieces.Prim(root, PrimitiveType.Cube, "WindowRight", new Vector3(1.88f, 4.9f, 0f), new Vector3(0.12f, 0.9f, 0.7f), m["Window"]);
+            Landmarks.WindowGlow(Pieces.Prim(root, PrimitiveType.Cube, "WindowFront", new Vector3(0f, 4.9f, 1.88f), new Vector3(0.7f, 0.9f, 0.12f), m["Window"]), false);
+            Landmarks.WindowGlow(Pieces.Prim(root, PrimitiveType.Cube, "WindowLeft", new Vector3(-1.88f, 4.9f, 0f), new Vector3(0.12f, 0.9f, 0.7f), m["Window"]), false);
+            Landmarks.WindowGlow(Pieces.Prim(root, PrimitiveType.Cube, "WindowRight", new Vector3(1.88f, 4.9f, 0f), new Vector3(0.12f, 0.9f, 0.7f), m["Window"]), false);
             Pieces.Prim(root, PrimitiveType.Sphere, "Cap", new Vector3(0f, 7.2f, 0f), new Vector3(4.0f, 2.6f, 4.0f), m["Roof"]);
             Pieces.Prim(root, PrimitiveType.Sphere, "CapTip", new Vector3(0f, 8.55f, 0f), Vector3.one * 0.32f, m["WoodDark"]);
             Pieces.Prim(root, PrimitiveType.Cylinder, "Axle", new Vector3(0f, 7.2f, 2.0f), new Vector3(0.32f, 0.5f, 0.32f), m["WoodDark"], Col.None, new Vector3(90f, 0f, 0f));
@@ -324,7 +324,7 @@ namespace Echoes.EditorTools
 
         /// <summary>Pastel specks drifting upwards over a box of the given size; plays for as long as it is switched on.</summary>
         public static ParticleSystem Motes(Transform parent, string name, Vector3 localPosition, Vector3 boxSize, float rate, int max,
-            Color colorA, Color colorB, float size)
+            Color colorA, Color colorB, float size, bool glow = false)
         {
             GameObject go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -361,7 +361,7 @@ namespace Echoes.EditorTools
             fade.enabled = true;
             fade.color = new ParticleSystem.MinMaxGradient(SceneKit.FadeInOut(Color.white, 1f));
 
-            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = SceneKit.ParticleMaterial();
+            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = glow ? SceneKit.GlowMaterial() : SceneKit.ParticleMaterial();
             return system;
         }
     }

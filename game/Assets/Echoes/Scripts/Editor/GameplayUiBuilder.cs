@@ -13,20 +13,24 @@ namespace Echoes.EditorTools
     /// <summary>Builds the Phase 2 UI on the existing HUD canvas: coins and hen status, toasts, the satchel and the alchemy panel.</summary>
     internal static class GameplayUiBuilder
     {
-        static readonly Color ModalColor = new Color(0.08f, 0.11f, 0.18f, 0.95f);
+        static readonly Color ModalColor = UiKit.ModalColor;
 
         public static GameplayUi Build(Canvas canvas, HudController hud)
         {
             Transform root = canvas.transform;
             GameplayUi ui = new GameplayUi { Hud = canvas.gameObject.AddComponent<GameplayHud>() };
 
-            // Coins and the hen (top-right)
-            Image status = UiKit.Panel(root, "StatusPanel", UiKit.PanelColor);
+            // Coins and the hen (top-right), each with a small round marker
+            Image status = UiKit.Panel(root, "StatusPanel", UiKit.PanelColor, true, true);
             status.rectTransform.Place(UiKit.TopRight, UiKit.TopRight, new Vector2(-32f, -32f), new Vector2(430f, 112f));
+            Image coinMark = UiKit.Dot(status.transform, "CoinMark", UiKit.Gold);
+            coinMark.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(24f, -20f), new Vector2(26f, 26f));
             Text coins = UiKit.Label(status.transform, "Coins", "Coins  20", 30, UiKit.Gold, TextAnchor.UpperLeft, FontStyle.Bold);
-            coins.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(24f, -14f), new Vector2(380f, 40f));
+            coins.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(62f, -14f), new Vector2(350f, 40f));
+            Image henMark = UiKit.Dot(status.transform, "HenMark", new Color(1f, 0.97f, 0.9f, 1f));
+            henMark.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(24f, -66f), new Vector2(26f, 26f));
             Text hen = UiKit.Label(status.transform, "Hen", GameSession.ChickenName + ": hungry", 26, UiKit.Cream, TextAnchor.UpperLeft);
-            hen.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(24f, -60f), new Vector2(380f, 40f));
+            hen.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(62f, -60f), new Vector2(350f, 40f));
 
             // Collection and crafting feedback (right edge); toast 0 is the newest and sits lowest
             Text[] toasts = new Text[4];
@@ -57,7 +61,7 @@ namespace Echoes.EditorTools
             veil.rectTransform.Fill();
             veil.raycastTarget = true;
 
-            Image card = UiKit.Panel(veil.transform, "Card", new Color(0.08f, 0.10f, 0.16f, 0.84f));
+            Image card = UiKit.Panel(veil.transform, "Card", new Color(0.11f, 0.09f, 0.19f, 0.88f), true, true);
             // 800 high and nudged down, so it clears the objective panel (ends 164 px from the top) and the controls hint
             card.rectTransform.Place(UiKit.Center, UiKit.Center, new Vector2(0f, -28f), new Vector2(1360f, 800f));
 
@@ -71,8 +75,7 @@ namespace Echoes.EditorTools
             story.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -222f), new Vector2(1140f, 138f));
             Text stages = UiKit.Label(card.transform, "Stages", "Silence   ·   Awakening   ·   Resonance   ·   Rest", 42, UiKit.Gold, TextAnchor.UpperCenter, FontStyle.Bold);
             stages.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -380f), new Vector2(1280f, 60f));
-            Text credits = UiKit.Label(card.transform, "Credits",
-                "A game for thatgamejam #02  ·  Made with Unity\nCode, writing and placeholder art made with AI assistance (Anthropic Claude Code)\nThank you for listening.",
+            Text credits = UiKit.Label(card.transform, "Credits", string.Join("\n", GameCredits.EndingLines),
                 26, new Color(1f, 0.95f, 0.84f, 0.92f), TextAnchor.UpperCenter);
             credits.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -456f), new Vector2(1280f, 120f));
 
@@ -92,7 +95,7 @@ namespace Echoes.EditorTools
         static InventoryPanel BuildInventory(Canvas canvas)
         {
             InventoryPanel controller = canvas.gameObject.AddComponent<InventoryPanel>();
-            Image panel = UiKit.Panel(canvas.transform, "InventoryPanel", ModalColor);
+            Image panel = UiKit.Panel(canvas.transform, "InventoryPanel", ModalColor, true, true);
             panel.rectTransform.Place(UiKit.Center, UiKit.Center, Vector2.zero, new Vector2(780f, 640f));
             panel.raycastTarget = true;
 
@@ -131,7 +134,7 @@ namespace Echoes.EditorTools
         static CraftingPanel BuildCrafting(Canvas canvas)
         {
             CraftingPanel controller = canvas.gameObject.AddComponent<CraftingPanel>();
-            Image panel = UiKit.Panel(canvas.transform, "CraftingPanel", ModalColor);
+            Image panel = UiKit.Panel(canvas.transform, "CraftingPanel", ModalColor, true, true);
             panel.rectTransform.Place(UiKit.Center, UiKit.Center, Vector2.zero, new Vector2(1100f, 720f));
             panel.raycastTarget = true;
 

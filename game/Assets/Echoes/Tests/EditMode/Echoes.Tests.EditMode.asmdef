@@ -6,7 +6,9 @@
         "UnityEditor.TestRunner",
         "Echoes.Runtime",
         "Echoes.Editor",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
         "Editor"

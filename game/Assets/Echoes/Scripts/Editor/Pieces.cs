@@ -72,47 +72,6 @@ namespace Echoes.EditorTools
                 GameObjectUtility.SetStaticEditorFlags(t.gameObject, 0);
         }
 
-        // ---- Characters ----------------------------------------------------------------------------------------
-
-        /// <summary>Chibi-style placeholder character, about 1.5 m tall, pivot at the feet, facing +Z.</summary>
-        public static GameObject Character(string name, MaterialLibrary m, string tunic, string hair, string accent,
-            bool hat, bool longHair, bool skirt, bool satchel)
-        {
-            GameObject root = new GameObject(name);
-            Transform body = Group("Body", root.transform, Vector3.zero);
-
-            Prim(body, PrimitiveType.Capsule, "Torso", new Vector3(0f, 0.62f, 0f), new Vector3(0.54f, 0.40f, 0.46f), m[tunic]);
-            Prim(body, PrimitiveType.Sphere, "Head", new Vector3(0f, 1.22f, 0f), Vector3.one * 0.46f, m["Skin"]);
-            Prim(body, PrimitiveType.Sphere, "Hair", new Vector3(0f, 1.28f, -0.04f), new Vector3(0.50f, 0.46f, 0.50f), m[hair]);
-            Prim(body, PrimitiveType.Sphere, "HairBack", new Vector3(0f, longHair ? 1.0f : 1.12f, -0.17f),
-                longHair ? new Vector3(0.40f, 0.78f, 0.28f) : new Vector3(0.40f, 0.46f, 0.28f), m[hair]);
-            Prim(body, PrimitiveType.Cylinder, "Scarf", new Vector3(0f, 0.98f, 0f), new Vector3(0.36f, 0.03f, 0.36f), m[accent]);
-            Prim(body, PrimitiveType.Sphere, "EyeL", new Vector3(-0.085f, 1.22f, 0.205f), new Vector3(0.055f, 0.075f, 0.04f), m["Eye"]);
-            Prim(body, PrimitiveType.Sphere, "EyeR", new Vector3(0.085f, 1.22f, 0.205f), new Vector3(0.055f, 0.075f, 0.04f), m["Eye"]);
-            Prim(body, PrimitiveType.Sphere, "CheekL", new Vector3(-0.14f, 1.15f, 0.17f), new Vector3(0.07f, 0.04f, 0.03f), m["Blush"]);
-            Prim(body, PrimitiveType.Sphere, "CheekR", new Vector3(0.14f, 1.15f, 0.17f), new Vector3(0.07f, 0.04f, 0.03f), m["Blush"]);
-
-            if (skirt)
-                Prim(body, PrimitiveType.Cylinder, "Skirt", new Vector3(0f, 0.34f, 0f), new Vector3(0.60f, 0.20f, 0.60f), m[tunic]);
-            if (satchel)
-                Prim(body, PrimitiveType.Cube, "Satchel", new Vector3(0f, 0.64f, -0.27f), new Vector3(0.30f, 0.34f, 0.14f), m["Wood"]);
-            if (hat)
-            {
-                Prim(body, PrimitiveType.Cylinder, "HatBrim", new Vector3(0f, 1.47f, 0f), new Vector3(0.66f, 0.012f, 0.66f), m["Straw"]);
-                Prim(body, PrimitiveType.Sphere, "HatDome", new Vector3(0f, 1.50f, 0f), new Vector3(0.36f, 0.24f, 0.36f), m["Straw"]);
-                Prim(body, PrimitiveType.Cylinder, "HatBand", new Vector3(0f, 1.49f, 0f), new Vector3(0.37f, 0.02f, 0.37f), m[accent]);
-            }
-
-            Transform left = Prim(root.transform, PrimitiveType.Sphere, "FootL", new Vector3(-0.13f, 0.08f, 0.04f), new Vector3(0.17f, 0.13f, 0.28f), m["Boots"]).transform;
-            Transform right = Prim(root.transform, PrimitiveType.Sphere, "FootR", new Vector3(0.13f, 0.08f, 0.04f), new Vector3(0.17f, 0.13f, 0.28f), m["Boots"]).transform;
-
-            CharacterAnimator animator = root.AddComponent<CharacterAnimator>();
-            Wire.Set(animator, "body", body);
-            Wire.Set(animator, "leftFoot", left);
-            Wire.Set(animator, "rightFoot", right);
-            return root;
-        }
-
         // ---- Nature --------------------------------------------------------------------------------------------
 
         public static GameObject Tree(string name, MaterialLibrary m, string leafMain, string leafTop, float trunkHeight)
@@ -121,9 +80,12 @@ namespace Echoes.EditorTools
             Transform t = root.transform;
             float h = trunkHeight;
             Prim(t, PrimitiveType.Cylinder, "Trunk", new Vector3(0f, h * 0.5f, 0f), new Vector3(0.34f, h * 0.5f, 0.34f), m["Trunk"], Col.Auto);
+            Prim(t, PrimitiveType.Sphere, "Root", new Vector3(0f, 0.12f, 0f), new Vector3(0.80f, 0.34f, 0.80f), m["Trunk"]);
             Prim(t, PrimitiveType.Sphere, "Leaves", new Vector3(0f, h + 0.7f, 0f), new Vector3(2.6f, 2.1f, 2.6f), m[leafMain]);
             Prim(t, PrimitiveType.Sphere, "LeavesTop", new Vector3(0.15f, h + 1.75f, -0.1f), new Vector3(1.7f, 1.5f, 1.7f), m[leafTop]);
             Prim(t, PrimitiveType.Sphere, "LeavesSide", new Vector3(-0.9f, h + 0.3f, 0.55f), new Vector3(1.5f, 1.3f, 1.5f), m[leafTop]);
+            Prim(t, PrimitiveType.Sphere, "LeavesLow", new Vector3(0.95f, h + 0.15f, -0.55f), new Vector3(1.35f, 1.15f, 1.35f), m[leafMain]);
+            Prim(t, PrimitiveType.Sphere, "LeavesCrown", new Vector3(-0.35f, h + 2.3f, 0.3f), new Vector3(0.95f, 0.85f, 0.95f), m[leafTop]);
             return root;
         }
 
@@ -132,6 +94,7 @@ namespace Echoes.EditorTools
             GameObject root = new GameObject("Rock");
             Prim(root.transform, PrimitiveType.Sphere, "Boulder", new Vector3(0f, 0.38f, 0f), new Vector3(1.7f, 1.0f, 1.35f), m["Rock"], Col.Box, new Vector3(0f, 20f, 4f));
             Prim(root.transform, PrimitiveType.Sphere, "Chip", new Vector3(0.9f, 0.18f, 0.35f), new Vector3(0.7f, 0.45f, 0.6f), m["Rock"]);
+            Prim(root.transform, PrimitiveType.Sphere, "Moss", new Vector3(0.05f, 0.72f, -0.05f), new Vector3(1.15f, 0.34f, 0.92f), m["GrassBladeLight"], Col.None, new Vector3(0f, 20f, 4f));
             return root;
         }
 

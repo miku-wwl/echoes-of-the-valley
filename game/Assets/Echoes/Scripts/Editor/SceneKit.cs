@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
+using UnityEditor;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -51,7 +52,7 @@ namespace Echoes.EditorTools
             camera.allowMSAA = true;
 
             UniversalAdditionalCameraData data = camera.GetUniversalAdditionalCameraData();
-            data.renderPostProcessing = false;
+            data.renderPostProcessing = true;   // the global Volume adds a soft bloom, a light vignette and the stage's colour grading
             data.requiresDepthOption = CameraOverrideOption.Off;
             data.requiresColorOption = CameraOverrideOption.Off;
             return camera;
@@ -63,13 +64,66 @@ namespace Echoes.EditorTools
             new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
         }
 
-        public static Material ParticleMaterial()
+        /// <summary>Soft, alpha-blended round dots (smoke, pollen, droplets). Created by MaterialLibrary.</summary>
+        public static Material ParticleMaterial() => Load("ParticleSoft");
+
+        /// <summary>Additive round dots that glow under the bloom (fireflies, sparkles, rings of light). Created by MaterialLibrary.</summary>
+        public static Material GlowMaterial() => Load("ParticleGlow");
+
+        static Material Load(string name)
         {
-            RenderPipelineAsset pipeline = GraphicsSettings.currentRenderPipeline;
-            Material material = pipeline != null ? pipeline.defaultParticleMaterial : null;
-            if (material == null)
-                Debug.LogWarning("[Echoes] No default particle material from the render pipeline; particles may render pink.");
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(AssetPaths.Materials + "/" + name + ".mat");
+            if (material == null) Debug.LogWarning("[Echoes] Material " + name + " is missing; particles may render pink.");
             return material;
+        }
+
+        /// <summary>
+        /// A global post-processing Volume with a light bloom, a soft vignette and gentle colour grading. The profile asset is kept
+        /// (same GUID) and its overrides are rebuilt on every run; ValleyLighting moves the values with the restoration stages.
+        /// </summary>
+        public static Volume CreateVolume(string objectName, string profilePath, float bloomIntensity, float bloomThreshold,
+            float vignetteIntensity, float saturation)
+        {
+            AssetPaths.EnsureFolder(AssetPaths.Settings);
+            VolumeProfile profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(profilePath);
+            if (profile == null)
+            {
+                profile = ScriptableObject.CreateInstance<VolumeProfile>();
+                AssetDatabase.CreateAsset(profile, profilePath);
+            }
+            foreach (Object old in AssetDatabase.LoadAllAssetRepresentationsAtPath(profilePath))
+            {
+                AssetDatabase.RemoveObjectFromAsset(old);
+                Object.DestroyImmediate(old, true);
+            }
+            profile.components.Clear();
+
+            Bloom bloom = profile.Add<Bloom>(true);
+            bloom.intensity.value = bloomIntensity;
+            bloom.threshold.value = bloomThreshold;
+            bloom.scatter.value = 0.62f;
+            bloom.tint.value = new Color(1f, 0.96f, 0.88f);
+            bloom.highQualityFiltering.value = false;
+            Vignette vignette = profile.Add<Vignette>(true);
+            vignette.intensity.value = vignetteIntensity;
+            vignette.smoothness.value = 0.45f;
+            vignette.color.value = new Color(0.10f, 0.06f, 0.10f);
+            ColorAdjustments grading = profile.Add<ColorAdjustments>(true);
+            grading.saturation.value = saturation;
+            grading.contrast.value = 6f;
+            grading.postExposure.value = 0f;
+            grading.colorFilter.value = Color.white;
+            foreach (VolumeComponent component in new VolumeComponent[] { bloom, vignette, grading })
+                AssetDatabase.AddObjectToAsset(component, profile);
+            EditorUtility.SetDirty(profile);
+            AssetDatabase.SaveAssets();
+
+            GameObject go = new GameObject(objectName);
+            Volume volume = go.AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.priority = 0f;
+            volume.sharedProfile = profile;
+            return volume;
         }
 
         public static Gradient FadeInOut(Color color, float peakAlpha)

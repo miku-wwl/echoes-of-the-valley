@@ -37,7 +37,7 @@ namespace Echoes.EditorTools
             Lit("Roof", 0.76f, 0.37f, 0.31f);
             Lit("Straw", 0.93f, 0.80f, 0.46f);
             Lit("Iron", 0.24f, 0.25f, 0.29f, 0.35f);
-            Lit("Window", 0.98f, 0.88f, 0.55f, 0.4f);
+            // (the Window glow material is defined with the other glowing details below)
 
             // Nature
             Lit("Trunk", 0.52f, 0.37f, 0.27f);
@@ -51,7 +51,10 @@ namespace Echoes.EditorTools
             Lit("FlowerYellow", 1.00f, 0.85f, 0.30f);
             Lit("FlowerWhite", 0.98f, 0.97f, 0.94f);
             Lit("FlowerLilac", 0.72f, 0.60f, 0.95f);
-            Lit("Water", 0.36f, 0.70f, 0.88f, 0.9f, shiny: true);
+            Lit("GrassBlade", 0.40f, 0.72f, 0.32f);
+            Lit("GrassBladeLight", 0.60f, 0.83f, 0.38f);
+            Lit("Reed", 0.46f, 0.66f, 0.30f);
+            Lit("Water", 0.42f, 0.78f, 0.95f, 0.9f, shiny: true);
             Lit("LilyPad", 0.34f, 0.62f, 0.34f, 0.3f);
             Lit("GroundMenu", 0.46f, 0.66f, 0.38f);
             Lit("HillMenu", 0.40f, 0.60f, 0.42f);
@@ -61,15 +64,20 @@ namespace Echoes.EditorTools
             Lit("Blush", 1.00f, 0.66f, 0.66f);
             Lit("Eye", 0.12f, 0.10f, 0.14f, 0.5f);
             Lit("Boots", 0.40f, 0.28f, 0.22f);
-            Lit("TunicHero", 0.34f, 0.64f, 0.80f);
+            Lit("TunicHero", 0.20f, 0.62f, 0.64f);
             Lit("HairHero", 0.52f, 0.28f, 0.17f);
+            Lit("HeroCape", 0.99f, 0.88f, 0.62f);
+            Lit("Trousers", 0.60f, 0.46f, 0.34f);
+            Lit("MouthCoral", 0.92f, 0.45f, 0.45f);
+            Lit("Brow", 0.32f, 0.21f, 0.16f);
+            Lit("Highlight", 1.00f, 1.00f, 1.00f);
             Lit("Scarf", 0.90f, 0.38f, 0.33f);
             Lit("TunicMira", 0.56f, 0.76f, 0.46f);
             Lit("HairMira", 0.84f, 0.64f, 0.36f);
             Lit("Cream", 0.98f, 0.94f, 0.84f);
 
             // Gameplay: gathering nodes, the hen, the murky water of the silent valley
-            Lit("WaterDull", 0.46f, 0.50f, 0.40f, 0.25f);
+            Lit("WaterDull", 0.52f, 0.56f, 0.44f, 0.25f);
             Lit("HerbLeaf", 0.20f, 0.74f, 0.64f);
             Lit("HerbDark", 0.14f, 0.42f, 0.38f);
             Lit("BlossomCoral", 1.00f, 0.54f, 0.36f);
@@ -109,13 +117,65 @@ namespace Echoes.EditorTools
             Glow("PotionBlue", new Color(0.40f, 0.66f, 0.96f), new Color(0.08f, 0.22f, 0.45f));
             Glow("Crystal", new Color(0.50f, 0.62f, 0.72f), Color.black, 0.7f);
 
+            // Phase 4: windows that light up with the valley, clouds, water that flows and particles that glow
+            Glow("Window", new Color(0.98f, 0.88f, 0.55f), Color.black, 0.4f);   // StageGlow drives its emission
+            Glow("LanternLamp", new Color(1f, 0.90f, 0.62f), new Color(0.9f, 0.55f, 0.15f), 0.3f);
+            Material cloud = Create("Cloud", FindShader("Universal Render Pipeline/Unlit"));
+            cloud.SetColor("_BaseColor", Color.white);
+            EditorUtility.SetDirty(cloud);
+
+            AssetPaths.EnsureFolder(AssetPaths.Textures);
+            Texture2D streaks = TextureKit.WaterStreaks(AssetPaths.Textures + "/WaterFlow.asset");
+            foreach (string waterName in new[] { "Water", "WaterDull" })
+            {
+                materials[waterName].SetTexture("_BaseMap", streaks);
+                materials[waterName].SetTextureScale("_BaseMap", Vector2.one);
+                EditorUtility.SetDirty(materials[waterName]);
+            }
+            Texture2D dot = TextureKit.GlowDot(AssetPaths.Textures + "/GlowDot.asset");
+            Particle("ParticleGlow", dot, additive: true);
+            Particle("ParticleSoft", dot, additive: false);
+
             // Terrain and skies
             Material terrain = Create("TerrainLit", FindShader("Universal Render Pipeline/Terrain/Lit"));
             EditorUtility.SetDirty(terrain);
-            Sky("SkyValley", new Color(0.46f, 0.54f, 0.64f), 1.05f, 0.9f);
-            Sky("SkyMenu", new Color(0.50f, 0.50f, 0.50f), 1.0f, 2.4f);
+            // The silent valley's sky is hazy and muted but never dark; ValleyLighting moves it towards a golden hour.
+            GradientSky("SkyValley", new Color(0.45f, 0.57f, 0.76f), new Color(0.80f, 0.85f, 0.89f), new Color(0.44f, 0.50f, 0.40f), 0.95f);
+            GradientSky("SkyMenu", new Color(0.20f, 0.17f, 0.42f), new Color(1.00f, 0.62f, 0.42f), new Color(0.24f, 0.20f, 0.22f), 1.0f);
 
             AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>URP particle material from the pipeline's own particle shader: soft round dots, additive (light) or alpha-blended (smoke, pollen).</summary>
+        void Particle(string name, Texture2D dot, bool additive)
+        {
+            Material material = Create(name, FindShader("Universal Render Pipeline/Particles/Unlit"));
+            material.SetTexture("_BaseMap", dot);
+            material.SetColor("_BaseColor", Color.white);
+            material.SetFloat("_Surface", 1f);                     // transparent
+            material.SetFloat("_Blend", additive ? 2f : 0f);
+            material.SetFloat("_SrcBlend", 5f);                    // SrcAlpha
+            material.SetFloat("_DstBlend", additive ? 1f : 10f);   // One, or OneMinusSrcAlpha
+            material.SetFloat("_ZWrite", 0f);
+            material.SetFloat("_Cull", 0f);
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.SetOverrideTag("RenderType", "Transparent");
+            material.renderQueue = 3000;
+            EditorUtility.SetDirty(material);
+        }
+
+        void GradientSky(string name, Color zenith, Color horizon, Color ground, float exposure)
+        {
+            Material material = Create(name, FindShader("Echoes/GradientSky"));
+            material.SetColor("_ZenithColor", zenith);
+            material.SetColor("_HorizonColor", horizon);
+            material.SetColor("_GroundColor", ground);
+            material.SetColor("_SunColor", new Color(1f, 0.92f, 0.75f));
+            material.SetVector("_SunDir", new Vector4(0.45f, 0.62f, 0.64f, 0f));
+            material.SetFloat("_SunSize", 0.9985f);
+            material.SetFloat("_Exposure", exposure);
+            material.SetFloat("_Falloff", 0.7f);
+            EditorUtility.SetDirty(material);
         }
 
         static Shader FindShader(string name)
@@ -179,16 +239,5 @@ namespace Echoes.EditorTools
             EditorUtility.SetDirty(material);
         }
 
-        void Sky(string name, Color tint, float exposure, float thickness)
-        {
-            Material material = Create(name, FindShader("Skybox/Procedural"));
-            material.SetColor("_SkyTint", tint);
-            material.SetColor("_GroundColor", new Color(0.42f, 0.44f, 0.40f));
-            material.SetFloat("_Exposure", exposure);
-            material.SetFloat("_AtmosphereThickness", thickness);
-            material.SetFloat("_SunSize", 0.05f);
-            material.SetFloat("_SunSizeConvergence", 5f);
-            EditorUtility.SetDirty(material);
-        }
     }
 }

@@ -55,6 +55,14 @@ namespace Echoes
             bannerGroup.alpha = 0.02f;
         }
 
+        /// <summary>Clears a banner that is still showing (the ending screen needs the whole stage to itself).</summary>
+        public void HideBanner()
+        {
+            bannerLength = 0f;
+            bannerAge = 0f;
+            if (bannerGroup != null) bannerGroup.alpha = 0f;
+        }
+
         void Update()
         {
             if (bannerGroup == null || bannerLength <= 0f) return;

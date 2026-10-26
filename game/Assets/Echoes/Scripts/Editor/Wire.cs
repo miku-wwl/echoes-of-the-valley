@@ -26,7 +26,9 @@ namespace Echoes.EditorTools
                 case float number: property.floatValue = number; break;
                 case int integer: property.intValue = integer; break;
                 case bool flag: property.boolValue = flag; break;
+                case Vector2 vector2: property.vector2Value = vector2; break;
                 case Vector3 vector: property.vector3Value = vector; break;
+                case Vector4 vector4: property.vector4Value = vector4; break;
                 case Color color: property.colorValue = color; break;
                 default: throw new ArgumentException("Unsupported value type " + value.GetType());
             }

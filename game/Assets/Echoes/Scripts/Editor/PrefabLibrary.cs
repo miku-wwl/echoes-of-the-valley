@@ -32,11 +32,11 @@ namespace Echoes.EditorTools
             set.TreeTall = Save(Pieces.Tree("Tree_Tall", m, "LeafB", "LeafA", 2.4f));
             set.TreeBlossom = Save(Pieces.Tree("Tree_Blossom", m, "Blossom", "BlossomLight", 1.7f));
             set.Rock = Save(Pieces.Rock(m));
-            set.Hero = Save(Pieces.Character("Hero", m, "TunicHero", "HairHero", "Scarf", hat: false, longHair: false, skirt: false, satchel: true));
+            set.Hero = Save(Characters.Hero(m));
 
-            set.Villager = Save(Villager(Pieces.Character("Villager", m, "TunicMira", "HairMira", "Cream", hat: true, longHair: true, skirt: true, satchel: false)));
-            set.GardenKeeper = Save(Villager(Pieces.Character("GardenKeeper", m, "TunicKeeper", "HairKeeper", "Cream", hat: true, longHair: false, skirt: true, satchel: false)));
-            set.WindmillRestorer = Save(Villager(Pieces.Character("WindmillRestorer", m, "TunicRestorer", "HairRestorer", "ScarfRestorer", hat: false, longHair: false, skirt: false, satchel: true)));
+            set.Villager = Save(Villager(Characters.Mira(m)));
+            set.GardenKeeper = Save(Villager(Characters.Wren(m)));
+            set.WindmillRestorer = Save(Villager(Characters.Alder(m)));
 
             set.HerbNode = Save(GameplayPieces.HerbNode(m));
             set.FlowerNode = Save(GameplayPieces.FlowerNode(m));

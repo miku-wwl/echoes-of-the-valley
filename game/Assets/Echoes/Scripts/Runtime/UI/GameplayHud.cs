@@ -100,6 +100,9 @@ namespace Echoes
                 case "windmill_completed":
                     hud.ShowBanner("The Windmill Turns", "The whole valley hums with life again.", 9f);
                     break;
+                case "ending_seen":
+                    hud.HideBanner();   // the ending screen opens right after this; an older banner must not show through it
+                    break;
             }
         }
 

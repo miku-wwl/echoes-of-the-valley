@@ -26,9 +26,10 @@ namespace Echoes.EditorTools
 
                 MaterialLibrary materials = new MaterialLibrary();
                 PrefabSet prefabs = PrefabLibrary.Build(materials);
+                AudioSet audio = AudioLibrary.Generate();
                 AssetPaths.EnsureFolder(AssetPaths.Scenes);
-                MainMenuSceneBuilder.Build(materials, prefabs);
-                ValleySceneBuilder.Build(materials, prefabs);
+                MainMenuSceneBuilder.Build(materials, prefabs, audio);
+                ValleySceneBuilder.Build(materials, prefabs, audio);
                 RegisterScenes();
 
                 AssetDatabase.SaveAssets();

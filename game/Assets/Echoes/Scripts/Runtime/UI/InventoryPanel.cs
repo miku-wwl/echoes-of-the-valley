@@ -56,6 +56,7 @@ namespace Echoes
             IsOpen = true;
             if (panel != null) panel.SetActive(true);
             GameFlow.SetPanelOpen(true);
+            AudioDirector.PlayStatic(SoundCue.PanelOpen);
             Refresh();
         }
 
@@ -65,6 +66,7 @@ namespace Echoes
             IsOpen = false;
             if (panel != null) panel.SetActive(false);
             GameFlow.SetPanelOpen(false);
+            AudioDirector.PlayStatic(SoundCue.PanelClose);
         }
 
         void Refresh()

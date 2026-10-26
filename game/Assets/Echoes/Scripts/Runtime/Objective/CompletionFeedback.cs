@@ -31,6 +31,7 @@ namespace Echoes
         {
             if (HasPlayed) return;
             HasPlayed = true;
+            GameSession.Current?.RaiseCue(SoundCue.HeartAwakened);   // only a live completion sounds; a loaded game uses ApplyInstant
             StartCoroutine(Transition());
         }
 

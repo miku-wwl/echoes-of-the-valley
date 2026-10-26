@@ -170,7 +170,7 @@ namespace Echoes.EditorTools
             fade.enabled = true;
             fade.color = new ParticleSystem.MinMaxGradient(SceneKit.FadeInOut(Color.white, 1f));
 
-            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = SceneKit.ParticleMaterial();
+            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = SceneKit.GlowMaterial();
             return system;
         }
 

@@ -22,7 +22,7 @@ namespace Echoes.EditorTools
         /// <summary>Top offset of the banner: the objective panel ends at 164 reference pixels, the banner starts below it.</summary>
         public const float BannerTop = -190f;
 
-        public static void Build(MaterialLibrary m, PrefabSet prefabs)
+        public static void Build(MaterialLibrary m, PrefabSet prefabs, AudioSet audio)
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -41,12 +41,14 @@ namespace Echoes.EditorTools
             WaterParts water = BuildWater(world.transform, m);
             GameplayPieces.HenYardFence(world.transform, Ground(terrain, ValleyLayout.HenYard), m);
             Scatter(world.transform, terrain, prefabs);
+            Scenery.Build(world.transform, terrain, m);
             BuildBoundaries(world.transform);
             Pieces.MakeStatic(world);
             // Things that move, scale or swap materials at runtime must not be statically batched.
             Pieces.MakeDynamic(heart.CrystalPivot.gameObject);
             Pieces.MakeDynamic(water.Root.gameObject);
             Pieces.MakeDynamic(springParts.Water.gameObject);
+            AddFlow(springParts.Water.gameObject, new Vector2(1.5f, 1.5f), new Vector2(0.03f, -0.05f), 0.5f);
 
             // Everything the player gathers, feeds or watches change lives outside the static scenery.
             Transform gameplay = new GameObject("Gameplay").transform;
@@ -79,6 +81,7 @@ namespace Echoes.EditorTools
             hero.name = "Visual";
             PlayerController playerController = player.AddComponent<PlayerController>();
             InteractionDetector detector = player.AddComponent<InteractionDetector>();
+            Wire.Set(player.AddComponent<FootstepAudio>(), "player", playerController);
 
             Camera camera = SceneKit.CreateCamera(spawnPosition + new Vector3(0f, 4f, -6f), Quaternion.Euler(22f, 0f, 0f), 60f);
             ThirdPersonCamera rig = camera.gameObject.AddComponent<ThirdPersonCamera>();
@@ -100,6 +103,9 @@ namespace Echoes.EditorTools
             GameSessionHost host = systems.AddComponent<GameSessionHost>();
             ResonanceView resonance = systems.AddComponent<ResonanceView>();
             Wire.Set(lighting, "sun", sun);
+            Wire.Set(lighting, "volume", SceneKit.CreateVolume("PostProcessing", AssetPaths.Settings + "/ValleyPostProcessing.asset", 0.22f, 0.92f, 0.22f, -8f));
+            BuildClouds(m);
+            AudioWiring.Add(audio, true);
             Wire.Set(host, "objective", objective);
             Wire.Set(objective, "hud", hud);
             Wire.Set(objective, "feedback", feedback);
@@ -209,12 +215,14 @@ namespace Echoes.EditorTools
             const int alphaRes = 128;
             float size = ValleyLayout.TerrainSize;
 
+            // Each layer is a small tileable texture: soft blotches of tone plus a few specks (pale flowers, pebbles).
+            AssetPaths.EnsureFolder(AssetPaths.Textures);
             TerrainLayer[] layers =
             {
-                MakeLayer("Grass", new Color(0.50f, 0.74f, 0.36f)),
-                MakeLayer("Meadow", new Color(0.66f, 0.78f, 0.40f)),
-                MakeLayer("Path", new Color(0.84f, 0.74f, 0.54f)),
-                MakeLayer("Stone", new Color(0.68f, 0.64f, 0.58f))
+                MakeLayer("Grass", new Color(0.50f, 0.74f, 0.36f), 0.09f, 6, 101, new Color(0.78f, 0.90f, 0.52f), 0.010f),
+                MakeLayer("Meadow", new Color(0.66f, 0.78f, 0.40f), 0.10f, 5, 202, new Color(1.00f, 0.95f, 0.70f), 0.016f),
+                MakeLayer("Path", new Color(0.84f, 0.74f, 0.54f), 0.07f, 8, 303, new Color(0.62f, 0.52f, 0.38f), 0.020f),
+                MakeLayer("Stone", new Color(0.68f, 0.64f, 0.58f), 0.08f, 6, 404, new Color(0.50f, 0.48f, 0.45f), 0.014f)
             };
 
             string dataPath = AssetPaths.Terrain + "/ValleyTerrainData.asset";
@@ -269,24 +277,11 @@ namespace Echoes.EditorTools
             return terrain;
         }
 
-        static TerrainLayer MakeLayer(string name, Color color)
+        static TerrainLayer MakeLayer(string name, Color color, float variation, int cells, int seed, Color speckle, float speckleChance)
         {
+            // Same asset file as before (stable GUID); no alpha channel, because URP's terrain shader locks smoothness to 1 with one.
             string texturePath = AssetPaths.Terrain + "/" + name + "Color.asset";
-            Texture2D texture = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath);
-            if (texture == null)
-            {
-                texture = new Texture2D(4, 4, TextureFormat.RGB24, true, false);
-                AssetDatabase.CreateAsset(texture, texturePath);
-            }
-            // No alpha channel on purpose: URP's terrain shader locks smoothness to 1 when the diffuse has alpha.
-            texture.Reinitialize(4, 4, TextureFormat.RGB24, true);
-            Color[] pixels = new Color[16];
-            for (int i = 0; i < pixels.Length; i++) pixels[i] = color;
-            texture.SetPixels(pixels);
-            texture.Apply(true, false);
-            texture.wrapMode = TextureWrapMode.Repeat;
-            texture.filterMode = FilterMode.Bilinear;
-            EditorUtility.SetDirty(texture);
+            Texture2D texture = TextureKit.Ground(texturePath, color, variation, cells, seed, speckle, speckleChance);
 
             string layerPath = AssetPaths.Terrain + "/" + name + ".terrainlayer";
             TerrainLayer layer = AssetDatabase.LoadAssetAtPath<TerrainLayer>(layerPath);
@@ -296,7 +291,7 @@ namespace Echoes.EditorTools
                 AssetDatabase.CreateAsset(layer, layerPath);
             }
             layer.diffuseTexture = texture;
-            layer.tileSize = new Vector2(8f, 8f);
+            layer.tileSize = new Vector2(7f, 7f);
             layer.smoothness = 0f;
             layer.metallic = 0f;
             EditorUtility.SetDirty(layer);
@@ -327,11 +322,57 @@ namespace Echoes.EditorTools
             }
 
             AssetPaths.EnsureFolder(AssetPaths.Meshes);
-            GameObject wide = StreamObject(water, "Stream", BuildStreamMesh("StreamWater", ValleyLayout.StreamWidth), m["Water"]);
+            Mesh wideMesh = BuildStreamMesh("StreamWater", ValleyLayout.StreamWidth);
+            GameObject wide = StreamObject(water, "Stream", wideMesh, m["Water"]);
+            AddFlow(wide, new Vector2(1f, 1.4f), new Vector2(0f, -0.20f), 0.3f);
+            StreamSparkles(wide.transform, wideMesh);
             wide.SetActive(false);
             GameObject trickle = StreamObject(water, "StreamTrickle", BuildStreamMesh("StreamTrickle", 0.8f), m["WaterDull"]);
+            AddFlow(trickle, new Vector2(0.5f, 1.4f), new Vector2(0f, -0.14f), 0.4f);
+            AddFlow(pondSurface, new Vector2(2.4f, 2.4f), new Vector2(0.012f, -0.016f), 0.7f);
 
             return new WaterParts { Root = water, Pond = pondSurface.GetComponent<Renderer>(), WideStream = wide, Trickle = trickle };
+        }
+
+        /// <summary>Scrolls the water texture along a surface (see WaterFlow); slower while the valley is silent.</summary>
+        static void AddFlow(GameObject surface, Vector2 tiling, Vector2 speed, float silentFlow)
+        {
+            WaterFlow flow = surface.AddComponent<WaterFlow>();
+            Wire.Set(flow, "target", surface.GetComponent<Renderer>());
+            Wire.Set(flow, "tiling", tiling);
+            Wire.Set(flow, "speed", speed);
+            Wire.Set(flow, "silentFlow", silentFlow);
+        }
+
+        /// <summary>Little glints that appear across the surface of the restored stream (the object is only active from stage 1).</summary>
+        static void StreamSparkles(Transform stream, Mesh surface)
+        {
+            GameObject go = new GameObject("Sparkles");
+            go.transform.SetParent(stream, false);
+            go.transform.localPosition = new Vector3(0f, 0.06f, 0f);
+            ParticleSystem system = go.AddComponent<ParticleSystem>();
+            system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            ParticleSystem.MainModule main = system.main;
+            main.loop = true;
+            main.playOnAwake = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.8f, 1.6f);
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.10f, 0.22f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 1f, 1f, 1f), new Color(0.75f, 0.95f, 1f, 1f));
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 160;
+            ParticleSystem.EmissionModule emission = system.emission;
+            emission.rateOverTime = 34f;
+            ParticleSystem.ShapeModule shape = system.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Mesh;
+            shape.meshShapeType = ParticleSystemMeshShapeType.Triangle;
+            shape.mesh = surface;
+            ParticleSystem.SizeOverLifetimeModule size = system.sizeOverLifetime;
+            size.enabled = true;
+            size.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.3f, 1f), new Keyframe(1f, 0f)));
+            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = SceneKit.GlowMaterial();
         }
 
         static GameObject StreamObject(Transform parent, string name, Mesh mesh, Material material)
@@ -634,6 +675,31 @@ namespace Echoes.EditorTools
             return root;
         }
 
+        /// <summary>A layer of slow, fat clouds high above the valley. CloudDrift moves them and tints them with the stage.</summary>
+        static void BuildClouds(MaterialLibrary m)
+        {
+            GameObject root = new GameObject("Clouds");
+            System.Random random = new System.Random(88);
+            for (int i = 0; i < 14; i++)
+            {
+                Transform cloud = new GameObject("Cloud" + i).transform;
+                cloud.SetParent(root.transform, false);
+                cloud.localPosition = new Vector3(Mathf.Lerp(-105f, 105f, (float)random.NextDouble()), Mathf.Lerp(46f, 64f, (float)random.NextDouble()),
+                    Mathf.Lerp(-95f, 115f, (float)random.NextDouble()));
+                int puffs = 4 + i % 3;
+                for (int p = 0; p < puffs; p++)
+                {
+                    Vector3 at = new Vector3(p * 3.3f - puffs * 1.65f, (float)random.NextDouble() * 1.4f, ((float)random.NextDouble() - 0.5f) * 3f);
+                    Vector3 size = new Vector3(7f + (float)random.NextDouble() * 4f, 3.2f + (float)random.NextDouble() * 1.4f, 5f + (float)random.NextDouble() * 2.5f);
+                    if (p == 0 || p == puffs - 1) size *= 0.72f;   // thinner at the ends
+                    Pieces.Prim(cloud, PrimitiveType.Sphere, "Puff" + p, at, size, m["Cloud"]);
+                }
+                cloud.localScale = Vector3.one * (0.9f + (i % 4) * 0.25f);
+            }
+            Pieces.NoShadows(root);
+            root.AddComponent<CloudDrift>();
+        }
+
         static Vector2 Polar(float radius, float degrees) =>
             new Vector2(Mathf.Cos(degrees * Mathf.Deg2Rad), Mathf.Sin(degrees * Mathf.Deg2Rad)) * radius;
 
@@ -673,7 +739,7 @@ namespace Echoes.EditorTools
             fade.enabled = true;
             fade.color = new ParticleSystem.MinMaxGradient(SceneKit.FadeInOut(Color.white, 1f));
 
-            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = SceneKit.ParticleMaterial();
+            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = SceneKit.GlowMaterial();
             return system;
         }
 
@@ -688,8 +754,10 @@ namespace Echoes.EditorTools
             pause = canvas.gameObject.AddComponent<PauseController>();
 
             // Objective (top-left)
-            Image objectivePanel = UiKit.Panel(root, "ObjectivePanel", UiKit.PanelColor);
+            Image objectivePanel = UiKit.Panel(root, "ObjectivePanel", UiKit.PanelColor, true, true);
             objectivePanel.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(32f, -32f), new Vector2(660f, 132f));
+            Image accent = UiKit.Bar(objectivePanel.transform, "Accent", UiKit.Gold);
+            accent.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(10f, -16f), new Vector2(5f, 100f));
             Text heading = UiKit.Label(objectivePanel.transform, "Heading", ObjectiveTracker.Title, 30, UiKit.Gold, TextAnchor.UpperLeft, FontStyle.Bold);
             heading.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(24f, -14f), new Vector2(612f, 40f));
             Text body = UiKit.Label(objectivePanel.transform, "Body", ObjectiveTracker.Describe(ObjectiveStep.MeetVillager), 26, UiKit.Cream, TextAnchor.UpperLeft);
@@ -701,13 +769,13 @@ namespace Echoes.EditorTools
             controls.rectTransform.Place(UiKit.BottomLeft, UiKit.BottomLeft, new Vector2(32f, 24f), new Vector2(980f, 40f));
 
             // Interaction prompt (bottom-centre)
-            Image promptPanel = UiKit.Panel(root, "InteractionPrompt", UiKit.PanelColor);
+            Image promptPanel = UiKit.Panel(root, "InteractionPrompt", UiKit.PanelColor, true, true);
             promptPanel.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 300f), new Vector2(640f, 70f));
             Text promptText = UiKit.Label(promptPanel.transform, "Text", "[E]  Interact", 34, UiKit.Cream, TextAnchor.MiddleCenter, FontStyle.Bold);
             promptText.rectTransform.Fill(8f);
 
             // Banner (top-centre), below the objective panel and the status panel so they never overlap
-            Image bannerPanel = UiKit.Panel(root, "Banner", new Color(0.08f, 0.11f, 0.18f, 0.6f));
+            Image bannerPanel = UiKit.Panel(root, "Banner", new Color(0.11f, 0.09f, 0.19f, 0.72f), true, true);
             bannerPanel.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, BannerTop), new Vector2(1300f, 168f));
             CanvasGroup bannerGroup = bannerPanel.gameObject.AddComponent<CanvasGroup>();
             bannerGroup.interactable = false;
@@ -718,10 +786,15 @@ namespace Echoes.EditorTools
             bannerSubtitle.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -88f), new Vector2(1180f, 72f));
 
             // Dialogue (bottom-centre)
-            Image dialoguePanel = UiKit.Panel(root, "Dialogue", new Color(0.08f, 0.11f, 0.18f, 0.86f));
+            Image dialoguePanel = UiKit.Panel(root, "Dialogue", new Color(0.11f, 0.09f, 0.19f, 0.90f), true, true);
             dialoguePanel.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 76f), new Vector2(1300f, 224f));
-            Text speaker = UiKit.Label(dialoguePanel.transform, "Speaker", string.Empty, 36, UiKit.Gold, TextAnchor.UpperLeft, FontStyle.Bold);
-            speaker.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(36f, -20f), new Vector2(900f, 46f));
+            Image namePlate = UiKit.Panel(dialoguePanel.transform, "NamePlate", new Color(0.34f, 0.28f, 0.52f, 0.95f), true, true);
+            namePlate.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(30f, -14f), new Vector2(660f, 52f));
+            Text speaker = UiKit.Label(namePlate.transform, "Speaker", string.Empty, 34, UiKit.Cream, TextAnchor.MiddleLeft, FontStyle.Bold);
+            speaker.rectTransform.anchorMin = Vector2.zero;
+            speaker.rectTransform.anchorMax = Vector2.one;
+            speaker.rectTransform.offsetMin = new Vector2(14f, 0f);   // the full height: Truncate hides text taller than its box
+            speaker.rectTransform.offsetMax = new Vector2(-14f, 0f);
             Text line = UiKit.Label(dialoguePanel.transform, "Line", string.Empty, 32, UiKit.Cream, TextAnchor.UpperLeft);
             line.rectTransform.Place(UiKit.TopLeft, UiKit.TopLeft, new Vector2(36f, -72f), new Vector2(1228f, 112f));
             Text hint = UiKit.Label(dialoguePanel.transform, "Hint", "E  Continue", 24, UiKit.Gold, TextAnchor.LowerRight);
@@ -734,14 +807,15 @@ namespace Echoes.EditorTools
             Image dim = UiKit.Panel(root, "PauseMenu", new Color(0.02f, 0.03f, 0.06f, 0.62f), false);
             dim.rectTransform.Fill();
             dim.raycastTarget = true;
-            Image box = UiKit.Panel(dim.transform, "Panel", new Color(0.08f, 0.11f, 0.18f, 0.94f));
-            box.rectTransform.Place(UiKit.Center, UiKit.Center, Vector2.zero, new Vector2(560f, 560f));
+            Image box = UiKit.Panel(dim.transform, "Panel", UiKit.ModalColor, true, true);
+            box.rectTransform.Place(UiKit.Center, UiKit.Center, Vector2.zero, new Vector2(620f, 760f));
             Text pauseTitle = UiKit.Label(box.transform, "Title", "Paused", 72, UiKit.Gold, TextAnchor.UpperCenter, FontStyle.Bold);
-            pauseTitle.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -40f), new Vector2(500f, 90f));
-            Button resume = UiKit.MakeButton(box.transform, "ResumeButton", "Resume", UiKit.Center, new Vector2(0f, 90f), new Vector2(400f, 76f));
-            Button save = UiKit.MakeButton(box.transform, "SaveButton", "Save Game", UiKit.Center, new Vector2(0f, 0f), new Vector2(400f, 76f));
-            Button mainMenu = UiKit.MakeButton(box.transform, "MainMenuButton", "Main Menu", UiKit.Center, new Vector2(0f, -90f), new Vector2(400f, 76f));
-            Button quit = UiKit.MakeButton(box.transform, "QuitButton", "Quit", UiKit.Center, new Vector2(0f, -180f), new Vector2(400f, 76f));
+            pauseTitle.rectTransform.Place(UiKit.TopCenter, UiKit.TopCenter, new Vector2(0f, -36f), new Vector2(520f, 90f));
+            Button resume = UiKit.MakeButton(box.transform, "ResumeButton", "Resume", UiKit.Center, new Vector2(0f, 150f), new Vector2(400f, 76f));
+            Button save = UiKit.MakeButton(box.transform, "SaveButton", "Save Game", UiKit.Center, new Vector2(0f, 60f), new Vector2(400f, 76f));
+            Button mainMenu = UiKit.MakeButton(box.transform, "MainMenuButton", "Main Menu", UiKit.Center, new Vector2(0f, -30f), new Vector2(400f, 76f));
+            Button quit = UiKit.MakeButton(box.transform, "QuitButton", "Quit", UiKit.Center, new Vector2(0f, -120f), new Vector2(400f, 76f));
+            UiKit.VolumeSliders(box.transform, UiKit.Center, new Vector2(0f, -232f));
             Text pauseHint = UiKit.Label(box.transform, "Hint", "Esc  Resume", 24, new Color(1f, 0.95f, 0.84f, 0.8f), TextAnchor.LowerCenter);
             pauseHint.rectTransform.Place(UiKit.BottomCenter, UiKit.BottomCenter, new Vector2(0f, 22f), new Vector2(400f, 34f));
 
@@ -757,6 +831,7 @@ namespace Echoes.EditorTools
             Wire.Set(dialogue, "speakerText", speaker);
             Wire.Set(dialogue, "bodyText", line);
             Wire.Set(dialogue, "hintText", hint);
+            Wire.Set(dialogue, "namePlate", namePlate);
 
             Wire.Set(pause, "panel", dim.gameObject);
             Wire.Set(pause, "resumeButton", resume);
