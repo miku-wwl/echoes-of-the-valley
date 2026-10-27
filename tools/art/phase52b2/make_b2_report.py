@@ -198,8 +198,10 @@ readme = '''# Echoes of the Valley Phase 5.2-B2 独立审阅包
 1. `comparison/index.html`：同机位前后对比（主角正/侧/背、脸部特写、工坊/花园/风车路径、20s/30s 树叶对比）。BEFORE 来自失败的 Gate B pilot 或 RC2 基线模式，AFTER 来自本次构建，像素未改。
 2. `player/after720/actual-player-automated-motion.mp4`：约 40 秒连续实机录像（自动输入），含相机绕主角、在树冠下低机位行走、沿原有土路行走；`contact-sheet.png` 为每 2 秒抽帧。
 3. `final-report.md`：改动、做法、**WHAT STILL LOOKS BAD**、测试/构建/性能（已区分录制/非录制）、状态字段。
-4. `terrain/`：修复前后的地形诊断（修复前资产 100% Grass 的原始证据）。`model-diagnostics-NOT-PLAYER-EVIDENCE/` 是编辑器诊断图，不是实机证据。
-5. `tests/`、`logs/`、`player/*/player.log`、`source/`（变更源码与 git 摘要）、`provenance/`（素材来源与 AI 披露）、`MANIFEST-SHA256.txt`。
+4. `terrain/`：修复前后的地形诊断（修复前资产 100% Grass 的原始证据），以及 `terrain/ground-glint-bisect-EDITOR-RENDERS/`（第一轮构建里地面白色反光斑的二分排查，Editor 渲染，非实机证据）。`model-diagnostics-NOT-PLAYER-EVIDENCE/` 同样是编辑器诊断图，不是实机证据。
+5. `tests/`（EditMode/PlayMode 原始 XML）、`logs/`、`player/*/player.log`、`build/build-manifest-SHA256.txt`（整个 Windows 构建的逐文件哈希）、`source/`（变更源码与 git 摘要）、`provenance/`（素材来源与 AI 披露）、`MANIFEST-SHA256.txt`。
+
+本包以**第二轮构建**（build id 见 final-report.md 第 9 节）为准。第一轮构建出现过地面白色反光斑和外套背面露出裙子，已修复并废弃，仅在 `docs/08-PHASE52-B2.md` 与诊断图中记录。
 
 请你重点判断：脸/头发/服装是否仍显程序化、跑步是否自然（脚是否滑步/穿模）、树叶是否仍遮挡镜头、土路是否可读，以及 3D 主角与背包界面里的原画是否像同一个人。`HUMAN_VISUAL_APPROVAL` 与 `HUMAN_GAMEPLAY_QA_STATUS` 保持 PENDING。
 '''
