@@ -1,6 +1,6 @@
 """Curated independent-review package for Phase 5.2-B2 (screenshots, video, tests, logs, changed source, provenance, hashes).
 
-python tools/art/phase52b2/make_b2_review.py            # after the final evidence exists and the work is committed
+python tools/art/phase52b2/make_b2_review.py [tests-folder] [build-dir]   # after the final evidence exists and the work is committed
 Never packages the official theme recording, other people's art or the rejected desktop capture. Never overwrites an existing package."""
 import hashlib, json, subprocess, sys, zipfile
 from datetime import datetime
@@ -31,14 +31,27 @@ def add(path, member):
     files[member] = path
 
 
-def add_tree(folder, prefix, pattern='*', skip=()):
+omitted = []
+
+
+def add_tree(folder, prefix, pattern='*', skip=(), keep=None):
+    """keep(path) -> bool filters bulky files; anything left out is listed with its SHA-256 in OMITTED-FILES-SHA256.txt (the files stay on disk)."""
     folder = Path(folder)
     if not folder.is_dir():
         print('MISSING folder (skipped):', folder)
         return
     for p in sorted(folder.rglob(pattern)):
         if p.is_file() and not any(s in p.parts for s in skip) and 'frames' not in p.parts:
+            if keep is not None and not keep(p):
+                omitted.append('%s  %d  %s' % (hashlib.sha256(p.read_bytes()).hexdigest(), p.stat().st_size, p.relative_to(root).as_posix()))
+                continue
             add(p, prefix + '/' + p.relative_to(folder).as_posix())
+
+
+# the whole-game smoke runs contribute the art-audit shots (S0/S3 hero, workshop, garden, NPCs, Clover) and the UI screens named in the brief
+SMOKE_KEEP = ('A', 'NPC', 'Clover', '02-', '03-', '05-', '06-', '15-')
+smoke_keep = lambda p: not p.name.lower().endswith('.png') or p.name.startswith(SMOKE_KEEP)
+no_stills = lambda p: not p.name.lower().endswith('.png')          # unrecorded runs exist for frame times; their stills duplicate the recorded run
 
 
 add(qa / 'README_FIRST_zh.md', 'README_FIRST_zh.md')
@@ -46,8 +59,10 @@ add(qa / 'final-report.md', 'final-report.md')
 add_tree(qa / 'comparison', 'comparison')
 for tag in ('after720', 'after1080', 'baseline720'):
     add_tree(qa / 'player' / tag, 'player/' + tag, '*', skip=('save',))
-for tag in ('unrecorded720', 'unrecorded1080', 'smoke720', 'smoke1080'):
-    add_tree(qa / 'player' / tag, 'player/' + tag, '*', skip=('save',))
+for tag in ('unrecorded720', 'unrecorded1080'):
+    add_tree(qa / 'player' / tag, 'player/' + tag, '*', skip=('save',), keep=no_stills)
+for tag in ('smoke720', 'smoke1080'):
+    add_tree(qa / 'player' / tag, 'player/' + tag, '*', skip=('save',), keep=smoke_keep)
 add_tree(qa / 'diagnostics-before-fix', 'terrain/diagnostics-before-fix')
 add_tree(qa / 'diagnostics-after-fix', 'terrain/diagnostics-after-fix')
 # Editor-rendered bisect of the white ground glint (found in the first B2 build, root cause and fix in docs/08-PHASE52-B2.md)
@@ -78,9 +93,15 @@ for line in changed:
         continue
     if path.startswith(('game/Assets/Echoes/Scripts/', 'game/Assets/Echoes/Tests/', 'tools/art/phase52b2/', 'tools/art/phase52/', 'docs/', 'README.md')) or path.endswith(('.shader', 'hero-skin.json')) and 'Source' not in path:
         add(root / path, 'source/' + path)
+for tex in ('Skin', 'Skin_Blink', 'Hair', 'Teal', 'Cream', 'Burgundy', 'Leather', 'Tights', 'Trinket', 'RouteGrass', 'RouteDirt', 'LeafClusters', 'GroundPlants'):
+    add(root / 'game/Assets/Echoes/Art/Phase52/Textures' / (tex + '.png'), 'source/painted-textures/' + tex + '.png')    # code-painted atlases, included so the paint itself can be judged
 add(root / 'docs/03-RULES-CREDITS.md', 'provenance/03-RULES-CREDITS.md')
 add(root / 'docs/08-PHASE52-B2.md', 'provenance/08-PHASE52-B2.md')
 
+if omitted:
+    header = 'SHA-256  size  path (left out of the zip to keep it reviewable; the files remain in the local artifacts/ folder)'
+    (qa / 'OMITTED-FILES-SHA256.txt').write_text(header + chr(10) + chr(10).join(omitted) + chr(10), encoding='utf-8')
+    add(qa / 'OMITTED-FILES-SHA256.txt', 'player/OMITTED-FILES-SHA256.txt')
 manifest = []
 for member, path in files.items():
     manifest.append((member, hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_size))
