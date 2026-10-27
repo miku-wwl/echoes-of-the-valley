@@ -10,6 +10,8 @@ An original, short, peaceful fantasy adventure about **bringing a silent valley 
 
 ## Current truth
 
+- **Phase 5.2-B2 (branch `art/phase52-b2`, local only): bounded revision of the failed Gate B pilot; self-assessed PARTIAL, owner approval PENDING.** Root causes were measured first: the saved pilot terrain was 100 % Grass (the plaza, five dirt paths and the windmill trail were gone) and the tree meshes used 2.2-2.6 m leaf cards from 0.9 m height under a camera that only tests colliders. B2 replaces the hero pipeline with a painted, toon-shaded, 43-bone character (8 painted materials, IK-planted jog at the unchanged 4.5 m/s), adds camera-aware dithered foliage and restores/re-skins the original paths. It stops for independent visual review; no Phase C/D work. Details, evidence and what still looks bad: [08](docs/08-PHASE52-B2.md).
+
 - **Phase 5.2: isolated pilot, Gate B FAIL; stopped before expansion.** The new weighted caretaker and bounded route work technically, but facial/costume finish and intrusive foliage cards do not meet the strict visual gate. The owner previously rejected RC2 art. Current evidence and owner-review boundary: [07](docs/07-PHASE52-ART-DIRECTION.md). The original scenes, controls and gameplay remain; no Phase C/D release work is authorized.
 
 - **Phase 5.1 (historical visual overhaul): implemented; art REJECTED by owner.** Engineering results and reproducible source remain in [06](docs/06-PHASE51.md). RC1 and RC2 are preserved; nothing is pushed or uploaded.

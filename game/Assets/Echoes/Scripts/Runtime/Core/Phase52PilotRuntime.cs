@@ -26,7 +26,7 @@ namespace Echoes
             if (menu == null || menu.CreditsLabel == null) return;
             const string old = "No external art, music, sound or font files are used. Music and sounds are original and synthesised procedurally. The interface uses the font and sprites built into Unity.";
             menu.CreditsLabel.text = GameCredits.Text.Replace(old,
-                "Pilot: original weighted Blender model, animation and foliage by OpenAI Codex. Caretaker portrait: original OpenAI image generation supplied by the owner. Owner visual review pending. Original synthesised audio and Unity built-in font retained.");
+                "Pilot B2: the original Blender-authored caretaker, its code-painted textures, toon shader, animation, foliage and path art were made with Anthropic Claude Code (first pilot: OpenAI Codex). Caretaker portrait: original OpenAI image generation supplied by the owner. Owner visual review pending. Original synthesised audio and Unity built-in font retained.");
         }
     }
 }

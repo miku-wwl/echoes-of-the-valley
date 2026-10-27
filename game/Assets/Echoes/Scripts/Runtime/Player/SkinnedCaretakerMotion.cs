@@ -2,12 +2,18 @@ using UnityEngine;
 
 namespace Echoes
 {
-    /// <summary>Samples authored skeletal clips by real displacement. Does not control input, camera or collision.</summary>
+    /// <summary>
+    /// Samples the authored skeletal clips from real displacement and turn rate. The locomotion phase advances with the distance
+    /// travelled (one cycle per stride), so a planted foot never slides at the unchanged controller speed. Turn clips are upper-body
+    /// only and play on a higher layer. Does not control input, camera or collision.
+    /// </summary>
     [DefaultExecutionOrder(90)]
     [RequireComponent(typeof(Animation))]
     public sealed class SkinnedCaretakerMotion : MonoBehaviour
     {
-        [SerializeField] float strideMetres = 2.4f;
+        const float IdleSeconds = 2.4f;
+        const float TurnSeconds = 0.9f;
+        [SerializeField] float strideMetres = 2.88f;
         Animation clips;
         PlayerController player;
         Vector3 previous;
@@ -15,19 +21,47 @@ namespace Echoes
         float phase;
         float clock;
         float blend;
+        float turnWeight;
+        float standing;
         bool ready;
+        bool layered;
 
         public float WalkBlend => blend;
         public float WalkPhase => phase;
+        public float StrideMetres => strideMetres;
         public float TravelledMetres { get; private set; }
         public float ActualSpeed { get; private set; }
         public string Motion { get; private set; } = "Idle";
 
         void OnEnable() { ready = false; }
 
+        void Awake() { Configure(); }
+
+        void Configure()
+        {
+            if (layered) return;
+            clips = GetComponent<Animation>();
+            Transform spine = FindBone(transform, "Spine");
+            foreach (string turn in new[] { "TurnLeft", "TurnRight" })
+            {
+                AnimationState state = clips[turn];
+                if (state == null) continue;
+                state.layer = 1;
+                state.blendMode = AnimationBlendMode.Blend;
+                if (spine != null) state.AddMixingTransform(spine, true);
+            }
+            layered = true;
+        }
+
+        static Transform FindBone(Transform root, string name)
+        {
+            foreach (Transform t in root.GetComponentsInChildren<Transform>(true)) if (t.name == name) return t;
+            return null;
+        }
+
         void LateUpdate()
         {
-            if (clips == null) clips = GetComponent<Animation>();
+            if (clips == null) Configure();
             if (player == null) player = GetComponentInParent<PlayerController>();
             if (player == null || Time.deltaTime <= 0f) return;
             if (!ready)
@@ -44,16 +78,19 @@ namespace Echoes
             if (distance > 1f) distance = 0f; // Teleports do not animate a stride or count as walking.
             ActualSpeed = distance / Time.deltaTime;
             TravelledMetres += distance;
-            phase = Mathf.Repeat(phase + distance / strideMetres, 1f);
+            standing = ActualSpeed < 0.2f ? standing + Time.deltaTime : 0f;
+            if (standing > 0.25f) phase = 0f; // the next run starts on a heel strike
+            else phase = Mathf.Repeat(phase + distance / strideMetres, 1f);
             clock += Time.deltaTime;
             float target = GameFlow.GameplayInputAllowed ? Mathf.Clamp01(ActualSpeed / 1.2f) : 0f;
-            blend = Mathf.MoveTowards(blend, target, Time.deltaTime * 7f);
-            float turnWeight = Mathf.Clamp01(Mathf.Abs(turning) / 220f) * .24f;
+            blend = Mathf.MoveTowards(blend, target, Time.deltaTime * 9f);
+            float turnTarget = Mathf.Clamp01(Mathf.Abs(turning) / 260f) * 0.7f;
+            turnWeight = Mathf.MoveTowards(turnWeight, turnTarget, Time.deltaTime * 7f);
             Motion = blend > .15f ? "Walk" : Mathf.Abs(turning) > 20f ? "Turn" : "Idle";
-            Set("Idle", Mathf.Repeat(clock / 2.4f, 1f), (1f - blend) * (1f - turnWeight));
-            Set("Walk", phase, blend * (1f - turnWeight));
-            Set("TurnLeft", Mathf.Repeat(clock / .9f, 1f), turning < 0 ? turnWeight : 0f);
-            Set("TurnRight", Mathf.Repeat(clock / .9f, 1f), turning >= 0 ? turnWeight : 0f);
+            Set("Idle", Mathf.Repeat(clock / IdleSeconds, 1f), 1f - blend);
+            Set("Walk", phase, blend);
+            Set("TurnLeft", Mathf.Repeat(clock / TurnSeconds, 1f), turning < 0 ? turnWeight : 0f);
+            Set("TurnRight", Mathf.Repeat(clock / TurnSeconds, 1f), turning >= 0 ? turnWeight : 0f);
             clips.Sample();
         }
 

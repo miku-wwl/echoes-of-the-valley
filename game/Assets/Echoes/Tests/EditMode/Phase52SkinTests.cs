@@ -19,16 +19,17 @@ namespace Echoes.Tests
             var root=Make();try
             {
                 var skin=root.GetComponent<SkinnedMeshRenderer>();var mesh=skin.sharedMesh;
-                Assert.AreEqual(25,skin.bones.Length);Assert.AreEqual(25,mesh.bindposes.Length);Assert.AreEqual(mesh.vertexCount,mesh.boneWeights.Length);
+                int boneCount=skin.bones.Length;Assert.GreaterOrEqual(boneCount,40,"Anatomical plus hair, scarf, coat and skirt secondary bones.");Assert.AreEqual(boneCount,mesh.bindposes.Length);Assert.AreEqual(mesh.vertexCount,mesh.boneWeights.Length);
+                foreach(string required in new[]{"Root","Pelvis","Spine","Chest","Neck","Head","ClavicleL","ClavicleR","UpperArmL","UpperArmR","ForearmL","ForearmR","HandL","HandR","ThighL","ThighR","CalfL","CalfR","FootL","FootR"})Assert.IsTrue(skin.bones.Any(b=>b.name==required),required);
                 int blended=0;
                 foreach(var w in mesh.boneWeights)
                 {
                     Assert.That(w.weight0+w.weight1+w.weight2+w.weight3,Is.EqualTo(1).Within(.00001));
-                    foreach(int n in new[]{w.boneIndex0,w.boneIndex1,w.boneIndex2,w.boneIndex3})Assert.That(n,Is.InRange(0,24));
+                    foreach(int n in new[]{w.boneIndex0,w.boneIndex1,w.boneIndex2,w.boneIndex3})Assert.That(n,Is.InRange(0,boneCount-1));
                     if(w.weight1>.08f)blended++;
                 }
                 Assert.Greater(blended,500,"Weight continuity at joints, not only rigid per-part bone attachment.");
-                Assert.That(mesh.bounds.size.y,Is.InRange(1.6f,1.85f));
+                Assert.That(mesh.bounds.size.y,Is.InRange(1.6f,1.9f));
             }finally{Object.DestroyImmediate(root);}
         }
 

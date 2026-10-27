@@ -24,6 +24,20 @@ namespace Echoes.Tests
             pause.SetPaused(true);yield return null;float phase=motion.WalkPhase;yield return new WaitForSecondsRealtime(.2f);Assert.AreEqual(phase,motion.WalkPhase);pause.Resume();
         }
 
+        [UnityTest] public IEnumerator TurnClipsPlayOnAnUpperBodyLayer_AndLocomotionStaysOnTheBaseLayer()
+        {
+            var skin=AddSkin();var animation=skin.GetComponent<Animation>();yield return null;
+            Assert.AreEqual(1,animation["TurnLeft"].layer);Assert.AreEqual(1,animation["TurnRight"].layer);Assert.AreEqual(0,animation["Walk"].layer);Assert.AreEqual(0,animation["Idle"].layer);
+        }
+
+        [UnityTest] public IEnumerator FoliageFadeDriver_PublishesThePlayerAsTheShaderFocus_AndClearsItOnDisable()
+        {
+            var driver=new GameObject("FoliageFadeDriverTest").AddComponent<FoliageFadeDriver>();yield return null;yield return null;
+            Vector4 focus=Shader.GetGlobalVector("_EchoesFocus");Assert.AreEqual(1f,focus.w);
+            Assert.Less(Vector3.Distance(new Vector3(focus.x,focus.y,focus.z),player.transform.position+Vector3.up*1.05f),.05f);
+            Object.Destroy(driver.gameObject);yield return null;yield return null;Assert.AreEqual(0f,Shader.GetGlobalVector("_EchoesFocus").w);
+        }
+
         [UnityTest] public IEnumerator TeleportDoesNotBecomeWalkingEvidence()
         {
             var skin=AddSkin();var motion=skin.GetComponent<SkinnedCaretakerMotion>();yield return null;yield return null;

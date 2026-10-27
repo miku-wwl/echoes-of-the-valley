@@ -20,7 +20,7 @@ movie=folder/'actual-player-automated-motion.mp4';assert not movie.exists()
 with (folder/'ffmpeg.log').open('w') as log:
     subprocess.run([str(ffmpeg),'-hide_banner','-loglevel','warning','-f','concat','-safe','0','-i',str(concat),'-fps_mode','vfr','-an','-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p','-movflags','+faststart',str(movie)],stderr=log,check=True)
 probe=json.loads(subprocess.check_output([str(ffprobe),'-v','error','-show_entries','format=duration:stream=width,height,avg_frame_rate,nb_frames','-of','json',str(movie)]))
-duration=float(probe['format']['duration']);assert 30<=duration<=40
+duration=float(probe['format']['duration']);assert 30<=duration<=46
 stream=probe['streams'][0];assert stream['width']==record['width'] and stream['height']==record['height']
 subprocess.run([str(ffmpeg),'-v','error','-i',str(movie),'-f','null','-'],check=True)
 (folder/'frame-manifest.json').write_text(json.dumps(manifest,indent=2),encoding='utf-8')

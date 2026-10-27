@@ -117,6 +117,12 @@ namespace Echoes
         void PushToast(string text)
         {
             if (toastTexts == null || toastTexts.Length == 0) return;
+            // The same message again while it is still showing refreshes it instead of stacking duplicate lines.
+            if (toastTexts[0] == text && toastAges[0] < toastSeconds)
+            {
+                toastAges[0] = 0f;
+                return;
+            }
             for (int i = toastTexts.Length - 1; i > 0; i--)
             {
                 toastTexts[i] = toastTexts[i - 1];

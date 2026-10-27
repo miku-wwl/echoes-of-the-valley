@@ -67,6 +67,13 @@ namespace Echoes
         {
             if (bannerGroup == null || bannerLength <= 0f) return;
 
+            // A banner never shows behind the satchel or crafting panel; its timer waits and it returns when the panel closes.
+            if (GameFlow.IsPanelOpen)
+            {
+                bannerGroup.alpha = 0f;
+                return;
+            }
+
             bannerAge += Time.unscaledDeltaTime;
             float fadeIn = Mathf.Clamp01(bannerAge / 0.35f);
             float fadeOut = Mathf.Clamp01((bannerLength - bannerAge) / 0.8f);

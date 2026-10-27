@@ -69,3 +69,7 @@ Valid motion evidence: `artifacts/visual-qa/phase-5.2/motion/after720-2/actual-p
 Seven matched comparisons, original PNGs, XML/logs, hashes and the detailed B assessment are in the ignored `artifacts/visual-qa/phase-5.2/final-report.md` and `comparison/index.html`. Static 8s and 36s route samples are documented there without a general FPS claim. Three-minute traversal, peak memory and full human input/audio acceptance are NOT VERIFIED. Independent owner/ChatGPT review is the next action; B failure cannot be overridden by engineering PASS.
 
 Technical API references used for the native bake: [Unity Skinned Mesh Renderer](https://docs.unity.com/en-us/engine/6000.3/manual/assets-and-media/asset-types/mesh/components-reference/class-skinned-mesh-renderer), [Mesh bindposes](https://docs.unity.com/en-us/engine/6000.0/script-reference/unityengine/mesh/bindposes), [AnimationClip](https://docs.unity.com/en-us/engine/6000.3/script-reference/unityengine/animationclip). No reference-source code was imported.
+
+## B2 revision (2026-10-28)
+
+The Gate B failure above is historical and preserved. The bounded B2 revision (new painted toon character, canopy/camera fix, path restoration and the measured root causes) is documented in [08](08-PHASE52-B2.md). `GATE_B_OWNER_APPROVAL=PENDING` and `WORLD_EXPANSION_ALLOWED=NO` still apply.

@@ -24,6 +24,7 @@ namespace Echoes.EditorTools
             scene=EditorSceneManager.OpenScene(Valley,OpenSceneMode.Single);
             var player=UnityEngine.Object.FindFirstObjectByType<PlayerController>();
             var host=new GameObject("Phase52PilotOnly").AddComponent<Phase52Pilot>();
+            host.gameObject.AddComponent<FoliageFadeDriver>();
             host.OriginalVisual=player.Animator.gameObject;host.Terrain=Terrain.activeTerrain;host.BaselineTerrain=host.Terrain.terrainData;
             var visual=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(Phase52HeroBuilder.PrefabPath),player.transform);
             visual.name="SkinnedCaretaker_Pilot";host.SkinnedVisual=visual;
@@ -64,7 +65,7 @@ namespace Echoes.EditorTools
             Directory.CreateDirectory(output);string version=PlayerSettings.bundleVersion;
             try
             {
-                PlayerSettings.bundleVersion="0.5.2-pilot.1";
+                PlayerSettings.bundleVersion="0.5.2-pilot.2";
                 var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{scenes=new[]{Menu,Valley},locationPathName=Path.Combine(output,"EchoesOfTheValley.exe"),target=BuildTarget.StandaloneWindows64,targetGroup=BuildTargetGroup.Standalone,options=BuildOptions.None});
                 var s=report.summary;
                 Debug.Log("[Echoes][P52] PILOT_BUILD "+s.result+" id="+s.guid+" errors="+s.totalErrors+" warnings="+s.totalWarnings+" bytes="+s.totalSize+"; owner approval PENDING, not a final release candidate.");
