@@ -67,3 +67,17 @@ The final scope also includes original Blender geometry for Mira (sage robe, apr
 | Seven item sprites | `WorldArt.Icon`, `InventoryPanel` bindings | Original 64px transparent procedural silhouettes keyed to the existing item ids | Original AI-assisted UI art; no imported icon/font pack |
 
 AI disclosure is included in the in-game credits and the new package README. Human approval remains pending. The original 36 synthesised WAVs are preserved. No official reference picture, source-kit screenshot, unmodified theme WAV, paid asset, ripped asset or marketplace content is staged or shipped.
+
+## Phase 5.2 isolated pilot (2026-10-27; owner review pending)
+
+The owner rejected Phase 5.1 art after playing RC2. The new work is limited to an isolated pilot: original armature, explicitly authored normalized skin weights, mesh and idle/walk/turn actions in `tools/art/phase52/build_hero.py` and editable `source/caretaker-pilot.blend`; FBX contains the mesh/rig and native Unity animation is baked from the JSON action tracks. Unity writes `Art/Phase52` meshes, clips, materials and the two separate pilot scenes. `Phase52HeroBuilder`, `Phase52EnvironmentBuilder` and `Phase52PilotBuilder` create the assets; `SkinnedCaretakerMotion` samples the authored clips from actual displacement. Original code-authored cutout leaf clusters, three tree silhouettes and local route paint are new AI-assisted art. No downloaded model, motion-capture clip, stock texture, font or sound is used.
+
+| Supplied file | Actual pilot use | Provenance and review boundary |
+| --- | --- | --- |
+| `01-heroine-portrait.png` | Copied **unmodified** to `game/Assets/Echoes/Art/Phase52/CaretakerPortrait.png`, SHA256 `10E28CC332AA62A38872FC02449300BF1CA236B8EF77367D8A382BE551F6A569`; shown only in correctly labelled Caretaker information beside the satchel | Original OpenAI image generation supplied by owner in the Phase 5.2 target pack. Source states AI authorship, original design and allows experimental portrait use. 1024x1536 RGBA; alpha 0–254 includes semitransparent painted/vignette regions. Human edge/fit/identity approval is PENDING; not cleared as final release art. |
+| `02-npc-lineup.png` | Design research only, not imported | Original AI concept; NPC rebuilding is gated behind B approval. |
+| `03-valley-s3-target.png`, `04-ui-dialogue-crafting-target.png` | Design research only, not imported | Concepts, never background textures or fake runtime evidence. |
+| `05-heroine-turnaround-reference.png` | Anatomy/costume research only, not imported | AI turnaround has inconsistent details; the new mesh defines one coherent model. |
+| `baseline-frames/frame_01.jpg`–`frame_10.jpg` | Private audit only, not imported or repackaged as game imagery | Owner gameplay/desktop captures with external overlays. |
+
+OpenAI Codex authored the new Blender/C#/PowerShell source, tests, original mesh/rig/actions, native foliage/terrain textures and documentation. No other coding agent or paid asset/API was invoked. The original 36 WAVs and gameplay/save definitions remain protected. The separate pilot menu replaces the old no-external-art statement with the actual portrait/Blender/AI disclosure; original RC2 scenes/credits remain historical. Code MIT scope does not extend to the generated art or supplied PNG. No Git push or itch.io upload is authorized.

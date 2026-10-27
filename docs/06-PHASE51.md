@@ -1,5 +1,7 @@
 # 06 — Phase 5.1 visual overhaul and review boundary
 
+**Superseded acceptance, 2026-10-27:** the owner played the actual RC2 Windows build and rejected its character/environment art. Earlier assistant assessments below are historical and do not override that judgment. Phase 5.2 starts from this rejection with an explicit owner gate; see [07](07-PHASE52-ART-DIRECTION.md).
+
 **2026-10-27 NZDT. Overall art acceptance: PARTIAL. Human visual/gameplay/audio approval: PENDING.** The overhaul is implemented across the existing valley. Character anatomy, clothing, architecture and vegetation have materially changed, but the rigid character animation and procedural environment remain below a finished commercial character-art standard. Passing engineering tests does not approve beauty or establish Atelier Ryza parity.
 
 ## What changed
