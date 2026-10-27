@@ -21,6 +21,35 @@
 * **Terrain and paths.** `PaintTerrain` now makes a fresh `AssetDatabase.CopyAsset` copy of the original terrain data (heights untouched), keeps stone, re-skins the original grass layers and the original path/trail layers with new painted layers and **adds** the route connectors, at 512 px instead of 128. Texels the original terrain left with no weights (156 along its far southern edge) are filled with Grass in the copy.
 * **Small UI fix.** The story banner no longer shows behind the satchel/crafting panel (its timer waits while a panel is open) and an identical toast that is still showing refreshes instead of stacking.
 
+## Verification (what was actually run)
+
+Unity 6000.3.27f1, URP 17.3.0, Windows x64 Mono/D3D11. All player input is **automated** (`PlayerController.InputOverride` and the camera APIs); no human played. Teleports only set up still positions and the whole-game smoke; the timed route has none.
+
+| Check | Result |
+| --- | --- |
+| EditMode, isolated project copy (`artifacts/visual-qa/phase-5.2/logs/b2-verification3`) | **Passed 219/219** (nine new B2 tests, including the ground-glint regression test) |
+| PlayMode, same copy | **Passed 89/89** (two new: turn layer, foliage-focus driver) |
+| Windows build `artifacts/build/phase52-b2-r2` | Succeeded, build id `51f3e0a09c6741a4bc1905c9a40a3557`, 0 errors, 0 warnings, 230,909,145 bytes; RC1 and RC2 zip SHA-256 unchanged; earlier pilot build folders not written to |
+| Automated 40 s route (175 m, 45 waypoints, canopy detour, orbit and low-pitch legs): recorded 720p, 1080p, RC2-baseline visuals, unrecorded 720p, unrecorded 1080p | all exit 0, 0 exception lines; video 40.04 s, 942 framebuffer frames, no desktop capture, no concept art |
+| Whole-game smoke (New Game, three restorations, ending, save/Continue) 720p and 1080p | PASS twice, natural exit 0, 0 exception lines, 40 screenshots each |
+| Unrecorded frame time, Radeon 780M, windowed, 60 FPS cap | 720p P99 16.97 ms, 1 % low 57.6 FPS; 1080p P99 16.94 ms, 1 % low 56.9 FPS; RC2-baseline visuals 720p P99 16.92 ms, 1 % low 57.7 FPS. The cap saturates, so no regression is measurable at 60 FPS; headroom above the cap is **NOT VERIFIED**. The recorded run (26.5 FPS) includes framebuffer readback and is not a benchmark. |
+| Foot planting on the real skinned vertices at 4.5 m/s | lowest sole vertex -1.1 mm / -0.5 mm; contact-vertex ground speed median 0.001 / 0.006 m/s (p95 0.48, maximum 2.1 m/s at the heel-strike and lift-off frames) |
+| Terrain | every texel sums to 1; 140 of 142 original dirt-path samples are still dirt; stone area within 5 % of the original |
+
+Not verified: any human playtest, GUI feel, audio, other GPUs, multi-minute traversal, VRAM and peak memory.
+
+## What still looks bad (author's honest list; Gate B owner approval is PENDING)
+
+* **Face.** Large amber anime eyes, blush and a small smile read as "generic stylised anime", not as the supplied portrait's face; skin shading is nearly flat and the nose and mouth are minimal. The 3D head is a smooth balloon with little structure under the hair.
+* **Identity match.** Costume, colours and silhouette follow the portrait (teal coat, cream dress, burgundy scarf, satchel, boots), but the 3D hair is much shorter and straighter than the portrait's long wavy ponytail, the tights are black instead of brown, and the proportions are chibi-leaning (the portrait's legs are far longer).
+* **Hair.** Bangs and ponytail are smooth separate ribbons with blunt points. In the extreme near-camera shot the strand texture still reads as wood grain and the painted highlight band is a pale smear. There is no fine strand detail.
+* **Hands and arms.** Hands are simple low-detail mitts and the bell sleeves hold a stiff A-pose in idle.
+* **Cloth.** The coat and skirt are thick sheets driven by bone chains, not cloth simulation, so tails can look rigid; embroidery is flat painted texture (no normal maps).
+* **Animation.** One jog cycle at 4.5 m/s, no walk or run variants and no start/stop transitions; turns are an upper-body layer. Foot planting is proven numerically but nobody has judged how natural it looks.
+* **Style mismatch.** Mira, Alder, Wren, Clover and the rest of the valley outside the pilot corridor keep the RC2 low-poly look; next to the painted hero the villagers look blocky (visible in the comparison page).
+* **Trees and plants.** Leaf clusters are flat cards with visible edges (a "confetti" look), the willow strands read as green planks, ground flowers look folded from paper, and the path pebbles repeat. The S0 grading (grey-teal) is inherited from RC2.
+* **Foliage fade.** The dithered near-camera fade was only seen in still frames; shimmer in motion is NOT VERIFIED.
+
 ## Feasibility decision (Option A / Option B)
 
 Option A (improved rigged 3D character) was pursued and delivered; see the results below. Option B (multi-direction 2.5D) was **not built**: with local tooling its eight-direction walk frames could only come from rendering the same 3D model, so it cannot be prettier than Option A, and a hand-painted or AI-generated set of consistent walk frames is outside local, licensable tooling. A static billboard or a fixed camera were never considered; the free third-person camera is unchanged.
