@@ -59,6 +59,8 @@ add(qa / 'final-report.md', 'final-report.md')
 add_tree(qa / 'comparison', 'comparison')
 for tag in ('after720', 'after1080', 'baseline720'):
     add_tree(qa / 'player' / tag, 'player/' + tag, '*', skip=('save',))
+no_video = lambda p: not p.name.lower().endswith('.mp4')        # the 1080p recording is only mined for stills; its video stays local (hash listed)
+add_tree(qa / 'player' / 'after1080-motion', 'player/after1080-motion', '*', skip=('save',), keep=no_video)
 for tag in ('unrecorded720', 'unrecorded1080'):
     add_tree(qa / 'player' / tag, 'player/' + tag, '*', skip=('save',), keep=no_stills)
 for tag in ('smoke720', 'smoke1080'):

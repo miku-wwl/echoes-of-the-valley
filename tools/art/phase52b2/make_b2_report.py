@@ -39,9 +39,9 @@ path_retained = '%d of %d (%.1f %%)' % (int(pm.group(2)), int(pm.group(1)), 100.
 m = re.search(r'PILOT_BUILD (\w+) id=(\w+) errors=(\d+) warnings=(\d+) bytes=(\d+)', build_log)
 build = {'result': m.group(1), 'id': m.group(2), 'errors': m.group(3), 'warnings': m.group(4), 'bytes': m.group(5)} if m else {'result': 'UNKNOWN', 'id': '?', 'errors': '?', 'warnings': '?', 'bytes': '?'}
 exe = Path(J['buildDir']) / 'EchoesOfTheValley.exe'
-stats = {k: read(qa / 'player' / k / 'tour-stats.json') for k in ('after720', 'after1080', 'baseline720', 'unrecorded720', 'unrecorded1080')}
+stats = {k: read(qa / 'player' / k / 'tour-stats.json') for k in ('after720', 'after1080', 'after1080-motion', 'baseline720', 'unrecorded720', 'unrecorded1080')}
 smoke = {k: read(qa / 'player' / k / 'process-result.json') for k in ('smoke720', 'smoke1080')}
-tour = {k: read(qa / 'player' / k / 'process-result.json') for k in ('after720', 'after1080', 'baseline720', 'unrecorded720', 'unrecorded1080')}
+tour = {k: read(qa / 'player' / k / 'process-result.json') for k in ('after720', 'after1080', 'after1080-motion', 'baseline720', 'unrecorded720', 'unrecorded1080')}
 prov = read(qa / 'player/after720/capture-provenance.json', {})
 head, base = git('rev-parse', 'HEAD'), '5f90a6bf906f95d3c4c344ee940df2e85fcd58a4'
 rc1 = root / 'artifacts/release/EchoesOfTheValley-Windows-x64-RC1.zip'
@@ -171,7 +171,7 @@ NEXT_ACTION=%(next)s
 ```
 '''
 runs = []
-for k, label in (('after720', 'Tour 720p with recorded video'), ('after1080', 'Tour 1080p'), ('baseline720', 'Tour 720p, RC2 baseline visuals'), ('unrecorded720', 'Tour 720p, unrecorded'), ('unrecorded1080', 'Tour 1080p, unrecorded')):
+for k, label in (('after720', 'Tour 720p with recorded video'), ('after1080', 'Tour 1080p'), ('after1080-motion', 'Tour 1080p with recorded frames (walking/turning/canopy stills; its video is not packaged)'), ('baseline720', 'Tour 720p, RC2 baseline visuals'), ('unrecorded720', 'Tour 720p, unrecorded'), ('unrecorded1080', 'Tour 1080p, unrecorded')):
     t, s = tour.get(k), stats.get(k)
     if t and s:
         runs.append('%s: exit code %s, forced termination %s, exception/error lines %s, %.1f m walked in %.1f s, %s waypoints, teleports during movement: %s; canopy detour: %s' % (label, t['exitCode'], t['forcedTermination'], t['exceptionLines'], s['metres'], s['seconds'], s['waypointsVisited'], s['teleportsDuringMovement'], s['canopyTree']))
@@ -185,7 +185,7 @@ smoke_ok = all(smoke.get(k) and smoke[k]['naturalExit'] and smoke[k]['exitCode']
 values = dict(
     base=base, changes=bullets(J['changes']), approach=bullets(J['approach']), better=bullets(J['better']), bad=bullets(J['bad']), foliage=bullets(J['foliage']), paths=bullets(J['paths']), anim=bullets(J['anim']),
     pathret=path_retained, testFolder=J['testFolder'], edit=edit, play=play, build_dir=J['buildDir'], bres=build['result'], bid=build['id'], berr=build['errors'], bwarn=build['warnings'], bbytes=build['bytes'], exe_sha=sha(exe) if exe.is_file() else 'MISSING',
-    runs=bullets(runs), perf=bullets(['Recorded 720p tour: ' + perf('after720'), '1080p tour: ' + perf('after1080'), 'Unrecorded 720p tour: ' + perf('unrecorded720'), 'Unrecorded 1080p tour: ' + perf('unrecorded1080'), 'RC2 baseline visuals 720p tour (original terrain/trees/hero): ' + perf('baseline720')]),
+    runs=bullets(runs), perf=bullets(['Recorded 720p tour: ' + perf('after720'), '1080p tour: ' + perf('after1080'), 'Recorded 1080p tour (frame capture on): ' + perf('after1080-motion'), 'Unrecorded 720p tour: ' + perf('unrecorded720'), 'Unrecorded 1080p tour: ' + perf('unrecorded1080'), 'RC2 baseline visuals 720p tour (original terrain/trees/hero): ' + perf('baseline720')]),
     head=head, orig=orig_changed.replace('\n', ', ') or 'none', wavs=wavs.replace('\n', ', ') or 'none', zip=J.get('zipPath', 'see below'), zip_sha=J.get('zipSha', '(see sidecar)'),
     further=bullets(J['further']), protected='YES' if protected else 'NO', video='YES' if prov else 'NO', smoke_line=('PASS (natural exit 0 twice, 0 exception lines)' if smoke_ok else 'FAIL or incomplete: see section 10'),
     next=J['next'], s_b2=status['b2'], s_model=status['model'], s_face=status['face'], s_hair=status['hair'], s_cloth=status['cloth'], s_mat=status['material'], s_anim=status['animation'], s_fol=status['foliage'], s_path=status['path'], s_gate=status['gate'])
@@ -197,6 +197,7 @@ readme = '''# Echoes of the Valley Phase 5.2-B2 独立审阅包
 阅读顺序：
 1. `comparison/index.html`：同机位前后对比（主角正/侧/背、脸部特写、工坊/花园/风车路径、20s/30s 树叶对比）。BEFORE 来自失败的 Gate B pilot 或 RC2 基线模式，AFTER 来自本次构建，像素未改。
 2. `player/after720/actual-player-automated-motion.mp4`：约 40 秒连续实机录像（自动输入），含相机绕主角、在树冠下低机位行走、沿原有土路行走；`contact-sheet.png` 为每 2 秒抽帧。
+   另有 `player/after720/selected-frames/`（720p）和 `player/after1080-motion/selected-frames/`（1080p）：从自动路线录像里挑出的真实帧——四个步态相位的行走、侧面跑步、转向、树冠下（录像器保存的 JPEG framebuffer 帧，未修改；`selected-frames.json` 写明每帧为何被选中）。
 3. `final-report.md`：改动、做法、**WHAT STILL LOOKS BAD**、测试/构建/性能（已区分录制/非录制）、状态字段。
 4. `terrain/`：修复前后的地形诊断（修复前资产 100% Grass 的原始证据），以及 `terrain/ground-glint-bisect-EDITOR-RENDERS/`（第一轮构建里地面白色反光斑的二分排查，Editor 渲染，非实机证据）。`model-diagnostics-NOT-PLAYER-EVIDENCE/` 同样是编辑器诊断图，不是实机证据。
 5. `tests/`（EditMode/PlayMode 原始 XML）、`logs/`、`player/*/player.log`、`build/build-manifest-SHA256.txt`（整个 Windows 构建的逐文件哈希）、`source/`（变更源码与 git 摘要）、`provenance/`（素材来源与 AI 披露）、`MANIFEST-SHA256.txt`。
