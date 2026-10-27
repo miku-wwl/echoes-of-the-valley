@@ -71,6 +71,18 @@ def build_torso():
 
 # ============================================================================ coat
 
+SKIRT_TOP, SKIRT_REF_HEM = 1.03, 0.600
+COAT_CLEARANCE = 0.020      # coat centre surface to skirt centre surface: both shells' thickness plus a safety margin
+
+
+def skirt_radii(y, a):
+    """Outer-skirt half-widths (x, z) at height y and angle a, pleats included. Shared by the skirt and the coat so the coat can clear it."""
+    f = np.clip((SKIRT_TOP - y) / (SKIRT_TOP - SKIRT_REF_HEM), 0, 1.1)         # frozen just below the reference hem: the coat tails do not keep widening
+    fp = np.clip(f, 0, 1)
+    pleat = 1 + 0.045 * fp ** 1.1 * np.sin(9 * a + 0.5) + 0.022 * fp * np.sin(15 * a + 1.1)
+    return lerp(0.114, 0.262, f ** 1.3) * pleat, lerp(0.086, 0.246, f ** 1.3) * pleat
+
+
 def coat_grid(nv=26, nu=56):
     u = np.linspace(0, 1, nu + 1)[None, :]
     t = np.linspace(0, 1, nv)[:, None]
@@ -80,11 +92,16 @@ def coat_grid(nv=26, nu=56):
     hem = lerp(0.73, 0.41, smoothstep(0.6, 2.7, sym)) + 0.016 * np.sin(5 * alpha + 0.7) - 0.030 * np.sin(alpha)
     y = 1.372 + (hem - 1.372) * t
     cz, rx, rz = body_r(y)
-    d = np.clip(0.86 - y, 0, None)
+    d = np.clip(1.0 - y, 0, None)
     back = smoothstep(0.0, -0.7, np.cos(alpha))
-    rx = rx + 0.016 + d * (0.17 + 0.09 * np.sin(alpha) ** 2)
-    rz = rz + 0.016 + d * (0.10 + 0.17 * back)
-    pleat = 1 + 0.050 * smoothstep(0.86, 0.45, y) * np.sin(7 * alpha + 0.6) + 0.028 * smoothstep(0.86, 0.40, y) * np.sin(11 * alpha + 2.1)
+    rx = rx + 0.016 + d * (0.13 + 0.07 * np.sin(alpha) ** 2)
+    rz = rz + 0.016 + d * (0.076 + 0.13 * back)
+    pleat = 1 + 0.050 * smoothstep(0.97, 0.50, y) * np.sin(7 * alpha + 0.6) + 0.028 * smoothstep(0.97, 0.45, y) * np.sin(11 * alpha + 2.1)
+    # the coat always stands outside the skirt (including both pleat patterns), so the cream skirt can never show through the coat
+    sx, sz = skirt_radii(y, alpha)
+    w = smoothstep(1.02, 0.95, y)
+    rx = np.maximum(rx, w * (sx + COAT_CLEARANCE) / pleat)
+    rz = np.maximum(rz, w * (sz + COAT_CLEARANCE) / pleat)
     x = rx * pleat * np.sin(alpha)
     z = cz + rz * pleat * np.cos(alpha)
     # bust relief, so the coat does not cut through the blouse shaping
@@ -99,7 +116,7 @@ def build_coat():
 
 SLEEVE_PATH = np.array([
     [0.100, 1.346, 0.000], [0.150, 1.324, 0.000], [0.203, 1.200, 0.004], [0.250, 1.045, 0.010], [0.276, 0.945, 0.026], [0.292, 0.865, 0.036]])
-SLEEVE_R = np.array([0.028, 0.054, 0.047, 0.050, 0.068, 0.088])
+SLEEVE_R = np.array([0.026, 0.049, 0.046, 0.050, 0.068, 0.088])
 
 
 def build_sleeve():
@@ -266,17 +283,28 @@ def build_belts():
     ys = [1.165, 1.120, 1.072, 1.024, 0.995]
     keys = [(y, 0, float(body_r(y)[0]), float(body_r(y)[1]) + 0.0075, float(body_r(y)[2]) + 0.0075, 2.2) for y in ys]
     parts += thick_sheet('Corset', 'Leather', loft_rows(keys, 10, 56), 0.007, 'Torso', A.LEATHER['corset'], A.LEATHER['corset'], reference=axis_reference(0, 0), closed_u=True, edge_uv=A.EDGE['Leather'])
-    hk = [(0.958, 0, float(body_r(0.958)[0]), float(body_r(0.958)[1]) + 0.013, float(body_r(0.958)[2]) + 0.013, 2.2), (0.922, 0, float(body_r(0.922)[0]), float(body_r(0.922)[1]) + 0.014, float(body_r(0.922)[2]) + 0.014, 2.2)]
-    parts += thick_sheet('HipBelt', 'Leather', loft_rows(hk, 3, 56), 0.007, 'Torso', A.LEATHER['strap2'], A.LEATHER['strap2'], reference=axis_reference(0, 0), closed_u=True, edge_uv=A.EDGE['Leather'])
+    # the hip belt hugs the open front but stands outside the coat at the sides and back (it is measured on the real coat surface)
+    coat = coat_grid()
+
+    def belt_ring(y, over=0.014):
+        cz, rx, rz = (float(v) for v in body_r(y))
+        near = np.abs(coat[..., 1] - y) < 0.025
+        side = float(np.abs(coat[..., 0][near]).max()) + over
+        back = float(-coat[..., 2][near].min()) + over
+        front = max(cz + rz + 0.013, float(skirt_radii(y, 0.0)[1]) + 0.012)          # also clears the skirt that fills the coat opening
+        return (y, 0, (front - back) / 2, max(rx + 0.031, side), (front + back) / 2, 2.2), front
+    ring_a, front_a = belt_ring(0.958)
+    ring_b, _ = belt_ring(0.922)
+    parts += thick_sheet('HipBelt', 'Leather', loft_rows([ring_a, ring_b], 3, 56), 0.007, 'Torso', A.LEATHER['strap2'], A.LEATHER['strap2'], reference=axis_reference(0, 0), closed_u=True, edge_uv=A.EDGE['Leather'])
     # buckles and eyelets
     parts.append(rbox('CorsetBuckle', 'Trinket', (0.0, 1.040, float(body_r(1.04)[2]) + 0.0165), (0.034, 0.040, 0.010), 0.004, 'Torso', rect=A.TRINKET['flat'], color=GOLD, seg=3, outline=0.5))
-    parts.append(rbox('HipBuckle', 'Trinket', (-0.050, 0.940, float(body_r(0.94)[2]) + 0.022), (0.030, 0.034, 0.010), 0.004, 'Torso', rect=A.TRINKET['flat'], color=GOLD, seg=3, outline=0.5))
+    parts.append(rbox('HipBuckle', 'Trinket', (-0.050, 0.940, belt_ring(0.94)[1] + 0.010), (0.030, 0.034, 0.010), 0.004, 'Torso', rect=A.TRINKET['flat'], color=GOLD, seg=3, outline=0.5))
     for k, y in enumerate((1.150, 1.108, 1.066)):
         for sgn in (-1, 1):
             e = uv_sphere('Eyelet%d%d' % (k, sgn), 'Trinket', (sgn * 0.016, y, float(body_r(y)[2]) + 0.0145), (0.0048, 0.0048, 0.0030), 'Torso', nu=8, nv=5, rect=A.TRINKET['flat'], color=GOLD, outline=0.4)
             parts.append(e)
     # tassels at the hip
-    for k, (x, y, z) in enumerate([(-0.095, 0.915, float(body_r(0.915)[2]) + 0.016), (-0.125, 0.905, 0.070)]):
+    for k, (x, y, z) in enumerate([(-0.095, 0.915, float(body_r(0.915)[2]) + 0.036), (-0.125, 0.905, 0.082)]):
         pts = np.array([[x, y, z], [x, y - 0.025, z + 0.002], [x, y - 0.075, z + 0.004]])
         tt = tube('Tassel%d' % k, 'Trinket', pts, [0.005, 0.011, 0.0035], [0.005, 0.011, 0.0035], 'Torso', rect=A.TRINKET['flat'], nu=8, color=BURG_TINT, outline=0.5)
         parts.append(tt)

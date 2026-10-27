@@ -32,7 +32,10 @@ def read(path, default=None):
 
 tv = legacy / 'logs' / J['testFolder']
 edit, play = tests(tv / 'tests-EditMode.xml'), tests(tv / 'tests-PlayMode.xml')
-build_log = (qa / 'logs/build/Build.log').read_text(encoding='utf-8', errors='replace')
+build_log = (qa / 'logs' / J.get('buildLogDir', 'build-r2') / 'Build.log').read_text(encoding='utf-8', errors='replace')
+edit_text = (tv / 'tests-EditMode.xml').read_text(encoding='utf-8', errors='replace')
+pm = re.search(r'path preservation\] original path centreline samples that were dirt=(\d+), still dirt in the pilot terrain=(\d+)', edit_text)
+path_retained = '%d of %d (%.1f %%)' % (int(pm.group(2)), int(pm.group(1)), 100.0 * int(pm.group(2)) / int(pm.group(1))) if pm else 'not recorded'
 m = re.search(r'PILOT_BUILD (\w+) id=(\w+) errors=(\d+) warnings=(\d+) bytes=(\d+)', build_log)
 build = {'result': m.group(1), 'id': m.group(2), 'errors': m.group(3), 'warnings': m.group(4), 'bytes': m.group(5)} if m else {'result': 'UNKNOWN', 'id': '?', 'errors': '?', 'warnings': '?', 'bytes': '?'}
 exe = Path(J['buildDir']) / 'EchoesOfTheValley.exe'
@@ -100,7 +103,7 @@ report = '''# Echoes of the Valley: Phase 5.2-B2 review report
 | EditMode (isolated project copy `%(testFolder)s`) | %(edit)s |
 | PlayMode (same copy) | %(play)s |
 
-Previous Gate B totals were 210/210 and 87/87. No test was removed or weakened. Changed existing tests: `Skin_HasNormalizedWeightsAndBlendedJointInfluences` (the rig has 43 bones instead of 25, so the hard-coded 25 became "at least 40 and the same joints are present", and the same weight/blend checks still run) and the bounds range (1.6-1.9 m). New B2 EditMode tests cover the toon materials and textures, mesh budget, foot planting on the real skinned vertices at 4.5 m/s, turn-clip keying, tree card size and canopy height, foliage materials and driver, terrain (no uniform collapse, every texel sums to 1, 98.6 %% of original path samples retained, stone retained) and missing-asset checks. New PlayMode tests cover the turn layer and the foliage-focus driver. Baseline counts from the earlier phases (203/203 and 85/85) were not re-measured on a pristine copy in this session.
+Previous Gate B totals were 210/210 and 87/87. No test was removed or weakened. Changed existing tests: `Skin_HasNormalizedWeightsAndBlendedJointInfluences` (the rig has 43 bones instead of 25, so the hard-coded 25 became "at least 40 and the same joints are present", and the same weight/blend checks still run) and the bounds range (1.6-1.9 m). New B2 EditMode tests cover the toon materials and textures, mesh budget, foot planting on the real skinned vertices at 4.5 m/s, turn-clip keying, tree card size and canopy height, foliage materials and driver, terrain (no uniform collapse, every texel sums to 1, original path samples retained: %(pathret)s, stone retained), the ground-glint regression test (no terrain layer may have an alpha-capable diffuse format) and missing-asset checks. New PlayMode tests cover the turn layer and the foliage-focus driver. Baseline counts from the earlier phases (203/203 and 85/85) were not re-measured on a pristine copy in this session.
 
 ## 9. Windows build
 
@@ -181,7 +184,7 @@ if prov:
 smoke_ok = all(smoke.get(k) and smoke[k]['naturalExit'] and smoke[k]['exitCode'] == 0 and smoke[k]['exceptionLines'] == 0 for k in ('smoke720', 'smoke1080'))
 values = dict(
     base=base, changes=bullets(J['changes']), approach=bullets(J['approach']), better=bullets(J['better']), bad=bullets(J['bad']), foliage=bullets(J['foliage']), paths=bullets(J['paths']), anim=bullets(J['anim']),
-    testFolder=J['testFolder'], edit=edit, play=play, build_dir=J['buildDir'], bres=build['result'], bid=build['id'], berr=build['errors'], bwarn=build['warnings'], bbytes=build['bytes'], exe_sha=sha(exe) if exe.is_file() else 'MISSING',
+    pathret=path_retained, testFolder=J['testFolder'], edit=edit, play=play, build_dir=J['buildDir'], bres=build['result'], bid=build['id'], berr=build['errors'], bwarn=build['warnings'], bbytes=build['bytes'], exe_sha=sha(exe) if exe.is_file() else 'MISSING',
     runs=bullets(runs), perf=bullets(['Recorded 720p tour: ' + perf('after720'), '1080p tour: ' + perf('after1080'), 'Unrecorded 720p tour: ' + perf('unrecorded720'), 'Unrecorded 1080p tour: ' + perf('unrecorded1080'), 'RC2 baseline visuals 720p tour (original terrain/trees/hero): ' + perf('baseline720')]),
     head=head, orig=orig_changed.replace('\n', ', ') or 'none', wavs=wavs.replace('\n', ', ') or 'none', zip=J.get('zipPath', 'see below'), zip_sha=J.get('zipSha', '(see sidecar)'),
     further=bullets(J['further']), protected='YES' if protected else 'NO', video='YES' if prov else 'NO', smoke_line=('PASS (natural exit 0 twice, 0 exception lines)' if smoke_ok else 'FAIL or incomplete: see section 10'),

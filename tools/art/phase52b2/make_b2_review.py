@@ -50,10 +50,21 @@ for tag in ('unrecorded720', 'unrecorded1080', 'smoke720', 'smoke1080'):
     add_tree(qa / 'player' / tag, 'player/' + tag, '*', skip=('save',))
 add_tree(qa / 'diagnostics-before-fix', 'terrain/diagnostics-before-fix')
 add_tree(qa / 'diagnostics-after-fix', 'terrain/diagnostics-after-fix')
-add_tree(qa / 'model-preview/unity', 'model-diagnostics-NOT-PLAYER-EVIDENCE/unity')
+# Editor-rendered bisect of the white ground glint (found in the first B2 build, root cause and fix in docs/08-PHASE52-B2.md)
+for tag in ('diagnostics-glow', 'diagnostics-glow2', 'diagnostics-glow3'):
+    add_tree(qa / tag, 'terrain/ground-glint-bisect-EDITOR-RENDERS/' + tag)
+add_tree(qa / 'model-preview/unity-r2c', 'model-diagnostics-NOT-PLAYER-EVIDENCE/unity-final-hero')
 add_tree(qa / 'unity-preview', 'model-diagnostics-NOT-PLAYER-EVIDENCE/pilot-scene-editor')
 add_tree(qa / 'logs', 'logs')
-add_tree(qa / 'tests', 'tests')
+tests_folder = sys.argv[1] if len(sys.argv) > 1 else 'b2-verification3'
+build_dir = root / (sys.argv[2] if len(sys.argv) > 2 else 'artifacts/build/phase52-b2-r2')
+add_tree(old_qa / 'logs' / tests_folder, 'tests')
+build_manifest = ['SHA-256  size  file (build %s)' % build_dir.name]
+for p in sorted(build_dir.rglob('*')):
+    if p.is_file():
+        build_manifest.append('%s  %d  %s' % (hashlib.sha256(p.read_bytes()).hexdigest(), p.stat().st_size, p.relative_to(build_dir).as_posix()))
+(qa / 'build-manifest-SHA256.txt').write_text('\n'.join(build_manifest) + '\n', encoding='utf-8')
+add(qa / 'build-manifest-SHA256.txt', 'build/build-manifest-SHA256.txt')
 # previous Gate B failure evidence kept for comparison (same camera positions)
 for rel in ('motion/after720-2/hero-front.png', 'motion/after720-2/hero-side.png', 'motion/after720-2/hero-rear.png', 'motion/after720-2/video-frame-20.png', 'motion/after720-2/video-frame-30.png'):
     add(old_qa / rel, 'previous-gate-b-failure/' + Path(rel).name)

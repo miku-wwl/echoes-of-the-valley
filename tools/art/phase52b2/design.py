@@ -216,7 +216,7 @@ def build_bangs():
     ]
     for i, (la, lo, le, loe, w, tip) in enumerate(specs):
         path = flow_path((la, lo), (le, loe), lift_end=tip, bulge=0.010 + 0.003 * (i % 3), steps=7)
-        parts.append(lock('Bang%d' % i, 'Hair', path, tapered(w * 1.2, 2.5, 0.28, 0.50), lambda s: 0.0085 * (1 - 0.5 * s), 'Bangs',
+        parts.append(lock('Bang%d' % i, 'Hair', path, tapered(w * 1.32, 2.5, 0.28, 0.42), lambda s: 0.0085 * (1 - 0.5 * s), 'Bangs',
                           ref_dir=normalize(path[len(path) // 2] - HEAD_C), ns=14, nc=10, rect=A.HAIR['lock'], color=HAIR_TINT[i % 4]))
     return parts
 
@@ -295,8 +295,19 @@ def build_ponytail():
             y = PT_TIE[1] + 0.022 * math.sin(math.pi * min(s / 0.28, 1.0)) - length * s ** 1.12
             z = PT_TIE[2] - 0.014 - 0.100 * float(smoothstep(0.0, 0.42, s)) + 0.040 * float(smoothstep(0.45, 1.0, s)) * (length / 0.45) - 0.012 * abs(lat) * s
             pts.append((x, y, z))
-        parts.append(lock('Ponytail%d' % i, 'Hair', np.array(pts), tapered(w, 1.7, 0.18), lambda s_, th=th: th * (1 - 0.5 * s_), 'Ponytail',
-                          ref_dir=(0, 0, -1), ns=24, nc=10, rect=A.HAIR['lock'], color=HAIR_TINT[tint]))
+        side_on = i in (0, 3, 4, 7)          # some locks show their wide face to the side so the ponytail has body from every angle
+        parts.append(lock('Ponytail%d' % i, 'Hair', np.array(pts), tapered(w * (0.8 if side_on else 1.0), 1.7, 0.18), lambda s_, th=th, so=side_on: th * (1.5 if so else 1.0) * (1 - 0.5 * s_), 'Ponytail',
+                          ref_dir=(1, 0, 0) if side_on else (0, 0, -1), ns=24, nc=10, rect=A.HAIR['lock'], color=HAIR_TINT[tint]))
+    for j, (lat, length, amp, ph) in enumerate(((0.0, 0.40, 0.010, 0.7), (-0.35, 0.36, 0.012, 2.6), (0.35, 0.37, 0.012, 3.6))):   # round core locks fill the middle
+        pts = []
+        for k in range(11):
+            s = k / 10
+            x = lat * 0.020 * (0.4 + 1.5 * s) + amp * math.sin(math.tau * (s * 1.1) + ph) * s
+            y = PT_TIE[1] + 0.012 * math.sin(math.pi * min(s / 0.28, 1.0)) - length * s ** 1.1
+            z = PT_TIE[2] - 0.010 - 0.075 * float(smoothstep(0.0, 0.42, s)) + 0.03 * float(smoothstep(0.45, 1.0, s))
+            pts.append((x, y, z))
+        parts.append(lock('PonytailCore%d' % j, 'Hair', np.array(pts), tapered(0.046, 1.6, 0.22, 0.6), lambda s_: 0.040 * (1 - 0.35 * s_), 'Ponytail',
+                          ref_dir=(0, 0, -1), ns=22, nc=10, n=2.2, rect=A.HAIR['lock'], color=HAIR_TINT[(j + 1) % 4]))
     return parts
 
 

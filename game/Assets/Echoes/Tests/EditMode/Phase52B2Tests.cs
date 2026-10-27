@@ -193,6 +193,20 @@ namespace Echoes.Tests
             Assert.That(stonePilot, Is.EqualTo(stoneBase).Within(stoneBase * .05), "The stone plaza and cliffs stay.");
         }
 
+        [Test] public void PilotTerrainLayers_HaveRgbOnlyDiffuse_SoTheGroundNeverGetsASunGlint()
+        {
+            // URP's terrain shader reads a diffuse alpha channel as smoothness and locks the layer to 1.0: a BC7 ground texture drew a white mirror glint.
+            EditorSceneManager.OpenScene(Phase52PilotBuilder.Valley); var pilot = Object.FindFirstObjectByType<Phase52Pilot>();
+            foreach (TerrainLayer layer in pilot.PilotTerrain.terrainLayers)
+            {
+                Assert.IsNotNull(layer.diffuseTexture, layer.name);
+                Assert.IsFalse(UnityEngine.Experimental.Rendering.GraphicsFormatUtility.HasAlphaChannel(layer.diffuseTexture.graphicsFormat),
+                    "Terrain layer " + layer.name + " diffuse format " + layer.diffuseTexture.graphicsFormat + " has an alpha channel (smoothness would be 1.0).");
+                Assert.AreEqual(0f, layer.metallic, layer.name);
+                Assert.LessOrEqual(layer.smoothness, .05f, layer.name);
+            }
+        }
+
         [Test] public void NoPilotAssetReferencesAMissingTextureShaderOrMesh()
         {
             foreach (string guid in AssetDatabase.FindAssets("t:Material", new[] { Folder }))

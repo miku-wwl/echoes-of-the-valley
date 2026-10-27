@@ -314,7 +314,11 @@ namespace Echoes.EditorTools
             if (!File.Exists(texPath)) throw new FileNotFoundException("Missing terrain texture " + texPath + "; run tools/art/phase52b2/foliage_textures.py");
             AssetDatabase.ImportAsset(texPath, ImportAssetOptions.ForceSynchronousImport);
             var importer = (TextureImporter)AssetImporter.GetAtPath(texPath);
-            importer.sRGBTexture = true; importer.mipmapEnabled = true; importer.anisoLevel = 8; importer.wrapMode = TextureWrapMode.Repeat; importer.filterMode = FilterMode.Trilinear; importer.alphaSource = TextureImporterAlphaSource.None; importer.textureCompression = TextureImporterCompression.CompressedHQ; importer.SaveAndReimport();
+            // URP's terrain shader treats any diffuse format that has an alpha channel (BC7 included) as "alpha = smoothness" and locks the layer to
+            // smoothness 1.0, which drew a mirror-like white sun glint on the ground. Opaque ground colour must therefore stay an RGB-only format (DXT1).
+            importer.sRGBTexture = true; importer.mipmapEnabled = true; importer.anisoLevel = 8; importer.wrapMode = TextureWrapMode.Repeat; importer.filterMode = FilterMode.Trilinear; importer.alphaSource = TextureImporterAlphaSource.None; importer.textureCompression = TextureImporterCompression.Compressed;
+            TextureImporterPlatformSettings standalone = importer.GetPlatformTextureSettings("Standalone"); standalone.overridden = true; standalone.format = TextureImporterFormat.DXT1; standalone.maxTextureSize = 2048; standalone.textureCompression = TextureImporterCompression.Compressed; importer.SetPlatformTextureSettings(standalone);
+            importer.SaveAndReimport();
             string p = Folder + "/" + name + ".terrainlayer"; var layer = AssetDatabase.LoadAssetAtPath<TerrainLayer>(p);
             if (layer == null) { layer = new TerrainLayer(); AssetDatabase.CreateAsset(layer, p); }
             layer.diffuseTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath); layer.tileSize = Vector2.one * tile; layer.smoothness = 0; layer.metallic = 0; EditorUtility.SetDirty(layer);

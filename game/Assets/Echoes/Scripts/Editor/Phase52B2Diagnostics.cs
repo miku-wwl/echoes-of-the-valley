@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Echoes.EditorTools
 {
@@ -198,6 +199,159 @@ namespace Echoes.EditorTools
             report.Add("ambient mode=" + RenderSettings.ambientMode + " sky=" + RenderSettings.ambientSkyColor + " equator=" + RenderSettings.ambientEquatorColor + " ground=" + RenderSettings.ambientGroundColor + " fog=" + RenderSettings.fog + " fogColor=" + RenderSettings.fogColor);
             File.WriteAllLines(dir + "/pilot-asset-audit.txt", report);
             Debug.Log("[Echoes][P52 B2 DIAG]\n" + string.Join("\n", report));
+        }
+
+        /// <summary>Renders the same pilot view with one scene group removed at a time, to find what draws an unexplained bright ellipse.</summary>
+        public static void GlowBisect()
+        {
+            string dir = Output();
+            ShaderUtil.allowAsyncCompilation = false;
+            EditorSceneManager.OpenScene(Phase52PilotBuilder.Valley);
+            var pilot = UnityEngine.Object.FindFirstObjectByType<Phase52Pilot>();
+            var player = UnityEngine.Object.FindFirstObjectByType<PlayerController>();
+            Camera camera = Camera.main;
+            Vector3 at = new Vector3(4.7f, 0, 24f); at.y = pilot.Terrain.SampleHeight(at) + pilot.Terrain.transform.position.y + .08f;
+            pilot.Apply(false); player.transform.position = at; player.transform.rotation = Quaternion.Euler(0, 180, 0);
+            void Render(string name)
+            {
+                Vector3 from = at + new Vector3(0, 1.10f, -2.6f), target = at + Vector3.up * .95f;
+                camera.transform.SetPositionAndRotation(from, Quaternion.LookRotation(target - from));
+                Shader.SetGlobalVector("_EchoesFocus", Vector4.zero);
+                var rt = RenderTexture.GetTemporary(1280, 720, 24); rt.antiAliasing = 2; camera.targetTexture = rt; camera.Render(); camera.Render();
+                RenderTexture previous = RenderTexture.active; RenderTexture.active = rt;
+                var image = new Texture2D(1280, 720, TextureFormat.RGB24, false); image.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0); image.Apply();
+                File.WriteAllBytes(Path.Combine(dir, "glow-" + name + ".png"), image.EncodeToPNG());
+                UnityEngine.Object.DestroyImmediate(image); RenderTexture.active = previous; camera.targetTexture = null; RenderTexture.ReleaseTemporary(rt);
+            }
+            Render("0-all");
+            pilot.Route.SetActive(false); Render("1-no-route"); pilot.Route.SetActive(true);
+            pilot.SkinnedVisual.SetActive(false); Render("2-no-hero"); pilot.SkinnedVisual.SetActive(true);
+            var particles = UnityEngine.Object.FindObjectsByType<ParticleSystemRenderer>(FindObjectsSortMode.None);
+            foreach (var r in particles) r.enabled = false; Render("3-no-particles"); foreach (var r in particles) r.enabled = true;
+            var lights = UnityEngine.Object.FindObjectsByType<Light>(FindObjectsSortMode.None).Where(l => l.type != LightType.Directional).ToArray();
+            foreach (var l in lights) l.enabled = false; Render("4-no-point-lights"); foreach (var l in lights) l.enabled = true;
+            pilot.Terrain.terrainData = pilot.BaselineTerrain; Render("5-baseline-terrain"); pilot.Terrain.terrainData = pilot.PilotTerrain;
+            var report = new List<string> { "particle renderers=" + particles.Length + " non-directional lights=" + lights.Length };
+            foreach (var r in particles) report.Add("particle " + r.name + " parent=" + (r.transform.parent != null ? r.transform.parent.name : "-") + " pos=" + r.transform.position.ToString("F1"));
+            File.WriteAllLines(Path.Combine(dir, "glow-bisect.txt"), report);
+        }
+
+        /// <summary>Second bisect: finds the blob's world position by raycast, lists what is there, and toggles sun / post-processing / terrain details / terrain material.</summary>
+        public static void GlowBisect2()
+        {
+            string dir = Output();
+            ShaderUtil.allowAsyncCompilation = false;
+            EditorSceneManager.OpenScene(Phase52PilotBuilder.Valley);
+            var pilot = UnityEngine.Object.FindFirstObjectByType<Phase52Pilot>();
+            var player = UnityEngine.Object.FindFirstObjectByType<PlayerController>();
+            Camera camera = Camera.main;
+            Vector3 at = new Vector3(4.7f, 0, 24f); at.y = pilot.Terrain.SampleHeight(at) + pilot.Terrain.transform.position.y + .08f;
+            pilot.Apply(false); player.transform.position = at; player.transform.rotation = Quaternion.Euler(0, 180, 0);
+            var report = new List<string>();
+            report.Add("terrain: details=" + pilot.PilotTerrain.detailPrototypes.Length + " trees=" + pilot.PilotTerrain.treePrototypes.Length + " treeInstances=" + pilot.PilotTerrain.treeInstanceCount
+                + " | baseline details=" + pilot.BaselineTerrain.detailPrototypes.Length + " trees=" + pilot.BaselineTerrain.treePrototypes.Length + " treeInstances=" + pilot.BaselineTerrain.treeInstanceCount
+                + " | materialTemplate=" + (pilot.Terrain.materialTemplate != null ? pilot.Terrain.materialTemplate.name + " shader=" + pilot.Terrain.materialTemplate.shader.name : "null") + " drawInstanced=" + pilot.Terrain.drawInstanced);
+            foreach (TerrainLayer layer in pilot.PilotTerrain.terrainLayers) report.Add("pilot layer " + (layer != null ? layer.name + " smooth=" + layer.smoothness + " metal=" + layer.metallic + " src=" + layer.smoothnessSource + " normal=" + (layer.normalMapTexture != null) + " mask=" + (layer.maskMapTexture != null) : "null"));
+            foreach (TerrainLayer layer in pilot.BaselineTerrain.terrainLayers) report.Add("baseline layer " + (layer != null ? layer.name + " smooth=" + layer.smoothness + " metal=" + layer.metallic + " src=" + layer.smoothnessSource + " normal=" + (layer.normalMapTexture != null) + " mask=" + (layer.maskMapTexture != null) : "null"));
+            foreach (var light in UnityEngine.Object.FindObjectsByType<Light>(FindObjectsSortMode.None)) report.Add("light " + light.name + " type=" + light.type + " intensity=" + light.intensity + " euler=" + light.transform.eulerAngles.ToString("F1"));
+
+            void Shot(string name, float yaw)
+            {
+                Quaternion q = Quaternion.Euler(0, yaw, 0);
+                Vector3 from = at + q * new Vector3(0, 1.10f, -2.6f), target = at + Vector3.up * .95f;
+                camera.transform.SetPositionAndRotation(from, Quaternion.LookRotation(target - from));
+                Shader.SetGlobalVector("_EchoesFocus", Vector4.zero);
+                var rt = RenderTexture.GetTemporary(1280, 720, 24); rt.antiAliasing = 2; camera.targetTexture = rt; camera.Render(); camera.Render();
+                RenderTexture previous = RenderTexture.active; RenderTexture.active = rt;
+                var image = new Texture2D(1280, 720, TextureFormat.RGB24, false); image.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0); image.Apply();
+                File.WriteAllBytes(Path.Combine(dir, "glow2-" + name + ".png"), image.EncodeToPNG());
+                Color32[] pixels = image.GetPixels32();
+                double sx = 0, sy = 0; int count = 0;
+                for (int y = 0; y < 400; y++) for (int x = 0; x < 1280; x++)
+                {
+                    Color32 c = pixels[y * 1280 + x];
+                    if (c.r >= 247 && c.g >= 247 && c.b >= 247) { sx += x; sy += y; count++; }
+                }
+                string line = "shot " + name + " yaw=" + yaw + " white pixels (lower 400 rows)=" + count;
+                if (count > 20)
+                {
+                    float cx = (float)(sx / count), cy = (float)(sy / count);
+                    line += " centroid=(" + cx.ToString("F0") + "," + (720 - cy).ToString("F0") + " from top)";
+                    Ray ray = camera.ScreenPointToRay(new Vector3(cx, cy, 0));
+                    if (Physics.Raycast(ray, out RaycastHit hit, 60f))
+                    {
+                        line += " ground hit=" + hit.point.ToString("F2") + " collider=" + hit.collider.name + " dist=" + hit.distance.ToString("F2");
+                        foreach (Renderer r in UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+                        {
+                            if (r is TrailRenderer) continue;
+                            if (r.bounds.size.x > 40f) continue;
+                            if (r.bounds.SqrDistance(hit.point) < 1.5f * 1.5f)
+                                line += "\n    near: " + r.name + " (" + (r.transform.parent != null ? r.transform.parent.name : "-") + ") " + r.GetType().Name + " mats=" + string.Join("|", r.sharedMaterials.Select(m => m != null ? m.name + ":" + m.shader.name : "null")) + " bounds=" + r.bounds.center.ToString("F1") + "/" + r.bounds.size.ToString("F1");
+                        }
+                    }
+                }
+                report.Add(line);
+                UnityEngine.Object.DestroyImmediate(image); RenderTexture.active = previous; camera.targetTexture = null; RenderTexture.ReleaseTemporary(rt);
+            }
+
+            Shot("a-all", 0);
+            Shot("b-yaw+35", 35);
+            Shot("c-yaw-35", -35);
+            var sun = UnityEngine.Object.FindObjectsByType<Light>(FindObjectsSortMode.None).First(l => l.type == LightType.Directional);
+            float intensity = sun.intensity; sun.intensity = 0; Shot("d-no-sun", 0); sun.intensity = intensity;
+            var volumes = UnityEngine.Object.FindObjectsByType<Volume>(FindObjectsSortMode.None);
+            foreach (var v in volumes) v.enabled = false; Shot("e-no-volume", 0); foreach (var v in volumes) v.enabled = true;
+            pilot.Terrain.drawTreesAndFoliage = false; Shot("f-no-terrain-details", 0); pilot.Terrain.drawTreesAndFoliage = true;
+            Material template = pilot.Terrain.materialTemplate; pilot.Terrain.materialTemplate = null; Shot("g-default-terrain-material", 0); pilot.Terrain.materialTemplate = template;
+            report.Add("volumes=" + volumes.Length);
+            File.WriteAllLines(Path.Combine(dir, "glow2-report.txt"), report);
+            Debug.Log("[Echoes][P52 B2 GLOW]\n" + string.Join("\n", report));
+        }
+
+        /// <summary>Third bisect: shows the pilot terrain with a single layer at full weight (in-memory clone only; nothing is saved) to find which layer / splat pass draws the sun glint.</summary>
+        public static void GlowBisect3()
+        {
+            string dir = Output();
+            ShaderUtil.allowAsyncCompilation = false;
+            EditorSceneManager.OpenScene(Phase52PilotBuilder.Valley);
+            var pilot = UnityEngine.Object.FindFirstObjectByType<Phase52Pilot>();
+            var player = UnityEngine.Object.FindFirstObjectByType<PlayerController>();
+            Camera camera = Camera.main;
+            Vector3 at = new Vector3(4.7f, 0, 24f); at.y = pilot.Terrain.SampleHeight(at) + pilot.Terrain.transform.position.y + .08f;
+            pilot.Apply(false); player.transform.position = at; player.transform.rotation = Quaternion.Euler(0, 180, 0);
+            var report = new List<string>();
+            TerrainData clone = UnityEngine.Object.Instantiate(pilot.PilotTerrain);
+            int layers = clone.alphamapLayers;
+            report.Add("clone layers=" + layers + " alphamap " + clone.alphamapWidth + "x" + clone.alphamapHeight);
+            pilot.Terrain.terrainData = clone;
+            void Shot(string name)
+            {
+                Vector3 from = at + new Vector3(0, 1.10f, -2.6f), target = at + Vector3.up * .95f;
+                camera.transform.SetPositionAndRotation(from, Quaternion.LookRotation(target - from));
+                Shader.SetGlobalVector("_EchoesFocus", Vector4.zero);
+                var rt = RenderTexture.GetTemporary(1280, 720, 24); rt.antiAliasing = 2; camera.targetTexture = rt; camera.Render(); camera.Render();
+                RenderTexture previous = RenderTexture.active; RenderTexture.active = rt;
+                var image = new Texture2D(1280, 720, TextureFormat.RGB24, false); image.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0); image.Apply();
+                File.WriteAllBytes(Path.Combine(dir, "glow3-" + name + ".png"), image.EncodeToPNG());
+                Color32[] pixels = image.GetPixels32();
+                int hot = 0, max = 0;
+                for (int y = 0; y < 300; y++) for (int x = 640; x < 1100; x++)
+                {
+                    Color32 c = pixels[y * 1280 + x]; int m = Mathf.Min(c.r, Mathf.Min(c.g, c.b)); if (m > max) max = m; if (m >= 215) hot++;
+                }
+                report.Add("shot " + name + ": brightest min-channel in lower-right region=" + max + " pixels>=215: " + hot);
+                UnityEngine.Object.DestroyImmediate(image); RenderTexture.active = previous; camera.targetTexture = null; RenderTexture.ReleaseTemporary(rt);
+            }
+            Shot("all-layers");
+            for (int k = 0; k < layers; k++)
+            {
+                var map = new float[clone.alphamapHeight, clone.alphamapWidth, layers];
+                for (int z = 0; z < clone.alphamapHeight; z++) for (int x = 0; x < clone.alphamapWidth; x++) map[z, x, k] = 1f;
+                clone.SetAlphamaps(0, 0, map);
+                Shot("only-layer" + k + "-" + clone.terrainLayers[k].name);
+            }
+            File.WriteAllLines(Path.Combine(dir, "glow3-report.txt"), report);
+            Debug.Log("[Echoes][P52 B2 GLOW3]\n" + string.Join("\n", report));
         }
 
         static float Sample(float[,] map, Vector2 p, Vector3 origin, TerrainData data)

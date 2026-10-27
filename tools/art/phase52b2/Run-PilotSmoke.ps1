@@ -13,7 +13,7 @@ $root=[IO.Path]::GetFullPath($OutputDirectory)
 if(Test-Path -LiteralPath $root){throw "Preserve prior evidence; fresh output required: $root"}
 $shots=Join-Path $root 'screenshots';New-Item -ItemType Directory -Path $shots | Out-Null
 $log=Join-Path $root 'player.log'
-$arguments=@('-screen-fullscreen','0','-screen-width',$Width,'-screen-height',$Height,'-echoes-smoke','-echoes-shots',('"'+$shots+'"'),'-echoes-save-dir',('"'+(Join-Path $root 'save')+'"'),'-logFile',('"'+$log+'"'))
+$arguments=@('-screen-fullscreen','0','-screen-width',$Width,'-screen-height',$Height,'-echoes-smoke','-echoes-art-audit','-echoes-shots',('"'+$shots+'"'),'-echoes-save-dir',('"'+(Join-Path $root 'save')+'"'),'-logFile',('"'+$log+'"'))
 $started=Get-Date
 $process=Start-Process -FilePath $exe -ArgumentList $arguments -WorkingDirectory (Split-Path $exe) -PassThru
 $natural=$process.WaitForExit($TimeoutSeconds*1000)

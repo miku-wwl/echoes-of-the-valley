@@ -55,15 +55,15 @@ def coat_back_details(c, box):
         c.put(c.stroke_mask(pts, 3.0), seam, 0.85)
         c.put(c.stroke_mask([(a + sgn * 3, b) for a, b in pts], 1.3), seam_hi, 0.5)
     c.put(c.stroke_mask([(cx - 0.34 * w, y0 + 70), (cx, y0 + 62), (cx + 0.34 * w, y0 + 70)], 2.6), seam, 0.8)   # yoke seam
-    for k in range(5):                                       # a row of small gold buttons along the spine
-        yy_ = y0 + 108 + k * 44
+    ey = y0 + 150                                              # emblem between the shoulder blades: a leaf with three echo arcs
+    c.put(c.ellipse_mask(cx, ey + 6, 40, 17, -1.15), GOLD)
+    c.put(c.stroke_mask([(cx - 27, ey + 35), (cx, ey + 6), (cx + 25, ey - 24)], 2.6), srgb('1C4B4D'), 0.9)
+    for r in (54, 72, 90):
+        c.put(c.stroke_mask([(cx + r * math.cos(t), ey + 6 - r * math.sin(t) * 0.8) for t in np.linspace(-0.25, 1.25, 24)], 2.8), GOLD, 0.62)
+    for k in range(3):                                         # three small gold buttons down the spine to the waist seam
+        yy_ = y0 + 228 + k * 34
         c.put(c.ellipse_mask(cx, yy_, 8.5, 8.5), GOLD)
         c.put(c.ellipse_mask(cx, yy_, 5.0, 5.0), GOLD_DARK, 0.9)
-    ey = y0 + int(0.62 * h) - 24                              # emblem below the waist seam: a leaf with three echo arcs
-    c.put(c.ellipse_mask(cx, ey + 6, 46, 20, -1.15), GOLD)
-    c.put(c.stroke_mask([(cx - 31, ey + 40), (cx, ey + 6), (cx + 29, ey - 27)], 2.8), srgb('1C4B4D'), 0.9)
-    for r in (72, 96, 120):
-        c.put(c.stroke_mask([(cx + r * math.cos(t), ey + 6 - r * math.sin(t) * 0.8) for t in np.linspace(-0.25, 1.25, 24)], 3.0), GOLD, 0.62)
     painterly(c, (x0, y0, x1, y1), 0.0, 1)
 
 

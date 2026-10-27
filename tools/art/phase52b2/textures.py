@@ -154,11 +154,11 @@ def paint_hair(size=1024):
     col = col * edge[..., None]
     grain = tile_noise(S, half, 10, 31)
     col *= (0.93 + 0.14 * grain)[..., None]
-    clump = 0.5 + 0.5 * np.sin(math.tau * (u * 2.6 + 0.9 * noise(8, half, 40, 77)[0][None, :]))
-    col = col * (1 + 0.16 * (clump - 0.5))[..., None]
+    clump = 0.5 + 0.5 * np.sin(math.tau * (u * 1.7 + 1.6 * noise(8, half, 40, 77)[0][None, :]))     # broad, irregular clump shading (regular fine stripes read as wood grain)
+    col = col * (1 + 0.09 * (clump - 0.5))[..., None]
     c.rgb[:, :half] = col
     rng = np.random.default_rng(5203)
-    for k in range(48):
+    for k in range(26):
         x = rng.uniform(4, half - 4)
         wob = rng.uniform(1.5, 6)
         ph = rng.uniform(0, 6.28)
@@ -168,7 +168,7 @@ def paint_hair(size=1024):
         light = rng.random() < 0.5
         m = c.stroke_mask(pts, rng.uniform(1.0, 2.8), 0.4)
         m[:, half:] = 0
-        c.put(m, srgb('E2A56C') if light else srgb('2B150E'), rng.uniform(0.07, 0.16))
+        c.put(m, srgb('E2A56C') if light else srgb('2B150E'), rng.uniform(0.05, 0.11))
     # soft glossy band across each clump (the anime "ring"): rows 24..38 % from the root
     band = smooth(0.22, 0.27, v) * smooth(0.40, 0.34, v)
     sheen = band * (1 - np.abs(2 * u - 1) ** 1.6)
@@ -184,11 +184,11 @@ def paint_hair(size=1024):
     rng = np.random.default_rng(5204)
     cap = Canvas(half, S, (0, 0, 0), ss=2)
     cap.rgb = ccol.copy()
-    for k in range(150):
+    for k in range(64):
         x = rng.uniform(0, half)
         pts = [(x + 4 * math.sin(y / 90.0 + k), y) for y in np.linspace(rng.uniform(0, 200), rng.uniform(S * 0.6, S), 24)]
         m = cap.stroke_mask(pts, rng.uniform(1.0, 2.4), 0.4)
-        cap.put(m, srgb('D69A63') if rng.random() < 0.5 else srgb('26120C'), rng.uniform(0.06, 0.14))
+        cap.put(m, srgb('D69A63') if rng.random() < 0.5 else srgb('26120C'), rng.uniform(0.04, 0.09))
     ring = smooth(0.40, 0.46, cv) * smooth(0.60, 0.53, cv)
     front = 0.35 + 0.65 * np.exp(-((cu - 0.5) / 0.30) ** 2)
     side_glow = 0.55 * (np.exp(-((cu - 0.12) / 0.10) ** 2) + np.exp(-((cu - 0.88) / 0.10) ** 2))
