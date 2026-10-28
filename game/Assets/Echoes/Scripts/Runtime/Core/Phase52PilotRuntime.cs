@@ -26,7 +26,10 @@ namespace Echoes
             if (menu == null || menu.CreditsLabel == null) return;
             const string old = "No external art, music, sound or font files are used. Music and sounds are original and synthesised procedurally. The interface uses the font and sprites built into Unity.";
             bool b3 = Application.version.StartsWith("0.5.2-pilot.3", StringComparison.Ordinal);
-            menu.CreditsLabel.text = GameCredits.Text.Replace(old, b3
+            bool b4 = Application.version.StartsWith("0.5.2-pilot.4", StringComparison.Ordinal);
+            menu.CreditsLabel.text = GameCredits.Text.Replace(old, b4
+                ? "Pilot B4 (high-angle 2.5D): the caretaker drawings, the painted workshop, willow and spring, the ground plants, the plaza stone and the minimap frame are original AI-generated illustrations supplied by the owner, cleaned and fitted by script; the villager sprites and portraits are cut from original illustrations made with OpenAI image generation and supplied by the owner. Pipelines, shaders, camera, minimap and scene builder were made with Anthropic Claude Code. Owner visual review pending. Original synthesised audio and Unity built-in font retained."
+                : b3
                 ? "Pilot B3 (2.5D): the caretaker and villager sprites and portraits are animated and cut from original illustrations made with OpenAI image generation and supplied by the owner; the sprite pipeline, shaders, fixed camera, foliage and path art were made with Anthropic Claude Code. Owner visual review pending. Original synthesised audio and Unity built-in font retained."
                 : "Pilot B2: the original Blender-authored caretaker, its code-painted textures, toon shader, animation, foliage and path art were made with Anthropic Claude Code (first pilot: OpenAI Codex). Caretaker portrait: original OpenAI image generation supplied by the owner. Owner visual review pending. Original synthesised audio and Unity built-in font retained.");
         }

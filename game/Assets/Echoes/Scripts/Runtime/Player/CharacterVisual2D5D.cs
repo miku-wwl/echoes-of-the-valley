@@ -45,6 +45,12 @@ namespace Echoes
 
         void LateUpdate() => Step(Time.deltaTime, Camera.main);
 
+        /// <summary>Shows another drawing set (the B4 pilot's before/after switch); the run phase carries on.</summary>
+        public void UseSheet(SpriteSheet25D other)
+        {
+            if (other != null) sheet = other;
+        }
+
         /// <summary>One presentation step (public so tests can drive it). A jump of more than 3 m in one step is a teleport, not running.</summary>
         public void Step(float dt, Camera view)
         {

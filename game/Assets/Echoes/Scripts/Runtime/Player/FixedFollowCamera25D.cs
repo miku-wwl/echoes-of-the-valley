@@ -28,11 +28,15 @@ namespace Echoes
         [SerializeField] float followSmoothTime = 0.12f;
         [SerializeField] float collisionRadius = 0.3f;
         [SerializeField] float zoomStep = 0.9f;
+        [Tooltip("Largest swing of the ending's slow drift. 360 = a full orbit (B3); painted 2.5D props need a gentle sway instead.")]
+        [SerializeField] float maxOrbitDegrees = 360f;
+        [Tooltip("Pull in only in front of the terrain: a high camera passing over roofs and canopies must not jump in (B4).")]
+        [SerializeField] bool terrainOnlyCollision;
 
         readonly RaycastHit[] hits = new RaycastHit[8];
         Camera view;
         Vector3 pivot, pivotVelocity, ahead, aheadVelocity, lastTarget;
-        float zoom, smoothZoom, zoomVelocity, currentDistance, orbit;
+        float zoom, smoothZoom, zoomVelocity, currentDistance, orbit, swayPhase;
         bool initialised;
 
         public float Yaw => yaw + orbit;
@@ -41,7 +45,23 @@ namespace Echoes
         public float Distance => initialised ? zoom : distance;
         public float MinDistance => minDistance;
         public float MaxDistance => maxDistance;
+        public float FieldOfView => fieldOfView;
+        public float MaxOrbitDegrees => maxOrbitDegrees;
         public Transform Target => target;
+
+        /// <summary>Sets the fixed view (B4 pilot switches, evidence stills) and snaps to it.</summary>
+        public void Configure(float newYaw, float newPitch, float newDistance, float newMin, float newMax, float newFov)
+        {
+            yaw = newYaw;
+            pitch = newPitch;
+            distance = newDistance;
+            minDistance = newMin;
+            maxDistance = newMax;
+            fieldOfView = newFov;
+            zoom = Mathf.Clamp(newDistance, newMin, newMax);
+            initialised = true;
+            Snap();
+        }
 
         void Start() => Snap();
 
@@ -57,7 +77,15 @@ namespace Echoes
                 if (Mathf.Abs(scroll) > 0.01f) zoom = Mathf.Clamp(zoom - Mathf.Sign(scroll) * zoomStep, minDistance, maxDistance);
             }
             float drift = legacyRig != null ? legacyRig.AutoOrbitDegreesPerSecond : 0f;
-            orbit = drift != 0f ? Mathf.Repeat(orbit + drift * dt, 360f) : Mathf.MoveTowardsAngle(orbit, 0f, 120f * dt);
+            if (maxOrbitDegrees >= 180f)
+                orbit = drift != 0f ? Mathf.Repeat(orbit + drift * dt, 360f) : Mathf.MoveTowardsAngle(orbit, 0f, 120f * dt);
+            else
+            {
+                // a slow back-and-forth sway of at most maxOrbitDegrees, at the drift's angular pace
+                swayPhase = drift != 0f ? swayPhase + Mathf.Abs(drift) * dt / Mathf.Max(1f, maxOrbitDegrees) : 0f;
+                float wanted = drift != 0f ? maxOrbitDegrees * Mathf.Sin(swayPhase) : 0f;
+                orbit = Mathf.MoveTowardsAngle(orbit, wanted, 120f * dt);
+            }
             Follow(dt, false);
         }
 
@@ -116,6 +144,7 @@ namespace Echoes
             for (int i = 0; i < count; i++)
             {
                 if (hits[i].collider.transform.IsChildOf(target) || hits[i].distance <= 0f) continue;
+                if (terrainOnlyCollision && !(hits[i].collider is TerrainCollider)) continue;
                 nearest = Mathf.Min(nearest, hits[i].distance);
             }
             return Mathf.Max(3.5f, nearest);
