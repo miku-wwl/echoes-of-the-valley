@@ -76,8 +76,9 @@ for k, label in (('smoke720', 'Whole-game smoke 720p'), ('smoke1080', 'Whole-gam
     r = smoke[k]
     run_lines.append('%s: %s' % (label, ('natural exit %s, exit code %s, %s s, %s screenshots, exception lines %s, %s' % (r['naturalExit'], r['exitCode'], r['seconds'], r['screenshots'], r['exceptionLines'], '; '.join(r.get('passLines') or []))) if r else 'not run'))
 video_line = ('%.2f s, %s real framebuffer frames at their captured intervals (about %.1f FPS), 1280x720, no audio, no desktop capture, no concept compositing; SHA-256 `%s`' % (prov['videoDuration'], prov['framesCaptured'], prov['framesCaptured'] / max(1e-6, prov['capturedSeconds']), prov['movieSha256'])) if prov else 'not produced'
-vs = runs['tour720-video'][1] or {}
+vs = runs['tour720-unrecorded'][1] or {}
 skate = vs.get('runPhaseVsDistance', {})
+skate_rec = (runs['tour720-video'][1] or {}).get('runPhaseVsDistance', {})
 S = J['status']
 smoke_ok = all(smoke[k] and smoke[k]['naturalExit'] and smoke[k]['exitCode'] == 0 and smoke[k]['exceptionLines'] == 0 for k in smoke)
 video_ok = bool(prov) and 45 <= prov.get('videoDuration', 0) <= 90
@@ -117,13 +118,15 @@ B3 tests: %(cases)s. No existing test was removed or weakened; `DialogueBox` gai
 
 ## 7. Windows build
 
-Non-development Windows x64 Mono/D3D11, Unity 6000.3.27f1 / URP 17.3.0, version `0.5.2-pilot.3`, `%(bdir)s`: **%(bres)s**, build id `%(bid)s`, errors %(berr)s, warnings %(bwarn)s, %(bbytes)s bytes, `EchoesOfTheValley.exe` SHA-256 `%(exe)s`. RC1/RC2 zips unchanged: %(prot)s. B2 branch still at its commit: %(b2)s.
+Non-development Windows x64 Mono/D3D11, Unity 6000.3.27f1 / URP 17.3.0, version `0.5.2-pilot.3`, `%(bdir)s`: **%(bres)s**, build id `%(bid)s`, errors %(berr)s, warnings %(bwarn)s, %(bbytes)s bytes, `EchoesOfTheValley.exe` SHA-256 `%(exe)s` (the Unity launcher stub, identical across builds of this Unity version; every build file is hashed in `logs/build-manifest-SHA256.txt`). RC1/RC2 zips unchanged: %(prot)s. B2 branch still at its commit: %(b2)s.
 
 ## 8. Real-player runs (automated)
 
 %(runs)s
 
-Video: %(video)s. Run-cycle check on the recorded route: the presenter's run phase advanced by distance / stride (%(stride).3f m) with median error %(skmed)s and p95 error %(skp95)s of a cycle per frame (the planted foot cannot skate by construction).
+Video: %(video)s.
+
+Run-cycle check (unrecorded 720p route, 60 FPS): the presenter's run phase advanced by distance / stride (%(stride).3f m) with a median per-frame difference of %(skmed)s and p95 %(skp95)s of a cycle. The residue is a sampling artefact (the tour samples the phase one frame before the presenter updates it), which grows with uneven frame times: in the recorded run it is median %(rmed)s, p95 %(rp95)s. The cycle itself is driven by distance, so the planted foot cannot skate at any speed.
 
 ## 9. Performance
 
@@ -168,7 +171,7 @@ NEXT_ACTION=%(next)s
 ''' % dict(built=bullets(J['built']), pipeline=bullets(J['pipeline']), camera=bullets(J['camera']), bad=bullets(J['bad']), gate=bullets(J['gate']),
            tv=J['testFolder'], edit=edit, play=play, cases=', '.join(cases) or 'none found', bdir=J['buildDir'], bres=build['result'], bid=build['id'], berr=build['errors'],
            bwarn=build['warnings'], bbytes=build['bytes'], exe=sha(exe) if exe.is_file() else 'MISSING', prot='YES' if protected else 'NO', b2='YES' if b2_intact else 'NO',
-           runs=bullets(run_lines), video=video_line, stride=skate.get('stride', 0), skmed=skate.get('medianError'), skp95=skate.get('p95Error'), head=head,
+           runs=bullets(run_lines), video=video_line, stride=skate.get('stride', 0), skmed=skate.get('medianError'), skp95=skate.get('p95Error'), rmed=skate_rec.get('medianError'), rp95=skate_rec.get('p95Error'), head=head,
            s_b3=S['b3'], s_pipe=S['pipeline'], s_dirs=S['directions'], s_idle=S['idle'], s_loco=S['locomotion'], s_ident=S['identity'], s_vis=S['visual'], s_cam=S['camera'],
            s_depth=S['depth'], s_fol=S['foliage'], s_path=S['path'], s_port=S['portrait'], s_video=('PASS (automated, %.1f s)' % prov['videoDuration']) if video_ok else 'FAIL or incomplete',
            s_perf=S['performance'], s_lic=S['license'], s_ai=S['ai'], s_gate=S['gate'], smoke=('PASS (720p and 1080p, natural exit 0, 0 exception lines)' if smoke_ok else 'FAIL or incomplete: see section 8'), next=J['next'])
