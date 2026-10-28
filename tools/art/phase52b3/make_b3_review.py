@@ -38,6 +38,10 @@ if stage.exists():
 stage.mkdir(parents=True)
 
 
+staged = {}
+omitted = []
+
+
 def put(src, rel):
     src = Path(src)
     if not src.is_file():
@@ -46,17 +50,27 @@ def put(src, rel):
     dst = stage / rel
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(src, dst)
+    staged[str(src.resolve())] = rel
     return dst
 
 
+def omit(src):
+    src = Path(src)
+    omitted.append('%s  %d  %s' % (hashlib.sha256(src.read_bytes()).hexdigest(), src.stat().st_size, src.relative_to(root).as_posix()))
+
+
 def put_tree(src, rel, keep=lambda p: True):
+    """Stages a folder; files that keep() rejects are listed with their hash in OMITTED-FILES-SHA256.txt (they stay on disk)."""
     src = Path(src)
     if not src.is_dir():
         print('MISSING folder (skipped):', src)
         return
     for p in sorted(src.rglob('*')):
-        if p.is_file() and 'frames' not in p.parts and 'save' not in p.parts and keep(p):
-            put(p, rel + '/' + p.relative_to(src).as_posix())
+        if p.is_file() and 'frames' not in p.parts and 'save' not in p.parts:
+            if keep(p):
+                put(p, rel + '/' + p.relative_to(src).as_posix())
+            else:
+                omit(p)
 
 
 # ---- top level documents -------------------------------------------------------------------------------------------------------------
@@ -72,12 +86,30 @@ for f in ('capture-provenance.json', 'tour-stats.json', 'tour.json', 'frame-mani
     put(video / f, 'motion/run-data/' + f)
 
 # ---- real player screenshots (REAL_PLAYER_SCREENSHOT) -------------------------------------------------------------------------------
-for tag in ('tour1080', 'tour720-video', 'tour1080-legacy-b2-hero'):
+for tag in ('tour1080', 'tour1080-legacy-b2-hero'):
     put_tree(ev / 'player' / tag, 'real-player-screenshots/' + tag, keep=lambda p: p.suffix == '.png' or p.name in ('tour-stats.json', 'process-result.json'))
-for tag in ('smoke720', 'smoke1080'):
-    put_tree(ev / 'player' / tag, 'real-player-screenshots/' + tag, keep=lambda p: p.suffix in ('.png', '.json'))
+put_tree(ev / 'player/tour720-video', 'real-player-screenshots/tour720-video', keep=lambda p: p.name in ('dialogue-mira.png', 'inventory-portrait.png', 'hero-front-S-closest-zoom.png'))
+SMOKE_KEEP = ('A1-', 'A2-', 'A3-', 'NPC', 'Clover', '03-', '05-', '06-', '13a', '15-')
+put_tree(ev / 'player/smoke1080', 'real-player-screenshots/smoke1080', keep=lambda p: p.suffix == '.json' or (p.suffix == '.png' and p.name.startswith(SMOKE_KEEP)))
+put_tree(ev / 'player/smoke720', 'real-player-screenshots/smoke720', keep=lambda p: p.suffix == '.json')
 for tag in ('tour720-unrecorded', 'tour1080-unrecorded'):
     put_tree(ev / 'player' / tag, 'performance/' + tag, keep=lambda p: p.suffix == '.json')
+
+t1080 = ev / 'player/tour1080'
+legacy = ev / 'player/tour1080-legacy-b2-hero'
+b2 = root / 'artifacts/visual-qa/phase-5.2-b2/player/after1080'
+src_pack = root / 'tools/art/phase52b3/source'
+views = root / 'artifacts/art-work/phase52b3/views'
+sprites = root / 'artifacts/art-work/phase52b3/sprites'
+# ---- character source assets ----------------------------------------------------------------------------------------------------------
+for f in ('01-heroine-portrait.png', '02-npc-lineup.png', '05-heroine-turnaround-reference.png', 'SOURCES_AND_RIGHTS.md'):
+    put(src_pack / f, 'character-source/CONCEPT_ART-owner-supplied/' + f)
+put_tree(views, 'character-source/extracted-views')
+put_tree(root / 'game/Assets/Echoes/Art/Phase52B3/Sprites', 'character-source/PRODUCTION_SPRITES', keep=lambda p: p.suffix in ('.png', '.json'))
+put_tree(root / 'game/Assets/Echoes/Art/Phase52B3/Portraits', 'character-source/PRODUCTION_SPRITES/portraits', keep=lambda p: p.suffix == '.png')
+put(sprites / 'contact-sheet-game-scale.png', 'character-source/PRODUCTION_SPRITES/contact-sheet-game-scale.png')
+put(sprites / 'portraits-sheet.png', 'character-source/PRODUCTION_SPRITES/portraits-sheet.png')
+put_tree(root / 'artifacts/visual-qa/phase-5.2-b3/editor-preview/p4', 'EDITOR_PREVIEW-not-player-evidence/camera-candidates', keep=lambda p: p.name.startswith('camera-') and p.name.endswith('-plaza.png') or p.name == 'NOTE.txt')
 
 # ---- comparison page -------------------------------------------------------------------------------------------------------------------
 cmp = stage / 'comparison'
@@ -90,13 +122,17 @@ def pair(group, title, items):
     for label, category, src in items:
         if src is None or not Path(src).is_file():
             continue
-        rel = '%s/%s' % (group, Path(src).name if not Path(src).name.startswith('frame-') else label + '.jpg')
-        dst = cmp / rel
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        if dst.exists():
-            rel = '%s/%s-%s' % (group, category.lower(), Path(src).name)
+        key = str(Path(src).resolve())
+        if key in staged:
+            rel = '../' + staged[key]                      # already in the package: link it, do not copy it twice
+        else:
+            rel = '%s/%s' % (group, Path(src).name)
             dst = cmp / rel
-        shutil.copyfile(src, dst)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if dst.exists():
+                rel = '%s/%s-%s' % (group, category.lower(), Path(src).name)
+                dst = cmp / rel
+            shutil.copyfile(src, dst)
         figs.append('<figure><img src="%s" loading="lazy"><figcaption><b>%s</b> &middot; %s</figcaption></figure>' % (html.escape(rel), html.escape(category), html.escape(label)))
     if figs:
         sections.append('<section><h2>%s</h2><div class="row">%s</div></section>' % (html.escape(title), ''.join(figs)))
@@ -141,16 +177,6 @@ Windows player driven by <b>automated</b> input (no human played). Captions are 
 %s</html>''' % '\n'.join(sections)
 cmp.mkdir(parents=True, exist_ok=True)
 (cmp / 'index.html').write_text(page, encoding='utf-8')
-
-# ---- character source assets ----------------------------------------------------------------------------------------------------------
-for f in ('01-heroine-portrait.png', '02-npc-lineup.png', '05-heroine-turnaround-reference.png', 'SOURCES_AND_RIGHTS.md'):
-    put(src_pack / f, 'character-source/CONCEPT_ART-owner-supplied/' + f)
-put_tree(views, 'character-source/extracted-views')
-put_tree(root / 'game/Assets/Echoes/Art/Phase52B3/Sprites', 'character-source/PRODUCTION_SPRITES', keep=lambda p: p.suffix in ('.png', '.json'))
-put_tree(root / 'game/Assets/Echoes/Art/Phase52B3/Portraits', 'character-source/PRODUCTION_SPRITES/portraits', keep=lambda p: p.suffix == '.png')
-put(sprites / 'contact-sheet-game-scale.png', 'character-source/PRODUCTION_SPRITES/contact-sheet-game-scale.png')
-put(sprites / 'portraits-sheet.png', 'character-source/PRODUCTION_SPRITES/portraits-sheet.png')
-put_tree(root / 'artifacts/visual-qa/phase-5.2-b3/editor-preview/p4', 'EDITOR_PREVIEW-not-player-evidence/camera-candidates')
 
 # ---- tests and logs -------------------------------------------------------------------------------------------------------------------------
 put(tests / 'tests-EditMode.xml', 'tests/EditMode.xml')
@@ -197,6 +223,9 @@ for p in sorted(build_dir.rglob('*')):
 | `real-player-screenshots/`, `motion/selected-frames/` | REAL_PLAYER_SCREENSHOT: unmodified captures of the Windows player, AUTOMATED input. |
 | `motion/actual-player-2d5d-motion.mp4` | REAL_PLAYER_VIDEO: the Windows player's own framebuffer frames at their real intervals, AUTOMATED input, no audio. |
 ''', encoding='utf-8')
+if omitted:
+    header = 'SHA-256  size  path (left out to keep the package reviewable; the files stay in the local artifacts/ folder)'
+    (stage / 'OMITTED-FILES-SHA256.txt').write_text(header + chr(10) + chr(10).join(omitted) + chr(10), encoding='utf-8')
 manifest = []
 for p in sorted(stage.rglob('*')):
     if p.is_file():
