@@ -127,6 +127,13 @@ Unity 6000.3.27f1, URP 17.3.0, Windows x64 Mono/D3D11, Radeon 780M. All player i
 The atlas test caught a real defect during this phase (1.04 % of the transparent texels at the drawings' edges were black after the idle
 warp); it was fixed in the pipeline (`decontaminate`), not by relaxing the test.
 
+## Integration into main (2026-10-29)
+
+`main` was fast-forwarded from `d9a8d12` to the B4 branch tip (no merge commit, no conflicts: `main` was an ancestor of the B4 work) and is
+now the only development branch. Integration does not change the visual verdict: **PHASE52_B4_STATUS=PARTIAL, GATE_B=NOT_APPROVED,
+B5_VISUAL_REFINEMENT=REQUIRED.** The re-verification of the integrated `main` (tests, builds, smoke runs, 1080p sample) is recorded in
+`artifacts/visual-qa/phase-5.2/b4/main-integration/`.
+
 ## Known limitations (see the report's WHAT STILL LOOKS BAD)
 
 * Outside the four places the valley is still B2: low-poly broadleaf trees (their leaf cards look like shards from 48 degrees), the

@@ -193,4 +193,4 @@ Frame time in the built player, four data points only (1280x720 windowed, vSync 
 ## Next action
 
 1. Phase 5 (release candidate) is recorded in [05](05-RELEASE.md). Then the **human** does the QA checklist there, decides the creator name and the AI-disclosure wording, and uploads to the jam entry by hand.
-2. Never push without being asked.
+2. Develop on `main` only (owner decision, 2026-10-29): inspect, modify, test, commit, push `main`; no new branches, no force-push, no history rewrites.

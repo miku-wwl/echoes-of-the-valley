@@ -8,7 +8,7 @@ Project: **Echoes of the Valley**, `thatgamejam #02` (2026). Read `README.md` an
 2. The game is **Silence → Awakening → Resonance → Rest**. Implement the `ResonanceStage` world-feedback mechanic, not generic farming with cosmetic restoration.
 3. Ship **one valley, three quests, three recipes, one chicken, three visible restoration stages, one ending**. No combat, fishing, seasons, large animal systems, cloud or multiplayer.
 4. Favor repeatable **Unity Editor C# automation + batchmode** for scenes, settings, build and content. Unity's own serialization writes `.unity`/`.prefab`/`.meta`; never invent YAML. Record manual playtest evidence honestly.
-5. Preserve this repo and its existing Unity project, if any. Check before creating `game/`; never overwrite/delete work or force-push. Do not push unless the user asks.
+5. Preserve this repo and its existing Unity project, if any. Check before creating `game/`; never overwrite/delete work or force-push. Develop on `main` only (no new branches): inspect, modify, test, commit, then push `main` once the change is verified (owner decision, 2026-10-29). Never rewrite history.
 
 ## Verification contract
 
