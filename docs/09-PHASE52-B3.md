@@ -49,9 +49,22 @@ Every pixel of every sprite is resampled from these illustrations; no pixel is d
 
 `FixedFollowCamera25D` (on the main camera, after the legacy orbit rig): **yaw 25 degrees (fixed), pitch 30 degrees (fixed), distance 8 m (mouse wheel 6-11 m), vertical field of view 35 degrees**, smooth follow with up to 0.8 m look-ahead, sphere cast against colliders (never closer than 3.5 m). No free orbit; WASD moves relative to the fixed view (W = up the screen). The pitch was chosen from Editor renders of four candidates (38/32/28/24 degrees): 30 shows building fronts and some horizon while keeping canopies and roofs mostly above the line of sight. The legacy orbit rig stays on the camera so the ending's slow drift (mirrored as a slow orbit around the player) and the scripted test cameras keep working. The controls hint now reads "WASD Move, Wheel Zoom, E Interact, I Satchel, Esc Pause".
 
-## Verification (filled in from the actual runs)
+## Verification (what was actually run)
 
-See `final-report.md` in the review package; numbers there are read from the test XML, build log and player logs.
+Unity 6000.3.27f1, URP 17.3.0, Windows x64 Mono/D3D11, Radeon 780M. All player input is **automated**; no human played.
+
+| Check | Result |
+| --- | --- |
+| EditMode, isolated project copy (`artifacts/visual-qa/phase-5.2/logs/b3-verification2`) | **Passed 229/229** (10 new B3 tests) |
+| PlayMode, same copy | **Passed 96/96** (7 new B3 tests, including the B3 scene: walk, talk to Mira, save, Continue restores the quest step) |
+| Windows build `artifacts/build/phase52-b3` (version `0.5.2-pilot.3`) | Succeeded, build id `5947b8e32c944b158709ae53297b83cb`, 0 errors, 0 warnings, 267,987,048 bytes |
+| Automated B3 route (idle, zoom, four diagonals, stop, talk to Mira, workshop, willow canopy circle, gather a Dawn Blossom, windmill, turn back, Wren, plaza): recorded 720p video, 1080p stills, B2 hero under the same camera, unrecorded 720p and 1080p | all exit 0, 0 exception lines, route pass, about 120 m in 49.4 s, controller speed max 4.5 m/s |
+| Real-player video | 49.68 s, 1253 framebuffer frames, 1280x720, full decode PASS |
+| Whole-game smoke (New Game, three restorations, ending, save/Continue) 720p and 1080p on the B3 build | PASS twice, natural exit 0, 0 exception lines, 40 screenshots each |
+| Unrecorded frame time, 60 FPS cap | 720p P99 16.82 ms, 1 % low 59.5 FPS; 1080p P99 16.69 ms, 1 % low 59.9 FPS (the cap saturates; headroom NOT VERIFIED) |
+| Run cycle vs distance (60 FPS runs) | the presenter's phase advances by distance / 2.85 m: median per-frame difference 0.000, p95 0.0027 of a cycle (the residue is the one-frame sampling lag) |
+
+Not verified: human play feel, sound, hiding behind buildings/trunks (silhouette pass), other GPUs, areas outside the route.
 
 ## What still looks bad (author's honest list)
 
@@ -61,5 +74,6 @@ See `final-report.md` in the review package; numbers there are read from the tes
 * **E (facing right)** is a mirrored illustration without her left-side accessories; the satchel still shows behind her instead of in front of her right hip, and faint inpainting smudges remain where the tassel was.
 * **Only four drawn directions.** Diagonals show side views.
 * **Style seams:** the caretaker and villagers are richly painted illustrations; the valley is still the simple low-poly/code-textured world (and Clover is still a low-poly 3D hen), so the characters are visibly more detailed than the world they stand in.
-* **Close-ups are impossible in-world:** the sprites carry about 289 texels per metre, enough for the gameplay camera (the character is about 25-35 % of the screen height) but not for camera close-ups; the dialogue busts carry the face.
+* **Close-ups are impossible in-world:** the sprites carry about 289 texels per metre, enough for the gameplay camera (she is about 340 px tall at 1080p at the default 8 m, 446 px at 6 m) but not for camera close-ups; the dialogue busts carry the face.
+* **Colour in the silent valley:** under the S0 grade she looks darker and greyer than the source illustration (the world's grading applies to her too).
 * **The source art is AI-generated** (supplied by the owner). Its turnaround is not geometrically exact (details differ slightly between views), which shows as small accessory differences when she turns.
