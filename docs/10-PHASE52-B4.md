@@ -107,9 +107,25 @@ scene for matched comparisons. The original, B2 and B3 scenes contain no B4 comp
 * `Run-B4Tour.ps1`, `Run-B4-Evidence.ps1`, `encode_b4_video.py`, `analyze_b4_tour.py` (frame times, direction coverage, run phase against
   distance, minimap objective timeline and scale), `minimap_strip.py`, `make_b4_report.py`, `make_b4_review.py`.
 
-## Verification
+## Verification (what was actually run)
 
-Filled in from the evidence by the final report (`artifacts/visual-qa/phase-5.2/b4/final-report.md`, also in the review package).
+Unity 6000.3.27f1, URP 17.3.0, Windows x64 Mono/D3D11, Radeon 780M. All player input is **automated**; no human played. Full numbers:
+`artifacts/visual-qa/phase-5.2/b4/final-report.md` (also in the review package).
+
+| Check | Result |
+| --- | --- |
+| EditMode, isolated project copy (`artifacts/visual-qa/phase-5.2/logs/b4-tests-4`) | **Passed 244/244** (15 new B4 tests; B3 had 229) |
+| PlayMode, same copy | **Passed 100/100** (4 new B4 tests, including the first quest through the workshop and the spring, save and Continue in the B4 scene; B3 had 96) |
+| Windows build `artifacts/build/phase52-b4` (version `0.5.2-pilot.4`, from commit `cd24f52`) | Succeeded, build id `3ff366c7acba45d89c6af80ffd29c988`, 0 errors, 0 warnings, 303,983,411 bytes |
+| Recorded route, 720p | Route pass, 231.7 m in 81.8 s, no failures; video 82.0 s of 2,050 real framebuffer frames, full decode, SHA-256 `3a94b720f7434a919f12a8c760aa759d174bed07e53c982a6bcad4aec27a2fb3` |
+| Minimap during the route | Objective Mira (start), Spring (43.4 s, after talking to Mira), Heart (75.1 s, after inspecting the spring); scale 3.59-3.79 UI units per metre (p05-p95) |
+| Unrecorded route 1080p: B4 vs the B3 presentation in the same build | 59.9 FPS mean, P99 16.91 ms, 1 % low 59.1 vs 59.9, 16.86 ms, 59.3 (60 FPS cap; an owner-started B3 player was open in the background) |
+| Unrecorded route 720p, B4 | 60.0 FPS mean, P99 16.84 ms |
+| Whole-game smoke (three restorations, ending, save and Continue) in the B4 build | PASS at 720p (70 s) and 1080p (75 s), 40 screenshots each, 0 exception lines |
+| Review package | `artifacts/review/phase52-b4/Echoes-Phase52-B4-Isometric-Review.zip`, 261 files, SHA-256 `DB138E4D28E78BF9552D0D5C399DFE40384A92FBF7A5FAE3A843939C7BC185A2` |
+
+The atlas test caught a real defect during this phase (1.04 % of the transparent texels at the drawings' edges were black after the idle
+warp); it was fixed in the pipeline (`decontaminate`), not by relaxing the test.
 
 ## Known limitations (see the report's WHAT STILL LOOKS BAD)
 
@@ -118,3 +134,5 @@ Filled in from the evidence by the final report (`artifacts/visual-qa/phase-5.2/
 * The paintings are drawn for a lower view than 48 degrees; as cards they cannot change perspective with the camera, so their roofs read
   slightly flatter than the ground around them.
 * The run cycle has four drawn poses per direction (eight frames with in-betweens): readable, not fluid animation.
+* From stage S1 on, the B2 pink bloom tree beside the spring path hides the caretaker when she stands under it (no canopy opening on
+  that low-poly tree; too close for the silhouette pass).

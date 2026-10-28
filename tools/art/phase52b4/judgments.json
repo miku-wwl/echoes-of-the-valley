@@ -44,6 +44,7 @@
   ],
   "bad": [
     "**The rest of the valley is still B2/B3 low-poly** and the high camera shows it: broadleaf trees whose leaf cards read as dark shards from above (visible at the edges of the spring, workshop-back and willow shots), the windmill, the garden, the grey-green stream ribbon, and the Heart's floating crystal, a plain blue cube. Next to the paintings this is the largest style gap.",
+    "**Occlusion by a B2 tree at the spring (stage S1 and later):** the pink bloom tree that appears beside the spring path when the stream is restored is low-poly B2 foliage without a canopy opening; when the caretaker stands under it (as in `stage-S1/S2/S3-set-by-script-spring`), only her head shows, and the leaves are too close for the silhouette pass. The painted willow handles this; that tree does not.",
     "The paintings were drawn for a lower view than 48 degrees: their roofs and the workshop's footprint read slightly flatter than the ground around them, and as cards they keep the same perspective at 42 and 54.",
     "The workshop's footprint is a skewed parallelogram on the ground (the painting's isometric projection does not match the camera's), so the collision prism is skewed too; walking along the facades is fine, but the corners are a little generous or tight.",
     "The caretaker's run has four drawn poses per direction: readable steps, not fluid animation; the back view's mirrored legs are the weakest frames. Small detail differences between the per-direction drawings are visible at the closest zoom.",
@@ -54,10 +55,10 @@
   "gate": [
     "Camera: higher and still easy to steer (screen-relative WASD, fixed yaw, wheel zoom); not harder to operate in the author's runs. Owner to judge comfort.",
     "Minimap: real (baked from the world, live player and objective); not a picture.",
-    "Occlusion: the player stays visible behind the workshop (silhouette) and under the willow (canopy opening); no severe occlusion found on the route.",
+    "Occlusion: behind the painted workshop the player shows as a silhouette through the roof, and under the painted willow the canopy opens around her; but at stage S1 and later the B2 bloom tree beside the spring path hides her when she stands under it (see WHAT STILL LOOKS BAD). Not severe on the S0 route; a real defect for later stages.",
     "Character: not a sliding sticker (distance-driven steps, idle breathing), but four-pose runs are basic.",
     "Style: the three painted places and the caretaker match each other; the surrounding low-poly trees and buildings do not. This is the main reason the author would not call the visual gate passed.",
-    "Regression: tests and the whole-game smoke runs are the evidence (see sections 10 and 12); performance: section 13."
+    "Regression: EditMode 244/244 and PlayMode 100/100 in an isolated copy (the B4 PlayMode test plays the first quest through the workshop and the spring, saves and continues in the B4 scene); the whole-game smoke (three restorations, ending, save and Continue) passes in the B4 build at 720p and 1080p. Performance: no measurable change at the 60 FPS cap (section 13)."
   ],
   "perfNote": "The unrecorded runs are the measurement (the recorded run includes synchronous framebuffer readback and JPEG encoding). An owner-started B3 player (PID 63528, launched without arguments on 2026-10-28 20:43) was open during the runs and was not closed by the author, so absolute frame times include its load; B4 and the B3 presentation were measured under the same conditions. B3's own 1080p unrecorded route in October 28's B3 review: mean 60.0 FPS, P99 16.69 ms (a different route, without that extra process). Headroom above the 60 FPS cap, VRAM, peak memory, other GPUs: NOT VERIFIED.",
   "status": {
@@ -71,8 +72,9 @@
     "minimap": "PASS (baked from the valley, live player arrow and objective; automated tests)",
     "environment": "PARTIAL (workshop, willow, spring, plaza upgraded; surrounding B2 low-poly trees/windmill remain)",
     "coherence": "PARTIAL (painted props and caretaker coherent; surrounding low-poly scenery is not)",
-    "screenshots": "PASS (real Windows player, AUTOMATED input, 1080p and 720p)",
-    "performance": "SEE REPORT"
+    "screenshots": "PASS (42 real Windows-player stills at 1080p and 42 at 720p, AUTOMATED input; S1-S3 stills set by the script and labelled)",
+    "performance": "PASS_AT_60FPS_CAP (B4 1080p unrecorded: mean 59.9 FPS, P99 16.91 ms, 1% low 59.1; B3 presentation same build and route: 59.9 / 16.86 ms / 59.3; headroom above the cap NOT VERIFIED; an owner-started B3 player was open in the background)"
   },
-  "next": "Owner plays actual B4 Windows build, assesses 2.5D visual fidelity"
+  "next": "Owner plays actual B4 Windows build, assesses 2.5D visual fidelity",
+  "reviewZip": "artifacts/review/phase52-b4/Echoes-Phase52-B4-Isometric-Review.zip (its SHA-256 is in the sidecar .sha256.txt: a zip cannot contain its own hash)"
 }

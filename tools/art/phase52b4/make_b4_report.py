@@ -100,7 +100,8 @@ if b4p and b3p:
             % (b4p['fps']['mean'], b4p['fps']['onePercentLow'], b4p['frameMs']['p95'], b4p['frameMs']['p99'], b3p['fps']['mean'], b3p['fps']['onePercentLow'], b3p['frameMs']['p95'], b3p['frameMs']['p99']))
 mm = (runs['tour720-video'][1] or {}).get('minimap', {})
 timeline = ', '.join('%.1f s %s (%s)' % (e['t'], e['objective'], e['step']) for e in mm.get('objectiveTimeline', [])) or 'not recorded'
-scale = mm.get('mapUnitsPerMetre', {})
+# the scale is measured on the unrecorded run: in the recorded run uneven capture frames put a frame between position and map samples
+scale = ((runs['tour1080-unrecorded'][1] or {}).get('minimap') or {}).get('mapUnitsPerMetre', {})
 vs = runs['tour720-unrecorded'][1] or {}
 skate = vs.get('runPhaseVsDistance', {})
 dirs = (runs['tour720-video'][1] or {}).get('directionSamples', {})
@@ -141,7 +142,7 @@ Real-player direction samples in the recorded route: %(dirs)s. Run-cycle check (
 
 %(minimap)s
 
-Recorded route, objective shown by the minimap over time: %(timeline)s. Map scale while walking (map units per metre, constant if the map follows the world): p05 %(sc05)s, median %(scmed)s, p95 %(sc95)s over %(scn)s steps.
+Recorded route (the video), objective shown by the minimap over time: %(timeline)s. Map scale while walking in the unrecorded 1080p route (UI units per metre of the player's own movement, constant if the map follows the world): p05 %(sc05)s, median %(scmed)s, p95 %(sc95)s over %(scn)s steps.
 
 ## 7. Static environment
 
