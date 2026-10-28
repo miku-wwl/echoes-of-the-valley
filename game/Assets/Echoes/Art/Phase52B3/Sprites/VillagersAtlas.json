@@ -1,0 +1,337 @@
+{
+ "note": "Villager idle sprites: gentle breathing/sway warp of the owner-supplied AI NPC lineup (02).",
+ "atlas": [
+  4096,
+  2048
+ ],
+ "idleFps": 5.0,
+ "villagers": {
+  "Mira": {
+   "pivot": [
+    156.26852200075217,
+    3.0
+   ],
+   "pixelsPerMeter": 268.1547619047619,
+   "size": [
+    271,
+    458
+   ]
+  },
+  "Wren": {
+   "pivot": [
+    51.424228395061725,
+    3.5
+   ],
+   "pixelsPerMeter": 282.1875,
+   "size": [
+    220,
+    459
+   ]
+  },
+  "Alder": {
+   "pivot": [
+    48.926387652122294,
+    3.0
+   ],
+   "pixelsPerMeter": 249.45054945054943,
+   "size": [
+    233,
+    461
+   ]
+  }
+ },
+ "frames": [
+  {
+   "villager": "Alder",
+   "index": 0,
+   "x": 0,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Alder",
+   "index": 1,
+   "x": 235,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Alder",
+   "index": 2,
+   "x": 470,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Alder",
+   "index": 3,
+   "x": 705,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Alder",
+   "index": 4,
+   "x": 940,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Alder",
+   "index": 5,
+   "x": 1175,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Alder",
+   "index": 6,
+   "x": 1410,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Alder",
+   "index": 7,
+   "x": 1645,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Alder",
+   "index": 8,
+   "x": 1880,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Alder",
+   "index": 9,
+   "x": 2115,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Alder",
+   "index": 10,
+   "x": 2350,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Alder",
+   "index": 11,
+   "x": 2585,
+   "y": 1587,
+   "w": 233,
+   "h": 461
+  },
+  {
+   "villager": "Wren",
+   "index": 0,
+   "x": 2820,
+   "y": 1589,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Wren",
+   "index": 1,
+   "x": 3042,
+   "y": 1589,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Wren",
+   "index": 2,
+   "x": 3264,
+   "y": 1589,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Wren",
+   "index": 3,
+   "x": 3486,
+   "y": 1589,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Wren",
+   "index": 4,
+   "x": 3708,
+   "y": 1589,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Wren",
+   "index": 5,
+   "x": 0,
+   "y": 1126,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Wren",
+   "index": 6,
+   "x": 222,
+   "y": 1126,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Wren",
+   "index": 7,
+   "x": 444,
+   "y": 1126,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Wren",
+   "index": 8,
+   "x": 666,
+   "y": 1126,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Wren",
+   "index": 9,
+   "x": 888,
+   "y": 1126,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Wren",
+   "index": 10,
+   "x": 1110,
+   "y": 1126,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Wren",
+   "index": 11,
+   "x": 1332,
+   "y": 1126,
+   "w": 220,
+   "h": 459
+  },
+  {
+   "villager": "Mira",
+   "index": 0,
+   "x": 1554,
+   "y": 1127,
+   "w": 271,
+   "h": 458
+  },
+  {
+   "villager": "Mira",
+   "index": 1,
+   "x": 1827,
+   "y": 1127,
+   "w": 271,
+   "h": 458
+  },
+  {
+   "villager": "Mira",
+   "index": 2,
+   "x": 2100,
+   "y": 1127,
+   "w": 271,
+   "h": 458
+  },
+  {
+   "villager": "Mira",
+   "index": 3,
+   "x": 2373,
+   "y": 1127,
+   "w": 271,
+   "h": 458
+  },
+  {
+   "villager": "Mira",
+   "index": 4,
+   "x": 2646,
+   "y": 1127,
+   "w": 271,
+   "h": 458
+  },
+  {
+   "villager": "Mira",
+   "index": 5,
+   "x": 2919,
+   "y": 1127,
+   "w": 271,
+   "h": 458
+  },
+  {
+   "villager": "Mira",
+   "index": 6,
+   "x": 3192,
+   "y": 1127,
+   "w": 271,
+   "h": 458
+  },
+  {
+   "villager": "Mira",
+   "index": 7,
+   "x": 3465,
+   "y": 1127,
+   "w": 271,
+   "h": 458
+  },
+  {
+   "villager": "Mira",
+   "index": 8,
+   "x": 3738,
+   "y": 1127,
+   "w": 271,
+   "h": 458
+  },
+  {
+   "villager": "Mira",
+   "index": 9,
+   "x": 0,
+   "y": 666,
+   "w": 271,
+   "h": 458
+  },
+  {
+   "villager": "Mira",
+   "index": 10,
+   "x": 273,
+   "y": 666,
+   "w": 271,
+   "h": 458
+  },
+  {
+   "villager": "Mira",
+   "index": 11,
+   "x": 546,
+   "y": 666,
+   "w": 271,
+   "h": 458
+  }
+ ],
+ "sources": {
+  "02-npc-lineup.png": "77ef2bdfbbdf24a08e93f60f2cbcc3c7091ab967510943c4c5be3dabf1ce83d3",
+  "01-heroine-portrait.png": "10e28cc332aa62a38872fc02449300bf1ca236b8ef77367d8a382be551f6a569"
+ }
+}

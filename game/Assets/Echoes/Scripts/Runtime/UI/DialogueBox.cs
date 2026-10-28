@@ -21,6 +21,7 @@ namespace Echoes
         Action onClosed;
 
         public bool IsOpen { get; private set; }
+        public string Speaker { get; private set; } = string.Empty;
         public string CurrentLine => IsOpen ? lines[index] : string.Empty;
         public int LineIndex => index;
 
@@ -41,6 +42,7 @@ namespace Echoes
             lines = dialogueLines;
             index = 0;
             onClosed = closed;
+            Speaker = speaker ?? string.Empty;
             IsOpen = true;
             GameFlow.IsDialogueOpen = true;
 
