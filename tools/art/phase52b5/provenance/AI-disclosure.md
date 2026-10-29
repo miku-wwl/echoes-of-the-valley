@@ -21,3 +21,7 @@ unchanged by B5. No third-party art, franchise material (including Atelier Ryza)
 by the owner and that the pipelines, shaders, camera, minimap and scene builder were made with Anthropic Claude Code.
 
 **Owner action before any release:** name the image generator, confirm this wording and approve the illustrations as release art.
+
+**Finalization handoff (2026-10-29).** OpenAI Codex audited the preserved source and evidence, added exact pre-test input hashing,
+corrected unsupported report claims, completed the review packaging and verified the Git delivery. It generated no new artwork and
+changed no Unity game input during finalization. All controls and captures remain automated; owner visual/gameplay approval is pending.

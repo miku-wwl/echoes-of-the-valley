@@ -13,6 +13,17 @@ $testLogs=Join-Path $pilotRepo ('artifacts/visual-qa/phase-5.2/logs/'+$EvidenceN
 if(Test-Path -LiteralPath $testLogs){throw "Preserve existing logs; choose a fresh EvidenceName: $testLogs"}
 New-Item -ItemType Directory -Path $testLogs | Out-Null
 [IO.File]::WriteAllText((Join-Path $testLogs 'isolated-project.txt'),$copyGame)
+# Capture the exact inputs before tests regenerate scenes/assets in the disposable copy.
+$sourceManifest = foreach ($directoryName in @('Assets','Packages','ProjectSettings')) {
+    foreach ($sourceFile in Get-ChildItem -LiteralPath (Join-Path $pilotRepo ('game/'+$directoryName)) -Recurse -File) {
+        $relativePath = $sourceFile.FullName.Substring((Join-Path $pilotRepo 'game').Length).TrimStart('\')
+        $sourceHash = (Get-FileHash -LiteralPath $sourceFile.FullName -Algorithm SHA256).Hash
+        $copyHash = (Get-FileHash -LiteralPath (Join-Path $copyGame $relativePath) -Algorithm SHA256).Hash
+        if ($sourceHash -ne $copyHash) { throw "Test copy mismatch: $relativePath" }
+        [ordered]@{path=$relativePath.Replace('\','/');sha256=$sourceHash;bytes=$sourceFile.Length}
+    }
+}
+[ordered]@{sourceCommit=(& git -C $pilotRepo rev-parse HEAD);sourceProject=(Join-Path $pilotRepo 'game');isolatedProject=$copyGame;files=@($sourceManifest)} | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $testLogs 'source-inputs-SHA256.json') -Encoding UTF8
 $env:BEE_BUILD_THREADS='4'
 foreach($platformName in @('EditMode','PlayMode')){
     $testXml=Join-Path $testLogs ('tests-'+$platformName+'.xml')

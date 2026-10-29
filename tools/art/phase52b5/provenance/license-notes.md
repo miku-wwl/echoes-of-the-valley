@@ -9,5 +9,6 @@
 * **No third-party assets**: no marketplace, stock, ripped, traced or franchise material, no external fonts, shaders, motion or sound.
   Tools used locally: Python 3 with NumPy, SciPy, OpenCV and Pillow (processing only), Unity 6000.3.27f1 with URP 17.3.0, ffmpeg
   (evidence encoding only).
-* **Not packaged**: the official theme recording, the pack's documents (kept in `tools/art/phase52b5/source-docs/` for provenance), Unity
-  caches, builds.
+* **Not packaged as game content**: the official theme recording and the pack's documents. The review ZIP includes the pack's
+  documents under `provenance/owner-pack/` for audit, never as gameplay evidence. Unity caches and Windows build files are excluded
+  from the review ZIP (a build hash manifest is included).
