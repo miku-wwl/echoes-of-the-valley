@@ -154,7 +154,8 @@ namespace Echoes.Tests
             Assert.Greater(open - closed, 0.25f, "the opening is what keeps her in view");
         }
 
-        /// <summary>Visible share of the caretaker: changed pixels in her screen box, against the same count with only the terrain and her.</summary>
+        /// <summary>Visible share of the caretaker: changed pixels in her screen box, against the same count with only the terrain and her
+        /// (rendered into a texture: a batch-mode test has no screen to capture).</summary>
         static float VisibleShare(Renderer hero, Vector3 feet)
         {
             Camera cam = Camera.main;
@@ -164,6 +165,12 @@ namespace Echoes.Tests
             int x0 = Mathf.Clamp((int)(a.x - 0.32f * tall), 0, w - 1), x1 = Mathf.Clamp((int)(a.x + 0.32f * tall), 0, w - 1);
             int y0 = Mathf.Clamp((int)Mathf.Min(a.y, b.y) - 2, 0, h - 1), y1 = Mathf.Clamp((int)Mathf.Max(a.y, b.y) + 2, 0, h - 1);
             var rt = new RenderTexture(w, h, 24);
+            // the hidden-silhouette pass marks where she is but is not her: off while counting (the presenter's next frame restores its block)
+            var block = new MaterialPropertyBlock();
+            hero.GetPropertyBlock(block);
+            Color tint = hero.sharedMaterial.GetColor("_OccludedTint");
+            block.SetColor("_OccludedTint", new Color(tint.r, tint.g, tint.b, 0f));
+            hero.SetPropertyBlock(block);
             int seen = HeroPixels(cam, hero, rt, x0, x1, y0, y1);
             var others = Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None).Where(r => r.enabled && r != hero).ToList();
             foreach (Renderer r in others) r.enabled = false;

@@ -29,7 +29,7 @@ namespace Echoes
         }
         [Serializable] sealed class Event { public float t; public string what; }
         [Serializable] sealed class CapturedFrame { public string file; public float t; }
-        [Serializable] sealed class Occlusion { public string still, presentation; public float zoom, visibleShare, visibleShareWithoutOpening = -1f; }
+        [Serializable] sealed class Occlusion { public string still, presentation; public float zoom, visibleShare = -1f, visibleShareWithoutOpening = -1f, markedShare = -1f; public int referencePixels; }
         [Serializable] sealed class Record
         {
             public string input = "AUTOMATED PlayerController.InputOverride and FixedFollowCamera25D.SetZoom; the real controller, gravity, collision, interaction detector, dialogue and minimap";
@@ -436,8 +436,8 @@ namespace Echoes
                         yield return Place(Ground(o.xz), 225f, zoom);
                         string name = "occlusion-" + o.name + label + (zoom < defaultZoom ? "-closest-zoom" : "");
                         yield return Shot(name);
-                        var measured = new Occlusion { still = name, presentation = before ? "B4" : "B5", zoom = zoom, visibleShare = VisibleShare() };
-                        if (!before) measured.visibleShareWithoutOpening = WithoutCanopyOpening(VisibleShare);
+                        var measured = new Occlusion { still = name, presentation = before ? "B4" : "B5", zoom = zoom };
+                        yield return MeasureVisibility(measured, !before);
                         record.occlusion.Add(measured);
                     }
                     if (b5 != null) b5.Apply(false);
@@ -518,75 +518,82 @@ namespace Echoes
             if (startedBefore) b5.Apply(true);
         }
 
+        static readonly int OccludedTintId = Shader.PropertyToID("_OccludedTint");
+        static readonly int FadeStrengthId = Shader.PropertyToID("_FadeStrength");
+
         /// <summary>
-        /// The share of the caretaker that can be seen from the real camera: the frame is rendered with and without her card, and the pixels
-        /// that change inside her screen box are the visible part of her; the same is done with every other renderer switched off (only the
-        /// terrain and her), and the first count is divided by the second. 1 = nothing hides her, 0 = she is fully hidden. The faint hidden
-        /// silhouette pass changes pixels too little to count, so it is not mistaken for visibility.
+        /// How much of the caretaker the player sees, measured on the real framebuffer (the frames the player shows, captured at the end of
+        /// consecutive frames while she stands still): the pixels her card changes inside her screen box in the full scene, divided by the
+        /// pixels it changes when every other renderer is switched off (only the terrain and her). 1 = nothing hides her, 0 = fully hidden.
+        /// The hidden-silhouette pass is switched off for this (it marks where she is but is not her); "marked" repeats the count with it
+        /// on and a lower threshold. For B5 the count is also made with the painted trees' opening switched off.
         /// </summary>
-        float VisibleShare()
+        IEnumerator MeasureVisibility(Occlusion o, bool painted)
         {
-            if (b4 == null || b4.HeroCard == null) return -1f;
+            if (b4 == null || b4.HeroCard == null) yield break;
             Renderer hero = b4.HeroCard;
+            Material material = hero.sharedMaterial;
+            Color tint = material.GetColor(OccludedTintId);
             Vector3 feet = player.transform.position;
             Vector3 a = view.WorldToScreenPoint(feet), b = view.WorldToScreenPoint(feet + Vector3.up * 1.75f);
             float tall = Mathf.Abs(b.y - a.y);
-            int w = view.pixelWidth, h = view.pixelHeight;
-            int x0 = Mathf.Clamp((int)(a.x - 0.32f * tall), 0, w - 1), x1 = Mathf.Clamp((int)(a.x + 0.32f * tall), 0, w - 1);
-            int y0 = Mathf.Clamp((int)Mathf.Min(a.y, b.y) - 2, 0, h - 1), y1 = Mathf.Clamp((int)Mathf.Max(a.y, b.y) + 2, 0, h - 1);
-            var rt = new RenderTexture(w, h, 24);
-            int seen = HeroPixels(hero, rt, x0, x1, y0, y1);
+            var box = new RectInt((int)(a.x - 0.32f * tall), (int)(Mathf.Min(a.y, b.y) - 2), (int)(0.64f * tall), (int)(tall + 4));
+            Color32[] on = null, off = null, refOn = null, refOff = null, marked = null, closedOn = null, closedOff = null;
+            material.SetColor(OccludedTintId, new Color(tint.r, tint.g, tint.b, 0f));
+            yield return Frame(p => on = p);
+            hero.enabled = false;
+            yield return Frame(p => off = p);
+            hero.enabled = true;
+            if (painted)
+            {
+                var cards = FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None).Where(r => r.sharedMaterial != null && r.sharedMaterial.shader.name == "Echoes/PaintedCard25D").ToList();
+                var block = new MaterialPropertyBlock();
+                foreach (var r in cards) { r.GetPropertyBlock(block); block.SetFloat(FadeStrengthId, 0f); r.SetPropertyBlock(block); }
+                yield return Frame(p => closedOn = p);
+                hero.enabled = false;
+                yield return Frame(p => closedOff = p);
+                hero.enabled = true;
+                foreach (var r in cards) r.SetPropertyBlock(null);
+            }
             var others = FindObjectsByType<Renderer>(FindObjectsSortMode.None).Where(r => r.enabled && r != hero).ToList();
             foreach (Renderer r in others) r.enabled = false;
-            int open = HeroPixels(hero, rt, x0, x1, y0, y1);
+            yield return Frame(p => refOn = p);
+            hero.enabled = false;
+            yield return Frame(p => refOff = p);
+            hero.enabled = true;
             foreach (Renderer r in others) r.enabled = true;
-            rt.Release();
-            Destroy(rt);
-            return open == 0 ? -1f : Mathf.Clamp01(seen / (float)open);
+            material.SetColor(OccludedTintId, tint);
+            yield return Frame(p => marked = p);
+            int w = Screen.width, h = Screen.height;
+            int reference = Changed(refOn, refOff, w, h, box, 64);
+            o.referencePixels = reference;
+            if (reference < 50) yield break;
+            o.visibleShare = Mathf.Clamp01(Changed(on, off, w, h, box, 64) / (float)reference);
+            if (painted) o.visibleShareWithoutOpening = Mathf.Clamp01(Changed(closedOn, closedOff, w, h, box, 64) / (float)reference);
+            o.markedShare = Mathf.Clamp01(Changed(marked, off, w, h, box, 24) / (float)Mathf.Max(1, Changed(refOn, refOff, w, h, box, 24)));
+            Debug.Log("[Echoes][P52 B5 TOUR] visibility " + o.still + ": visible " + o.visibleShare.ToString("F3") + ", without the opening " + o.visibleShareWithoutOpening.ToString("F3")
+                + ", marked " + o.markedShare.ToString("F3") + " (" + reference + " reference pixels)");
         }
 
-        int HeroPixels(Renderer hero, RenderTexture rt, int x0, int x1, int y0, int y1)
+        static IEnumerator Frame(Action<Color32[]> store)
         {
-            Color32[] with = Grab(rt);
-            hero.enabled = false;
-            Color32[] without = Grab(rt);
-            hero.enabled = true;
-            int w = rt.width, changed = 0;
-            for (int y = y0; y <= y1; y++)
-                for (int x = x0; x <= x1; x++)
+            yield return new WaitForEndOfFrame();
+            Texture2D frame = ScreenCapture.CaptureScreenshotAsTexture();
+            store(frame.GetPixels32());
+            Destroy(frame);
+        }
+
+        static int Changed(Color32[] p, Color32[] q, int w, int h, RectInt box, int threshold)
+        {
+            if (p == null || q == null || p.Length != w * h || q.Length != w * h) return 0;
+            int changed = 0;
+            for (int y = Mathf.Max(0, box.yMin); y < Mathf.Min(h, box.yMax); y++)
+                for (int x = Mathf.Max(0, box.xMin); x < Mathf.Min(w, box.xMax); x++)
                 {
-                    Color32 p = with[y * w + x], q = without[y * w + x];
-                    if (Mathf.Max(Mathf.Abs(p.r - q.r), Mathf.Abs(p.g - q.g), Mathf.Abs(p.b - q.b)) > 64) changed++;
+                    Color32 c = p[y * w + x], d = q[y * w + x];
+                    if (Mathf.Max(Mathf.Abs(c.r - d.r), Mathf.Abs(c.g - d.g), Mathf.Abs(c.b - d.b)) > threshold) changed++;
                 }
             return changed;
-        }
-
-        /// <summary>Measures with the painted trees' opening switched off (the canopy fully drawn), to show what the opening contributes.</summary>
-        float WithoutCanopyOpening(Func<float> measure)
-        {
-            var cards = FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None).Where(r => r.sharedMaterial != null && r.sharedMaterial.shader.name == "Echoes/PaintedCard25D").ToList();
-            var block = new MaterialPropertyBlock();
-            foreach (var r in cards) { r.GetPropertyBlock(block); block.SetFloat("_FadeStrength", 0f); r.SetPropertyBlock(block); }
-            float value = measure();
-            foreach (var r in cards) r.SetPropertyBlock(null);
-            return value;
-        }
-
-        Color32[] Grab(RenderTexture rt)
-        {
-            RenderTexture previous = view.targetTexture;
-            view.targetTexture = rt;
-            view.Render();
-            view.targetTexture = previous;
-            RenderTexture active = RenderTexture.active;
-            RenderTexture.active = rt;
-            var image = new Texture2D(rt.width, rt.height, TextureFormat.RGBA32, false);
-            image.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-            image.Apply();
-            RenderTexture.active = active;
-            Color32[] pixels = image.GetPixels32();
-            Destroy(image);
-            return pixels;
         }
 
         IEnumerator ShowStage(ResonanceStage stage)

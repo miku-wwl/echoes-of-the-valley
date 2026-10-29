@@ -115,8 +115,11 @@ Shader "Echoes/PaintedCard25D"
                     #else
                     focusPx.y = _ScreenParams.y - focusPx.y;
                     #endif
-                    float r = length(i.positionCS.xy - focusPx) / _ScreenParams.y;
-                    float open = (1 - smoothstep(_FadeRadius * 0.40, _FadeRadius, r)) * _FadeStrength;
+                    // an upright ellipse round the chest, as tall as the caretaker (her head and feet are 0.7 m and 1.05 m from the focus):
+                    // fully open over her whole figure, fading out softly to the ellipse's edge
+                    float2 d = (i.positionCS.xy - focusPx) / _ScreenParams.y;
+                    float r = length(float2(d.x, d.y * 0.62));
+                    float open = (1 - smoothstep(_FadeRadius * 0.55, _FadeRadius, r)) * _FadeStrength;
                     alpha *= step(open, Bayer4(uint2(i.positionCS.xy)));
                 }
                 clip(alpha - _Cutoff);

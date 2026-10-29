@@ -183,8 +183,8 @@ namespace Echoes.EditorTools
             trees.mainTexture = CardTexture(Folder + "/Props/BroadleafTree.png", 2048, 0.45f);
             trees.SetFloat("_Cutoff", 0.45f);
             trees.SetFloat("_DepthPull", 0.2f);
-            trees.SetFloat("_FadeRadius", 0.17f);
-            trees.SetFloat("_FadeStrength", 0.85f);
+            trees.SetFloat("_FadeRadius", 0.16f);    // an ellipse 0.16 screen heights across, 0.26 tall: the caretaker at the default zoom is ~0.17 tall
+            trees.SetFloat("_FadeStrength", 0.92f);
 
             var garden = Mat("Card_GardenPlants", "Echoes/PaintedCard25D");
             garden.mainTexture = CardTexture(Folder + "/Props/GardenPlants.png", 2048, 0.4f);
@@ -219,17 +219,14 @@ namespace Echoes.EditorTools
             Texture2D soil = GroundTexture(Folder + "/Terrain/TilledSoil.png");
             Triplanar("Bed_SoilRich", soil, new Color(0.80f, 0.72f, 0.66f), new Color(0.84f, 0.76f, 0.70f), 1.4f);
             Triplanar("Bed_SoilDry", soil, new Color(1.02f, 0.94f, 0.85f), new Color(1.10f, 1.00f, 0.90f), 1.4f);
-            // the plaza's stone, warmer: the terrain's cobble layer takes the ochre-graded cobble (the silent valley's cool filter makes a near
-            // grey stone read blue on the ground); the dais and pillars (lit by the triplanar shader's own warmer model) keep B4's fieldstone
-            // with a mild warm tint, which the ochre texture would have pushed to orange
-            GroundTexture(Folder + "/Terrain/PlazaCobbleWarm.png");
-            Texture2D fieldstone = AssetDatabase.LoadAssetAtPath<Texture2D>(Phase52B4Builder.Folder + "/Terrain/PlazaCobble.png");
+            // the plaza's stone: one warm grey stone (B4's cobble by luminance) for the terrain's cobble layer and for the dais, pillars and
+            // blocks (B4's own tints and tile sizes), so the plaza reads as one material instead of yellow ruins on blue-grey cobbles
+            Texture2D stone = GroundTexture(Folder + "/Terrain/PlazaCobbleWarm.png");
             foreach (string b4Name in new[] { "PlazaStoneB4", "PlazaStoneDarkB4", "PlazaDaisB4", "PlazaDaisInnerB4" })
             {
                 var b4Material = AssetDatabase.LoadAssetAtPath<Material>(Phase52B4Builder.Folder + "/" + b4Name + ".mat");
                 if (b4Material == null) continue;
-                Color tint = b4Material.GetColor("_BaseColor"), top = b4Material.GetColor("_TopColor");
-                Triplanar(b4Name.Replace("B4", "B5"), fieldstone, new Color(tint.r * 1.04f, tint.g, tint.b * 0.92f), new Color(top.r * 1.04f, top.g, top.b * 0.92f), b4Material.GetFloat("_MetresPerTile"));
+                Triplanar(b4Name.Replace("B4", "B5"), stone, b4Material.GetColor("_BaseColor"), b4Material.GetColor("_TopColor"), b4Material.GetFloat("_MetresPerTile"));
             }
             GroundLayer("B5PlazaCobble", Folder + "/Terrain/PlazaCobbleWarm.png", 3.4f);
             // outputs of earlier versions of this generator that nothing uses any more (the boulders are painted cards now)

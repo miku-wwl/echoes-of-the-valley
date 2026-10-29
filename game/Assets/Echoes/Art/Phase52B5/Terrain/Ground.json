@@ -140,10 +140,7 @@
  "PlazaCobbleWarm": {
   "recipe": {
    "source": "Phase52B4/Terrain/PlazaCobble.png",
-   "hue": 34.0,
-   "sat": 0.32,
-   "val": 0.54,
-   "warm": 0.05
+   "method": "luminance x (1.10, 1.00, 0.84) x 0.98 + 25 % of the original chroma"
   },
   "sourceColour": {
    "hueDeg": 46.6,
@@ -156,13 +153,13 @@
    ]
   },
   "finalColour": {
-   "hueDeg": 29.3,
-   "saturation": 0.332,
-   "value": 0.559,
+   "hueDeg": 38.2,
+   "saturation": 0.272,
+   "value": 0.518,
    "meanRGB": [
-    141.7,
-    119.2,
-    97.8
+    132.0,
+    119.1,
+    96.4
    ]
   },
   "finalWrap": {

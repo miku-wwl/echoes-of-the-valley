@@ -14,7 +14,7 @@ Outputs (default game/Assets/Echoes/Art/Phase52B5/Terrain/):
   MeadowA.png   the lush grass layer (graded from meadow_grass_albedo: less yellow and less saturated, to sit with the B4 drawings)
   MeadowB.png   a warmer, drier grass for the large meadow patches (the same painting turned 90 degrees, so the two never repeat together)
   TilledSoil.png   garden soil (from tilled_soil_albedo, slightly less saturated)
-  PlazaCobbleWarm.png   the B4 plaza cobble (B4's own seam-blended texture) graded warmer for the B5 plaza
+  PlazaCobbleWarm.png   the B4 plaza cobble (B4's own seam-blended texture) as warm grey stone for the B5 plaza (terrain and ruins)
   Ground.json   the parameters and the wrap measurements of every output
 Audit images (default artifacts/visual-qa/phase-5.2/b5/asset-audit/ground/): 4 x 4 repeats before and after, and the seam crossings.
 """
@@ -190,10 +190,13 @@ def main():
         print(name, json.dumps(report[name]['finalWrap']), json.dumps(report[name]['finalColour']))
     # the B4 plaza cobble (already seam-blended by make_b4_props.py), warmed so the plaza's stone sits with the warmer meadow
     cobble = np.asarray(Image.open(ROOT / 'game/Assets/Echoes/Art/Phase52B4/Terrain/PlazaCobble.png').convert('RGB'))
-    # (the silent valley's cool colour filter turns a near-grey stone blue-grey on screen, so the stone is given real ochre, not a tint)
-    warm = grade(cobble, 34.0, 0.32, 0.54, 0.05)
+    # warm grey by luminance: B4's cobble has blue-grey stones among the brown ones, and a hue/saturation grade only made them bluer; here every
+    # stone keeps its light and dark and a quarter of its own colour, over one warm grey (the silent valley's cool filter still reads it as stone)
+    f = cobble.astype(np.float32) / 255
+    lum = f @ np.float32([0.299, 0.587, 0.114])
+    warm = np.clip((lum[..., None] * np.float32([1.10, 1.00, 0.84]) * 0.98 + 0.25 * (f - lum[..., None])) * 255 + 0.5, 0, 255).astype(np.uint8)
     Image.fromarray(warm).save(out / 'PlazaCobbleWarm.png', optimize=True)
-    report['PlazaCobbleWarm'] = dict(recipe=dict(source='Phase52B4/Terrain/PlazaCobble.png', hue=34.0, sat=0.32, val=0.54, warm=0.05), sourceColour=hsv_mean(cobble),
+    report['PlazaCobbleWarm'] = dict(recipe=dict(source='Phase52B4/Terrain/PlazaCobble.png', method='luminance x (1.10, 1.00, 0.84) x 0.98 + 25 % of the original chroma'), sourceColour=hsv_mean(cobble),
                                      finalColour=hsv_mean(warm), finalWrap=wrap_metrics(warm), size=list(warm.shape[1::-1]))
     print('PlazaCobbleWarm', json.dumps(report['PlazaCobbleWarm']['finalColour']))
     (out / 'Ground.json').write_text(json.dumps(report, indent=1), encoding='utf-8')
