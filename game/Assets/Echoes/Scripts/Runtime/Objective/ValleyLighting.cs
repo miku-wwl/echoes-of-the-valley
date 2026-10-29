@@ -132,6 +132,24 @@ namespace Echoes
             dirty = true;
         }
 
+        /// <summary>
+        /// Replaces the muted values (the silent valley before the Heart wakes) that the mood is composed from; the awakened and restored
+        /// looks are unchanged because the Heart blend lerps away from them. A presentation pilot's before/after switch uses it.
+        /// </summary>
+        public void SetMutedBase(Color sunColor, Color ambientSky, Color ambientEquator, Color ambientGround, Color fog)
+        {
+            Capture();
+            baseSun = sunColor;
+            baseAmbientSky = ambientSky;
+            baseAmbientEquator = ambientEquator;
+            baseAmbientGround = ambientGround;
+            baseFog = fog;
+            dirty = true;
+        }
+
+        /// <summary>The muted sun colour the mood is composed from (tests compare presentations).</summary>
+        public Color MutedSun { get { Capture(); return baseSun; } }
+
         /// <summary>Applies the mood for the given blends at once, outside Play Mode (the Preview task renders each stage this way).</summary>
         public void ApplyNow(float heart, float stream, float garden, float valley)
         {
