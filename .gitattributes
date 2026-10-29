@@ -12,6 +12,9 @@
 *.shader text eol=lf
 *.shadergraph text eol=lf
 *.inputactions text eol=lf
+# Unity writes TerrainData as binary even in Force Text mode; as "text" git dropped the CR of every CR LF byte pair in it.
+*Terrain.asset binary
+*TerrainData.asset binary
 
 # Future authored binary assets via Git LFS (if LFS is initialized).
 *.blend filter=lfs diff=lfs merge=lfs -text
