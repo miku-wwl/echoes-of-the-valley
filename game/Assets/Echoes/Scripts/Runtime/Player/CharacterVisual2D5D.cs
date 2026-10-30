@@ -69,10 +69,12 @@ namespace Echoes
 
             Vector3 facing = Flat(player.transform.forward), camForward = Flat(view.transform.forward), camRight = Flat(view.transform.right);
             FacingAngle = Mathf.Atan2(Vector3.Dot(facing, camRight), Vector3.Dot(facing, camForward)) * Mathf.Rad2Deg;
-            string wanted = Sector(FacingAngle, backFrontHalfWidth);
-            if (wanted != Direction && !InSector(FacingAngle, Direction, backFrontHalfWidth, hysteresis))
+            bool eight = sheet.Get("NE") != null;
+            string wanted = eight ? Sector8(FacingAngle) : Sector(FacingAngle, backFrontHalfWidth);
+            bool keep = eight ? Mathf.Abs(Mathf.DeltaAngle(Angle8(Direction), FacingAngle)) <= 22.5f + hysteresis : InSector(FacingAngle, Direction, backFrontHalfWidth, hysteresis);
+            if (wanted != Direction && !keep)
             {
-                if (Opposite(wanted, Direction))
+                if (!eight && Opposite(wanted, Direction))
                 {
                     // a half turn passes through a perpendicular view for a moment, so it reads as turning rather than flipping
                     turnVia = Direction == "N" || Direction == "S" ? (FacingAngle >= 0f ? "E" : "W") : "S";
@@ -81,7 +83,7 @@ namespace Echoes
                 Direction = wanted;
             }
             if (turnTimer > 0f) turnTimer -= dt;
-            ShownDirection = turnTimer > 0f && turnVia != null ? turnVia : Direction;
+            ShownDirection = !eight && turnTimer > 0f && turnVia != null ? turnVia : Direction;
 
             SpriteSheet25D.Direction frames = sheet.Resolve(ShownDirection, out bool mirrored, out float phaseOffset);
             if (frames == null) return;
@@ -138,5 +140,14 @@ namespace Echoes
         }
 
         static bool Opposite(string a, string b) => (a == "N" && b == "S") || (a == "S" && b == "N") || (a == "E" && b == "W") || (a == "W" && b == "E");
+
+        static readonly string[] Eight = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
+        /// <summary>Camera-relative headings. Each key has its own drawing; none is a mirrored cardinal substitute.</summary>
+        public static string Sector8(float angle) => Eight[Mathf.RoundToInt(Mathf.Repeat(angle, 360f) / 45f) % 8];
+        public static float Angle8(string direction)
+        {
+            int index = System.Array.IndexOf(Eight, direction);
+            return Mathf.Repeat(Mathf.Max(0, index) * 45f + 180f, 360f) - 180f;
+        }
     }
 }

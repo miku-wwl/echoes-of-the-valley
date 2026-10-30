@@ -1,0 +1,38 @@
+{
+  "project": "Echoes of the Valley",
+  "phase": "5.3",
+  "qa_scope": "source_png_structure_only_not_unity_runtime",
+  "generated_with": "ChatGPT image generation",
+  "source_png_count": 7,
+  "alpha": {
+    "Caretaker_8dir_idle_source.png": {"size_px": [1536, 1024], "alpha_min": 0, "alpha_max": 254, "nontransparent_area_ratio_at_alpha128": 0.355},
+    "Caretaker_8dir_walk_keyposes_source.png": {"size_px": [1230, 1278], "alpha_min": 0, "alpha_max": 255, "nontransparent_area_ratio_at_alpha128": 0.394},
+    "Mira_8dir_idle_source.png": {"size_px": [1536, 1024], "alpha_min": 0, "alpha_max": 254, "nontransparent_area_ratio_at_alpha128": 0.333},
+    "LilyPads_6clusters_45deg_source.png": {"size_px": [1536, 1024], "alpha_min": 0, "alpha_max": 254, "nontransparent_area_ratio_at_alpha128": 0.228},
+    "Pond_S0_dormant_45deg_source.png": {"size_px": [1536, 1024], "alpha_min": 0, "alpha_max": 254, "nontransparent_area_ratio_at_alpha128": 0.647},
+    "Pond_S3_restored_45deg_source.png": {"size_px": [1536, 1024], "alpha_min": 0, "alpha_max": 254, "nontransparent_area_ratio_at_alpha128": 0.646},
+    "PondWater_muted_albedo_TILING_CANDIDATE.png": {"size_px": [1254, 1254], "alpha_min": 255, "alpha_max": 255}
+  },
+  "pond_s0_s3_mask_iou_alpha_gt_128": 0.991,
+  "atlas_interior_divider_6px_alpha_gt_128_count": {
+    "Caretaker_8dir_idle": {"vertical": 0, "horizontal": 968},
+    "Caretaker_8dir_walk_keyposes": {"vertical": 0, "horizontal": 1488},
+    "Mira_8dir_idle": {"vertical": 0, "horizontal": 53}
+  },
+  "water_texture_seam_estimate_mean_absolute_rgb_0_255": {
+    "left_right": 15.4,
+    "top_bottom": 11.9,
+    "local_left_adjacent": 3.8,
+    "local_top_adjacent": 7.0,
+    "seamless_verified": false
+  },
+  "explicit_non_pass_gates": [
+    "Source atlas contains cross-row alpha and needs image-aware repacking.",
+    "The 16 hero walking images are two contact poses per direction, not a proven complete animation.",
+    "Pond S0 and S3 coastline align well but detailed crossfade can ghost.",
+    "Water material is an unverified tiling candidate.",
+    "Wren and Alder are not included in the generated sources.",
+    "No Unity runtime testing, build, or human approval was performed in this generation step."
+  ],
+  "status": "SOURCE_ART_READY_WITH_LIMITATIONS"
+}

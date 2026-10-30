@@ -23,7 +23,8 @@ $sourceManifest = foreach ($directoryName in @('Assets','Packages','ProjectSetti
         [ordered]@{path=$relativePath.Replace('\','/');sha256=$sourceHash;bytes=$sourceFile.Length}
     }
 }
-[ordered]@{sourceCommit=(& git -C $pilotRepo rev-parse HEAD);sourceProject=(Join-Path $pilotRepo 'game');isolatedProject=$copyGame;files=@($sourceManifest)} | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $testLogs 'source-inputs-SHA256.json') -Encoding UTF8
+$capturedGitStatus = @(& git -C $pilotRepo status --porcelain=v1)
+[ordered]@{sourceCommit=(& git -C $pilotRepo rev-parse HEAD);workingTreeDirty=($capturedGitStatus.Count -gt 0);gitStatusAtCapture=$capturedGitStatus;sourceProject=(Join-Path $pilotRepo 'game');isolatedProject=$copyGame;files=@($sourceManifest)} | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $testLogs 'source-inputs-SHA256.json') -Encoding UTF8
 $env:BEE_BUILD_THREADS='4'
 foreach($platformName in @('EditMode','PlayMode')){
     $testXml=Join-Path $testLogs ('tests-'+$platformName+'.xml')

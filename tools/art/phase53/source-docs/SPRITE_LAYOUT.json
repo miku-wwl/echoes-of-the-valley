@@ -1,0 +1,36 @@
+{
+  "coordinate_convention": "image pixels origin top-left",
+  "character_world_facing_direction_order": ["S", "SW", "W", "NW", "N", "NE", "E", "SE"],
+  "source_atlases": {
+    "Caretaker_8dir_idle_source.png": {
+      "nominal_grid": [4, 2],
+      "rows": [["S", "SW", "W", "NW"], ["N", "NE", "E", "SE"]],
+      "frames_per_direction": 1,
+      "status": "source_only_cross_row_alpha_avoid_fixed_grid_crop"
+    },
+    "Caretaker_8dir_walk_keyposes_source.png": {
+      "nominal_grid": [4, 4],
+      "rows": [
+        ["S_A", "SW_A", "W_A", "NW_A"],
+        ["N_A", "NE_A", "E_A", "SE_A"],
+        ["S_B", "SW_B", "W_B", "NW_B"],
+        ["N_B", "NE_B", "E_B", "SE_B"]
+      ],
+      "frames_per_direction": 2,
+      "animation_quality": "unverified_contact_keyposes",
+      "status": "source_only_cross_row_alpha_avoid_fixed_grid_crop"
+    },
+    "Mira_8dir_idle_source.png": {
+      "nominal_grid": [4, 2],
+      "rows": [["S", "SW", "W", "NW"], ["N", "NE", "E", "SE"]],
+      "frames_per_direction": 1,
+      "status": "source_only_may_have_minor_cross_row_alpha"
+    },
+    "LilyPads_6clusters_45deg_source.png": {
+      "nominal_grid": [3, 2],
+      "rows": [["cluster_1", "cluster_2", "cluster_3"], ["cluster_4", "cluster_5", "cluster_6"]],
+      "status": "source_only_verify_clean_individual_alpha"
+    }
+  },
+  "important": "Do not interpret nominal grid as clean rectangular crop bounds; determine the actual sprite matte and foot pivot per component."
+}
